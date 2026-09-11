@@ -2,7 +2,7 @@ import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
-import { useThemeMotion } from '../../lib/theme';
+import Stage from '../decor/Stage';
 
 function Counter({ to, suffix = '', decimals = 0 }) {
     const ref = useRef(null);
@@ -49,7 +49,6 @@ const METRICS = [
 export default function About() {
     const [tilt, setTilt] = useState({ x: 0, y: 0 });
     const reduceRef = useRef(false);
-    const fx = useThemeMotion();
     useEffect(() => {
         reduceRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }, []);
@@ -57,7 +56,7 @@ export default function About() {
     return (
         <section
             id="about"
-            className="noise relative overflow-hidden bg-[var(--bg-soft)] py-24 md:py-36"
+            className="noise relative overflow-hidden bg-[var(--bg-soft)] section-pad"
             onMouseMove={(e) => {
                 if (reduceRef.current) return;
                 if (window.matchMedia('(pointer: coarse)').matches) return;
@@ -68,15 +67,13 @@ export default function About() {
                 });
             }}
         >
-            {/* cursor-reactive brand fragments */}
+            {/* cursor-reactive stage — clean single orb + motif, stays dark */}
             <div
                 className="pointer-events-none absolute inset-0 transition-transform duration-500"
                 style={{ transform: `translate(${tilt.x * 14}px, ${tilt.y * 14}px)` }}
                 aria-hidden
             >
-                <div className="absolute right-[8%] top-[12%] h-40 w-10 rounded-lg border border-[#891FFB]/25 bg-[#891FFB]/10 blur-[1px]" />
-                <div className="absolute bottom-[14%] left-[4%] h-56 w-12 rounded-lg border border-[#507AF4]/25 bg-[#507AF4]/10" />
-                <div className="absolute bottom-[8%] right-[22%] h-24 w-24 rounded-full" style={{ background: 'var(--glow-cyan)', filter: `blur(${fx.orbBlur * 0.5}px)`, opacity: fx.orb }} />
+                <Stage variant="about" />
             </div>
 
             <div className="container-x relative">

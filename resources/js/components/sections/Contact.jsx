@@ -4,6 +4,7 @@ import MagneticButton from '../motion/MagneticButton';
 import { SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import { useThemeMotion } from '../../lib/theme';
+import Stage from '../decor/Stage';
 
 const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
 
@@ -28,7 +29,9 @@ export default function Contact() {
     };
 
     return (
-        <section id="contact" className="noise relative overflow-hidden bg-[var(--bg)] py-24 md:py-36">
+        <section id="contact" className="noise relative overflow-hidden bg-[var(--bg)] section-pad">
+            {/* tricolor convergence stage */}
+            <Stage variant="contact" />
             {/* rising bars bg — calmer in light theme */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center gap-6 opacity-30" aria-hidden>
                 {[['#891FFB', 140], ['#507AF4', 210], ['#1BE2EB', 300]].map(([c, h], i) => (
@@ -56,7 +59,7 @@ export default function Contact() {
                             <a
                                 href="mailto:hello@marketorr.com"
                                 data-cursor="cta"
-                                className="btn-press group relative flex items-center justify-center gap-4 overflow-hidden rounded-full border border-[var(--field-line)] px-10 py-7 font-display text-xl font-extrabold uppercase tracking-tight text-[var(--ink)] transition-all duration-500 hover:border-transparent hover:text-white md:text-2xl"
+                                className="btn-press group relative flex items-center justify-center gap-4 overflow-hidden rounded-full border border-[var(--field-line)] px-6 py-7 font-display text-xl font-extrabold uppercase tracking-tight text-[var(--ink)] transition-all duration-500 hover:border-transparent hover:text-white sm:px-10 md:text-2xl"
                             >
                                 <span
                                     className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"

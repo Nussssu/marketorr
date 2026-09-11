@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { PROJECTS } from '../../lib/projects';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
+import Stage from '../decor/Stage';
 
 /* Abstract premium visual per project — artwork stays cinematic in both themes */
 function ProjectVisual({ p, glow }) {
@@ -89,8 +90,9 @@ export default function OurWork({ glow }) {
     const bgY = useTransform(scrollYProgress, [0, 1], [reduce ? 0 : 60, reduce ? 0 : -60]);
 
     return (
-        <section id="work" className="relative bg-[var(--bg-soft)] py-24 md:py-36">
-            <div className="container-x">
+        <section id="work" className="relative overflow-hidden bg-[var(--bg-soft)] section-pad">
+            <Stage variant="work" />
+            <div className="container-x relative">
                 <SectionLabel index="03" name="OUR WORK" />
                 {/* sticky intro */}
                 <div ref={stickyRef} className="relative">

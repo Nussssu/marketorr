@@ -4,15 +4,21 @@ import { useState } from 'react';
 import { SERVICES } from '../../lib/services';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
+import Stage from '../decor/Stage';
 
 export default function Services() {
     const [active, setActive] = useState(null);
     const [hover, setHover] = useState(null);
     const reduce = useReducedMotion();
+    // Section atmosphere follows the hovered / tapped service color.
+    const atmoSlug = hover ?? active;
+    const atmoService = SERVICES.find((s) => s.slug === atmoSlug);
+    const atmo = atmoService ? atmoService.accent : '#891FFB';
 
     return (
-        <section id="services" className="relative bg-[var(--bg)] py-24 md:py-36">
-            <div className="container-x">
+        <section id="services" className="relative overflow-hidden bg-[var(--bg)] section-pad">
+            <Stage variant="services" atmo={atmo} atmoKey={atmoSlug ?? 'base'} />
+            <div className="container-x relative">
                 <SectionLabel index="02" name="SERVICES" />
                 <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Branding', '& UI/UX']} />
@@ -40,7 +46,7 @@ export default function Services() {
                                     onMouseEnter={() => setHover(s.slug)}
                                     onMouseLeave={() => setHover(null)}
                                     onClick={() => setActive(s.slug)}
-                                    className="btn-press relative grid gap-3 px-1 py-8 transition-all duration-500 md:grid-cols-[64px_1fr_auto] md:items-center md:gap-8 md:px-4 md:py-10 md:hover:px-7"
+                                    className="btn-press relative grid gap-3 rounded-xl px-3 py-8 transition-all duration-500 hover:bg-[var(--chip)] md:grid-cols-[64px_1fr_auto] md:items-center md:gap-8 md:px-4 md:py-10 md:hover:px-7"
                                     aria-expanded={isOpen}
                                 >
                                     {/* accent edge */}
@@ -49,7 +55,12 @@ export default function Services() {
                                         style={{ background: grad, transform: isHover || isOpen ? 'scaleY(1)' : 'scaleY(0)' }}
                                         aria-hidden
                                     />
-                                    <span className="font-display text-sm font-bold text-[var(--ink-faint)]">{s.index}</span>
+                                    <span
+                                        className="font-display text-sm font-bold text-[var(--ink-faint)] transition-colors duration-300"
+                                        style={isHover || isOpen ? { color: s.accent } : undefined}
+                                    >
+                                        {s.index}
+                                    </span>
                                     <span>
                                         <span className="flex items-center gap-4">
                                             <span className="font-display text-3xl font-extrabold uppercase tracking-tight text-[var(--ink-strong)] transition-colors duration-300 md:text-5xl">

@@ -71,8 +71,8 @@ export default function CustomCursor() {
                 animate={{
                     width: size,
                     height: size,
-                    backgroundColor: isLabel ? 'var(--ink)' : 'rgba(255,255,255,0)',
-                    borderColor: isLabel ? 'var(--ink)' : state === 'default' ? 'var(--ink-faint)' : '#891FFB',
+                    backgroundColor: isView ? 'var(--ink)' : 'rgba(255,255,255,0)',
+                    borderColor: isView ? 'var(--ink)' : state === 'default' ? 'var(--ink-faint)' : '#891FFB',
                     scale: ripple ? [1, 1.35, 1] : 1,
                 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
@@ -88,8 +88,14 @@ export default function CustomCursor() {
                         opacity: state === 'default' || isLabel ? 0 : 0.55,
                     }}
                 />
+                {isExplore && (
+                    <span
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: 'linear-gradient(135deg,#891FFB,#507AF4,#1BE2EB)', boxShadow: '0 0 28px rgba(137,31,251,0.55)' }}
+                    />
+                )}
                 <span
-                    className="relative font-display text-[10px] font-bold tracking-[0.12em] text-[var(--bg)]"
+                    className={`relative font-display text-[10px] font-bold tracking-[0.12em] ${isExplore ? 'text-white' : 'text-[var(--bg)]'}`}
                     style={{ opacity: isLabel ? 1 : 0 }}
                 >
                     {isView ? 'VIEW' : isExplore ? 'EXPLORE' : ''}

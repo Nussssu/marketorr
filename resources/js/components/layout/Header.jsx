@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import MagneticButton from '../motion/MagneticButton';
 import ThemeToggle from './ThemeToggle';
 
@@ -142,8 +142,17 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {open && (
-                <nav className="border-t border-[var(--line)] bg-[var(--header-bg)] px-5 pb-8 pt-4 backdrop-blur-xl lg:hidden" aria-label="Mobile">
+            <AnimatePresence initial={false}>
+                {open && (
+                    <motion.nav
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden border-t border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-xl lg:hidden"
+                        aria-label="Mobile"
+                    >
+                        <div className="px-5 pb-8 pt-4">
                     {LINKS.map((l, i) =>
                         home ? (
                             <a
@@ -186,8 +195,10 @@ export default function Header() {
                             Start a Project ↗
                         </Link>
                     )}
-                </nav>
-            )}
+                        </div>
+                    </motion.nav>
+                )}
+            </AnimatePresence>
         </motion.header>
     );
 }

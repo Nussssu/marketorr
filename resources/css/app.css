@@ -225,3 +225,43 @@ input, textarea, select { color-scheme: inherit; }
   transition: transform 0.45s var(--ease);
 }
 .field-wrap:focus-within::after { transform: scaleX(1); }
+
+/* ---------- Reusable stage / atmosphere utilities ---------- */
+.section-pad { padding-block: clamp(5rem, 9vw, 9rem); }
+
+.hairline-brand {
+  height: 2px;
+  background: var(--brand-gradient);
+}
+.hairline-fade {
+  mask-image: linear-gradient(90deg, transparent, black 18%, black 82%, transparent);
+}
+
+/* Restrained CTA glow on hover — intensity follows the active theme */
+.btn-press[data-cursor="cta"]:hover {
+  box-shadow:
+    0 10px 34px -10px rgba(137, 31, 251, calc(0.55 * var(--fx-glow))),
+    0 6px 20px -6px rgba(27, 226, 235, calc(0.35 * var(--fx-glow)));
+}
+
+/* Atmosphere wash — color driven by --atmo, re-animates whenever its key changes */
+.atmo-wash { animation: atmo-in 0.9s var(--ease); }
+@keyframes atmo-in {
+  from { opacity: 0; transform: scale(1.05); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Slow aurora drift for ambient orbs */
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, -6%, 0) scale(1.08); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-5%, 5%, 0) scale(1.06); }
+}
+.drift-a { animation: drift-a 16s ease-in-out infinite; }
+.drift-b { animation: drift-b 20s ease-in-out infinite; }
+
+/* Logo-inspired three-bar motif */
+.motif-bar { border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08); }

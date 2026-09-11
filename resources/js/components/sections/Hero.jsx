@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { EASE } from '../../lib/motion';
 import { useThemeMotion } from '../../lib/theme';
 import MagneticButton from '../motion/MagneticButton';
+import Stage from '../decor/Stage';
 
 function BarColumn({ b, mx, my, reduce, glow }) {
     const bx = useTransform(mx, (v) => (reduce ? 0 : v * b.depth * 14));
@@ -105,11 +106,9 @@ export default function Hero() {
 
     return (
         <section ref={ref} id="top" className="noise relative flex min-h-svh flex-col overflow-hidden bg-[var(--bg)]">
-            {/* bg — orbs soften + shrink in light theme via fx */}
+            {/* layered stage lighting + mouse-reactive grid */}
+            <Stage variant="hero" />
             <motion.div className="grid-bg absolute inset-0" style={reduce ? undefined : { x: gridX, y: gridY }} aria-hidden />
-            <div className="absolute -left-40 top-1/3 h-[480px] w-[480px] rounded-full" style={{ background: 'var(--glow-purple)', filter: `blur(${fx.orbBlur}px)`, opacity: fx.orb }} aria-hidden />
-            <div className="absolute right-[-160px] top-[8%] h-[420px] w-[420px] rounded-full" style={{ background: 'var(--glow-blue)', filter: `blur(${fx.orbBlur}px)`, opacity: fx.orb }} aria-hidden />
-            <div className="absolute bottom-[-120px] left-1/3 h-[300px] w-[520px] rounded-full" style={{ background: 'var(--glow-cyan)', filter: `blur(${fx.orbBlur}px)`, opacity: fx.orb }} aria-hidden />
 
             <motion.div style={{ y: textY, opacity: textOpacity, scale: textScale }} className="container-x relative z-10 flex flex-1 flex-col justify-center pt-32">
                 <motion.p
@@ -163,7 +162,7 @@ export default function Hero() {
                 </div>
             </motion.div>
 
-            <motion.div style={reduce ? undefined : { y: barsY }} className="container-x relative z-10 mt-10 flex items-end justify-between pb-10">
+            <motion.div style={reduce ? undefined : { y: barsY }} className="container-x relative z-10 mt-10 flex items-end justify-center pb-10 md:justify-between">
                 <div className="hidden items-center gap-6 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] md:flex" aria-hidden>
                     <span>Idea <span className="text-[#891FFB]">●</span></span>
                     <span>Experience <span className="text-[#507AF4]">●</span></span>
