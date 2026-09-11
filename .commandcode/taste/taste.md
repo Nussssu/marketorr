@@ -1,0 +1,4 @@
+- Prioritizes performance optimization: removes duplicate scroll listeners, mousemove handlers, excessive blur/backdrop-filter, and duplicate animation loops. Prefers `transform` and `opacity` for animations. Confidence: 0.95
+- Always runs the build after making changes and fixes TypeScript errors, hydration warnings, console errors, overflow, broken navigation, and animation lag before considering work complete. Confidence: 0.9
+- On mobile, disables custom cursor, mouse-follow effects, heavy parallax, and long sticky animations. Ensures touch-friendly layouts (single-column, stacked CTAs, full-width form fields, services work without hover). Confidence: 0.9
+- Uses `clamp()` for responsive typography and padding. Key breakpoints: 375px, 430px, 768px, 1024px, 1440px, 1920px. Confidence: 0.85

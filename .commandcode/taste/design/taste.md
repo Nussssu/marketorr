@@ -1,0 +1,2 @@
+- Brand colors: Purple `#891FFB`, Blue `#507AF4`, Cyan `#1BE2EB`. Confidence: 0.95
+- Backgrounds should be clean and subtle: faint grid, very light depth, subtle radial glows in brand colors. Avoids multiple large animated blur blobs. Confidence: 0.85
