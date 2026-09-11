@@ -47,30 +47,14 @@ const METRICS = [
 ];
 
 export default function About() {
-    const [tilt, setTilt] = useState({ x: 0, y: 0 });
-    const reduceRef = useRef(false);
-    useEffect(() => {
-        reduceRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }, []);
-
     return (
         <section
             id="about"
             className="noise relative overflow-hidden bg-[var(--bg-soft)] section-pad"
-            onMouseMove={(e) => {
-                if (reduceRef.current) return;
-                if (window.matchMedia('(pointer: coarse)').matches) return;
-                const r = e.currentTarget.getBoundingClientRect();
-                setTilt({
-                    x: ((e.clientX - r.left) / r.width - 0.5) * 2,
-                    y: ((e.clientY - r.top) / r.height - 0.5) * 2,
-                });
-            }}
         >
             {/* cursor-reactive stage — clean single orb + motif, stays dark */}
             <div
-                className="pointer-events-none absolute inset-0 transition-transform duration-500"
-                style={{ transform: `translate(${tilt.x * 14}px, ${tilt.y * 14}px)` }}
+                className="pointer-events-none absolute inset-0"
                 aria-hidden
             >
                 <Stage variant="about" />

@@ -1,0 +1,4 @@
+- Prefers fast, snappy animations: hover effects finish in 180-220ms with small movements (4-6px), buttons scale to ~0.97 on click. Avoids slow springs, `transition: all 1s`, and slow looping animations. Confidence: 0.9
+- Hero entrance animations should complete in about 1.5 seconds using masked upward text reveals. Confidence: 0.8
+- Uses Framer Motion `useScroll`/`useTransform` for scroll-exit effects (content moves up 60-80px, slight opacity reduction, scale ~0.97). Avoids heavy pinning. Confidence: 0.8
+- Uses Lenis for smooth scrolling with `duration: 0.65`, `wheelMultiplier: 1.15`. Maintains only one Lenis instance and one RAF loop. Disables/reduces smooth scrolling on mobile for native feel. Confidence: 0.85

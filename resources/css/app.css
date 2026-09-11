@@ -88,6 +88,7 @@
 
 html {
   scroll-behavior: auto;
+  overflow-x: clip;
 }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
@@ -115,7 +116,8 @@ section[id], div[id], footer[id] {
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.9;
-  font-size: clamp(46px, 12.5vw, 170px);
+  font-size: clamp(2.65rem, 12.5vw, 10.625rem);
+  text-wrap: balance;
   overflow-wrap: break-word;
 }
 @media (min-width: 640px) {
@@ -126,14 +128,16 @@ section[id], div[id], footer[id] {
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 0.92;
-  font-size: clamp(44px, 6.5vw, 104px);
+  font-size: clamp(2.5rem, 6.5vw, 6.5rem);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .display-md {
   font-family: var(--font-display);
   font-weight: 750;
   letter-spacing: -0.03em;
   line-height: 0.95;
-  font-size: clamp(32px, 4.2vw, 64px);
+  font-size: clamp(2rem, 4.2vw, 4rem);
 }
 
 .text-gradient {
@@ -173,15 +177,24 @@ section[id], div[id], footer[id] {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.btn-press { transition: transform var(--dur-fast) var(--ease), background var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease); }
+.btn-press { transition: transform var(--dur-fast) var(--ease), background-color 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease); }
 .btn-press:active { transform: scale(0.97); }
+
+[data-arrow] {
+  display: inline-block;
+  transition: transform 0.2s var(--ease);
+}
+.group:hover [data-arrow],
+.group:focus-visible [data-arrow] { transform: translate3d(5px, -5px, 0); }
+.group:hover [data-arrow="horizontal"],
+.group:focus-visible [data-arrow="horizontal"] { transform: translate3d(5px, 0, 0); }
 
 .link-underline { position: relative; }
 .link-underline::after {
   content: ""; position: absolute; left: 0; bottom: -3px; height: 1.5px; width: 100%;
   background: var(--brand-gradient);
   transform: scaleX(0); transform-origin: right;
-  transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
 }
 .link-underline:hover::after, .link-underline:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 
@@ -201,7 +214,7 @@ section[id], div[id], footer[id] {
 }
 
 .cursor-none-desktop { cursor: auto; }
-@media (pointer: fine) {
+@media (min-width: 1024px) and (pointer: fine) {
   .cursor-none-desktop, .cursor-none-desktop a, .cursor-none-desktop button { cursor: none; }
 }
 
@@ -225,6 +238,10 @@ input, textarea, select { color-scheme: inherit; }
   transition: transform 0.45s var(--ease);
 }
 .field-wrap:focus-within::after { transform: scaleX(1); }
+
+@media (max-width: 767px) {
+  .animate-marquee { animation: none; }
+}
 
 /* ---------- Reusable stage / atmosphere utilities ---------- */
 .section-pad { padding-block: clamp(5rem, 9vw, 9rem); }
@@ -250,18 +267,6 @@ input, textarea, select { color-scheme: inherit; }
   from { opacity: 0; transform: scale(1.05); }
   to { opacity: 1; transform: scale(1); }
 }
-
-/* Slow aurora drift for ambient orbs */
-@keyframes drift-a {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(4%, -6%, 0) scale(1.08); }
-}
-@keyframes drift-b {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-5%, 5%, 0) scale(1.06); }
-}
-.drift-a { animation: drift-a 16s ease-in-out infinite; }
-.drift-b { animation: drift-b 20s ease-in-out infinite; }
 
 /* Logo-inspired three-bar motif */
 .motif-bar { border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08); }
