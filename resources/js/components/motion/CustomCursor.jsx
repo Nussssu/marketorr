@@ -55,7 +55,9 @@ export default function CustomCursor() {
     const isView = state === 'view';
     const isExplore = state === 'explore';
     const isLabel = isView || isExplore;
-    const size = isLabel ? 88 : state === 'hover' ? 52 : state === 'cta' ? 64 : 36;
+    // EXPLORE is a compact gradient pill; every other state stays circular.
+    const width = isExplore ? 132 : isView ? 88 : state === 'hover' ? 52 : state === 'cta' ? 64 : 36;
+    const height = isExplore ? 44 : isView ? 88 : state === 'hover' ? 52 : state === 'cta' ? 64 : 36;
 
     return (
         <>
@@ -69,8 +71,8 @@ export default function CustomCursor() {
                 className="pointer-events-none fixed left-0 top-0 z-[199] flex items-center justify-center rounded-full"
                 style={{ x: rx, y: ry, translateX: '-50%', translateY: '-50%' }}
                 animate={{
-                    width: size,
-                    height: size,
+                    width,
+                    height,
                     backgroundColor: isView ? 'var(--ink)' : 'rgba(255,255,255,0)',
                     borderColor: isView ? 'var(--ink)' : state === 'default' ? 'var(--ink-faint)' : '#891FFB',
                     scale: ripple ? [1, 1.35, 1] : 1,
@@ -89,16 +91,34 @@ export default function CustomCursor() {
                     }}
                 />
                 {isExplore && (
-                    <span
+                    <motion.span
                         className="absolute inset-0 rounded-full"
-                        style={{ background: 'linear-gradient(135deg,#891FFB,#507AF4,#1BE2EB)', boxShadow: '0 0 28px rgba(137,31,251,0.55)' }}
+                        initial={{ opacity: 0, backgroundPositionX: '0%' }}
+                        animate={{ opacity: 1, backgroundPositionX: '100%' }}
+                        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        style={{
+                            backgroundImage: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
+                            backgroundSize: '160% 100%',
+                            boxShadow: '0 10px 30px -10px rgba(137,31,251,0.55), 0 6px 20px -8px rgba(27,226,235,0.45)',
+                        }}
                     />
                 )}
                 <span
-                    className={`relative font-display text-[10px] font-bold tracking-[0.12em] ${isExplore ? 'text-white' : 'text-[var(--bg)]'}`}
+                    className={`relative flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.12em] ${isExplore ? 'text-white' : 'text-[var(--bg)]'}`}
                     style={{ opacity: isLabel ? 1 : 0 }}
                 >
                     {isView ? 'VIEW' : isExplore ? 'EXPLORE' : ''}
+                    {isExplore && (
+                        <motion.span
+                            aria-hidden
+                            className="text-[11px] leading-none"
+                            initial={{ x: 0 }}
+                            animate={{ x: 5 }}
+                            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            ↗
+                        </motion.span>
+                    )}
                 </span>
                 {!isLabel && (
                     <span className="absolute inset-[3px] rounded-full border border-[var(--ink-faint)]" />

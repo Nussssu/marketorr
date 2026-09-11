@@ -1,7 +1,10 @@
+import { Link } from '@inertiajs/react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
+import ScrollHeading from '../motion/ScrollHeading';
+import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
 function Counter({ to, suffix = '', decimals = 0 }) {
@@ -46,7 +49,7 @@ const METRICS = [
     { value: 6, suffix: 'yrs', label: 'Avg. team experience' },
 ];
 
-export default function About() {
+export default function About({ heroHeading = false }) {
     return (
         <section
             id="about"
@@ -59,16 +62,19 @@ export default function About() {
             >
                 <Stage variant="about" />
             </div>
+            <CursorGlow />
 
             <div className="container-x relative">
                 <SectionLabel index="01" name="ABOUT" />
                 <div className="mt-10 grid gap-12 lg:grid-cols-12">
                     <div className="lg:col-span-7">
-                        <RevealText
-                            as="h2"
-                            className="display-lg uppercase text-[var(--ink-strong)]"
-                            lines={['We build brands', 'and digital', 'experiences', 'that move people.']}
-                        />
+                        <ScrollHeading enabled={heroHeading}>
+                            <RevealText
+                                as="h2"
+                                className="display-lg uppercase text-[var(--ink-strong)]"
+                                lines={['We build brands', 'and digital', 'experiences', 'that move people.']}
+                            />
+                        </ScrollHeading>
                         <motion.div
                             initial={{ scaleX: 0 }}
                             whileInView={{ scaleX: 1 }}
@@ -96,9 +102,9 @@ export default function About() {
                             <span className="text-[#507AF4]">Digital execution. </span>
                             <span className="text-[#1BE2EB]">Measurable results.</span>
                         </p>
-                        <a href="#services" data-cursor="explore" className="link-underline btn-press mt-6 inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
+                        <Link href="/services" data-cursor="explore" className="link-underline btn-press mt-6 inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
                             Explore our services →
-                        </a>
+                        </Link>
                     </div>
                 </div>
 

@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { SERVICES } from '../../lib/services';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
+import ScrollHeading from '../motion/ScrollHeading';
+import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
-export default function Services() {
+export default function Services({ heroHeading = false }) {
     const [active, setActive] = useState(null);
     const [hover, setHover] = useState(null);
     const reduce = useReducedMotion();
@@ -18,10 +20,13 @@ export default function Services() {
     return (
         <section id="services" className="relative overflow-hidden bg-[var(--bg)] section-pad">
             <Stage variant="services" atmo={atmo} atmoKey={atmoSlug ?? 'base'} />
+            <CursorGlow />
             <div className="container-x relative">
                 <SectionLabel index="02" name="SERVICES" />
                 <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Branding', '& UI/UX']} />
+                    <ScrollHeading enabled={heroHeading}>
+                        <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Branding', '& UI/UX']} />
+                    </ScrollHeading>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }} transition={{ duration: 0.7 }}

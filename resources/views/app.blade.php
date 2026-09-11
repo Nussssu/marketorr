@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,16 +9,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <script>
-        // Apply theme before paint: stored choice wins, otherwise follow the OS.
+        // Apply theme before paint: stored choice wins, otherwise default to light.
         (function () {
             try {
                 var stored = localStorage.getItem('marketorr-theme');
-                var theme = stored === 'light' || stored === 'dark'
-                    ? stored
-                    : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                var theme = stored === 'light' || stored === 'dark' ? stored : 'light';
                 document.documentElement.setAttribute('data-theme', theme);
             } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-theme', 'light');
             }
         })();
     </script>
