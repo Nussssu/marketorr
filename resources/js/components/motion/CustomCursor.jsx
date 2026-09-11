@@ -12,7 +12,7 @@ export default function CustomCursor() {
     const ry = useSpring(y, { stiffness: 420, damping: 38, mass: 0.6 });
 
     useEffect(() => {
-        const fine = window.matchMedia('(pointer: fine)').matches;
+        const fine = window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches;
         const touch = window.matchMedia('(pointer: coarse)').matches;
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!fine || touch || reduced || reduce) return;

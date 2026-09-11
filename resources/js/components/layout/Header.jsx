@@ -5,6 +5,7 @@ import MagneticButton from '../motion/MagneticButton';
 import ThemeToggle from './ThemeToggle';
 
 const LINKS = [
+    { label: 'Home', hash: '#home' },
     { label: 'About', hash: '#about' },
     { label: 'Services', hash: '#services' },
     { label: 'Our Work', hash: '#work' },
@@ -15,9 +16,9 @@ function Logo({ home }) {
     const inner = (
         <>
             <span className="flex h-9 items-end gap-[4px]" aria-hidden>
-                <span className="h-5 w-[7px] rounded-[2px] bg-[#891FFB] transition-all duration-300 group-hover:h-9" />
-                <span className="h-7 w-[7px] rounded-[2px] bg-[#507AF4] transition-all duration-300 group-hover:h-9" />
-                <span className="h-9 w-[7px] rounded-[2px] bg-[#1BE2EB] transition-all duration-300 group-hover:h-9" />
+                <span className="h-5 w-[7px] rounded-[2px] bg-[#891FFB] transition-[height] duration-200 group-hover:h-9" />
+                <span className="h-7 w-[7px] rounded-[2px] bg-[#507AF4] transition-[height] duration-200 group-hover:h-9" />
+                <span className="h-9 w-[7px] rounded-[2px] bg-[#1BE2EB] transition-[height] duration-200 group-hover:h-9" />
             </span>
             <span className="font-display text-[19px] font-extrabold tracking-tight text-[var(--ink)]">
                 MARKETORR<span className="text-gradient">.</span>
@@ -27,7 +28,7 @@ function Logo({ home }) {
     const cls = 'btn-press group flex items-center gap-3';
     if (home) {
         return (
-            <a href="#top" className={cls} aria-label="Marketorr home">
+            <a href="#home" className={cls} aria-label="Marketorr home">
                 {inner}
             </a>
         );
@@ -49,6 +50,23 @@ export default function Header() {
     const hrefFor = (hash) => (home ? hash : `/${hash}`);
 
     useEffect(() => {
+        if (!open) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.__lenis?.stop();
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.__lenis?.start();
+        };
+    }, [open]);
+
+    useEffect(() => {
+        setOpen(false);
+    }, [url]);
+
+    useEffect(() => {
         let last = window.scrollY;
         const onScroll = () => {
             const y = window.scrollY;
@@ -65,10 +83,10 @@ export default function Header() {
     return (
         <motion.header
             animate={{ y: hidden && !open ? '-110%' : '0%' }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className={`fixed inset-x-0 top-0 z-[100] transition-colors duration-300 ${
                 scrolled && !open
-                    ? 'border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-xl'
+                    ? 'border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md'
                     : 'border-b border-transparent bg-transparent'
             }`}
         >
@@ -83,8 +101,8 @@ export default function Header() {
                                 className="link-underline btn-press group relative py-2 text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
                             >
                                 <span className="relative block overflow-hidden">
-                                    <span className="block transition-transform duration-300 group-hover:-translate-y-full">{l.label}</span>
-                                    <span aria-hidden className="absolute inset-0 block translate-y-full text-gradient transition-transform duration-300 group-hover:translate-y-0">
+                                    <span className="block transition-transform duration-200 group-hover:-translate-y-full">{l.label}</span>
+                                    <span aria-hidden className="absolute inset-0 block translate-y-full text-gradient transition-transform duration-200 group-hover:translate-y-0">
                                         {l.label}
                                     </span>
                                 </span>
@@ -96,8 +114,8 @@ export default function Header() {
                                 className="link-underline btn-press group relative py-2 text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
                             >
                                 <span className="relative block overflow-hidden">
-                                    <span className="block transition-transform duration-300 group-hover:-translate-y-full">{l.label}</span>
-                                    <span aria-hidden className="absolute inset-0 block translate-y-full text-gradient transition-transform duration-300 group-hover:translate-y-0">
+                                    <span className="block transition-transform duration-200 group-hover:-translate-y-full">{l.label}</span>
+                                    <span aria-hidden className="absolute inset-0 block translate-y-full text-gradient transition-transform duration-200 group-hover:translate-y-0">
                                         {l.label}
                                     </span>
                                 </span>
@@ -148,8 +166,8 @@ export default function Header() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden border-t border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-xl lg:hidden"
+                        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                        className="max-h-[calc(100svh-72px)] overflow-y-auto border-t border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md lg:hidden"
                         aria-label="Mobile"
                     >
                         <div className="px-5 pb-8 pt-4">

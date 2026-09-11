@@ -4,13 +4,15 @@ import Lenis from 'lenis';
 export default function SmoothScroll() {
     useEffect(() => {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        if (window.matchMedia('(pointer: coarse)').matches) return; // natural touch scroll
+        if (window.matchMedia('(max-width: 1023px), (pointer: coarse)').matches) return;
+        if (window.__lenis) return;
 
         const lenis = new Lenis({
-            duration: 1.05,
+            duration: 0.65,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
-            touchMultiplier: 1.4,
+            wheelMultiplier: 1.15,
+            syncTouch: false,
         });
 
         let raf = 0;
@@ -35,7 +37,7 @@ export default function SmoothScroll() {
             const el = document.querySelector(id);
             if (!el) return;
             e.preventDefault();
-            lenis.scrollTo(el, { offset: -72, duration: 1.2 });
+            lenis.scrollTo(el, { offset: -72, duration: 0.65 });
         };
         document.addEventListener('click', onClick);
 

@@ -46,12 +46,12 @@ export default function Services() {
                                     onMouseEnter={() => setHover(s.slug)}
                                     onMouseLeave={() => setHover(null)}
                                     onClick={() => setActive(s.slug)}
-                                    className="btn-press relative grid gap-3 rounded-xl px-3 py-8 transition-all duration-500 hover:bg-[var(--chip)] md:grid-cols-[64px_1fr_auto] md:items-center md:gap-8 md:px-4 md:py-10 md:hover:px-7"
+                                    className="btn-press relative grid gap-3 rounded-xl px-3 py-8 transition-colors duration-200 hover:bg-[var(--chip)] md:grid-cols-[64px_1fr_auto] md:items-center md:gap-8 md:px-4 md:py-10"
                                     aria-expanded={isOpen}
                                 >
                                     {/* accent edge */}
                                     <span
-                                        className="absolute left-0 top-0 h-full w-[3px] origin-top transition-transform duration-500"
+                                        className="absolute left-0 top-0 h-full w-[3px] origin-top transition-transform duration-200"
                                         style={{ background: grad, transform: isHover || isOpen ? 'scaleY(1)' : 'scaleY(0)' }}
                                         aria-hidden
                                     />
@@ -79,7 +79,7 @@ export default function Services() {
                                                     initial={{ height: 0, opacity: 0 }}
                                                     animate={{ height: 'auto', opacity: 1 }}
                                                     exit={{ height: 0, opacity: 0 }}
-                                                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                                                     className="block overflow-hidden"
                                                 >
                                                     <span className="mt-4 block text-[14px] leading-relaxed text-[var(--mute)]">{s.description}</span>
@@ -114,11 +114,11 @@ export default function Services() {
                                             {isOpen ? 'Open' : 'Explore'}
                                         </span>
                                         <span
-                                            className="btn-press flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-lg text-[var(--ink)] transition-all duration-500 group-hover:border-transparent group-hover:text-white"
+                                            className="btn-press flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-lg text-[var(--ink)] group-hover:border-transparent group-hover:text-white"
                                             style={isHover ? { background: grad } : undefined}
                                             aria-hidden
                                         >
-                                            <span className={`block transition-transform duration-500 ${isHover ? 'rotate-45' : ''}`}>↗</span>
+                                            <span data-arrow aria-hidden>↗</span>
                                         </span>
                                     </span>
                                 </Link>
