@@ -1,0 +1,119 @@
+export type ServiceSlug =
+  | "branding"
+  | "web-ui-ux"
+  | "software-ui-ux"
+  | "mobile-app-ui-ux";
+
+export interface Service {
+  slug: ServiceSlug;
+  index: string;
+  name: string;
+  short: string;
+  description: string;
+  accent: string;
+  accentTo?: string;
+  capabilities: string[];
+  deliverables: string[];
+  outcomes: { value: string; label: string }[];
+}
+
+export const SERVICES: Service[] = [
+  {
+    slug: "branding",
+    index: "01",
+    name: "Branding",
+    short: "Identities that demand attention.",
+    description:
+      "Strategy-led identities — positioning, naming, visual systems and guidelines that make ambitious brands impossible to ignore.",
+    accent: "#891FFB",
+    capabilities: [
+      "Brand Strategy",
+      "Visual Identity",
+      "Logo Systems",
+      "Typography",
+      "Color Systems",
+      "Brand Guidelines",
+      "Campaign Identity",
+      "Creative Direction",
+    ],
+    deliverables: ["Strategy deck", "Identity system", "Guidelines", "Launch kit"],
+    outcomes: [
+      { value: "3.2x", label: "Avg. brand recall lift" },
+      { value: "48+", label: "Identities shipped" },
+    ],
+  },
+  {
+    slug: "web-ui-ux",
+    index: "02",
+    name: "Web UI/UX",
+    short: "Websites engineered to convert.",
+    description:
+      "High-converting marketing sites and web experiences — architecture, interface, motion and design systems built for growth.",
+    accent: "#891FFB",
+    accentTo: "#507AF4",
+    capabilities: [
+      "UX Strategy",
+      "Website Architecture",
+      "Wireframing",
+      "UI Design",
+      "Responsive Design",
+      "Interaction Design",
+      "Design Systems",
+      "Prototyping",
+    ],
+    deliverables: ["Sitemap & UX", "UI screens", "Design system", "Prototype"],
+    outcomes: [
+      { value: "2.4x", label: "Avg. conversion lift" },
+      { value: "60+", label: "Sites launched" },
+    ],
+  },
+  {
+    slug: "software-ui-ux",
+    index: "03",
+    name: "Software UI/UX",
+    short: "Complex products, made clear.",
+    description:
+      "SaaS, dashboards and enterprise tools — workflows, data-viz and scalable systems that teams love to use.",
+    accent: "#507AF4",
+    capabilities: [
+      "SaaS UI/UX",
+      "Dashboard Design",
+      "Admin Panels",
+      "CRM UI",
+      "ERP Interfaces",
+      "Data Visualization",
+      "Workflow Design",
+      "Enterprise Design Systems",
+    ],
+    deliverables: ["Flows & IA", "Product UI", "Component library", "Handoff specs"],
+    outcomes: [
+      { value: "-38%", label: "Avg. task-time reduction" },
+      { value: "35+", label: "Products designed" },
+    ],
+  },
+  {
+    slug: "mobile-app-ui-ux",
+    index: "04",
+    name: "Mobile App UI/UX",
+    short: "Apps people keep opening.",
+    description:
+      "Native-feel iOS and Android experiences — flows, micro-interactions and prototypes tuned for retention.",
+    accent: "#507AF4",
+    accentTo: "#1BE2EB",
+    capabilities: [
+      "User Flows",
+      "Information Architecture",
+      "Android UI",
+      "iOS UI",
+      "Mobile Design Systems",
+      "Interactive Prototypes",
+      "Micro-interactions",
+      "Developer Handoff",
+    ],
+    deliverables: ["Flows", "App UI kit", "Prototype", "Store assets"],
+    outcomes: [
+      { value: "4.8★", label: "Avg. store rating" },
+      { value: "40+", label: "Apps shipped" },
+    ],
+  },
+];
