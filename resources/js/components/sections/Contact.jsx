@@ -4,11 +4,12 @@ import MagneticButton from '../motion/MagneticButton';
 import { SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import { useThemeMotion } from '../../lib/theme';
-import Stage from '../decor/Stage';
+import ScrollHeading from '../motion/ScrollHeading';
+import InkField from '../decor/InkField';
 
 const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
 
-export default function Contact() {
+export default function Contact({ heroHeading = false }) {
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
     const { data, setData, post, processing, wasSuccessful, errors, reset } = useForm({
@@ -30,8 +31,8 @@ export default function Contact() {
 
     return (
         <section id="contact" className="noise relative overflow-hidden bg-[var(--bg)] section-pad">
-            {/* tricolor convergence stage */}
-            <Stage variant="contact" />
+            {/* mouse-reactive watercolour field */}
+            <InkField theme={fx.theme} />
             {/* rising bars bg — calmer in light theme */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center gap-6 opacity-30" aria-hidden>
                 {[['#891FFB', 140], ['#507AF4', 210], ['#1BE2EB', 300]].map(([c, h], i) => (
@@ -47,11 +48,13 @@ export default function Contact() {
 
             <div className="container-x relative">
                 <SectionLabel index="04" name="CONTACT" />
-                <RevealText
-                    as="h2"
-                    className="display-lg mt-10 uppercase text-[var(--ink-strong)]"
-                    lines={['Have a project?', "Let's make", 'it matter.']}
-                />
+                <ScrollHeading enabled={heroHeading} className="mt-10">
+                    <RevealText
+                        as="h2"
+                        className="display-lg uppercase text-[var(--ink-strong)]"
+                        lines={['Have a project?', "Let's make", 'it matter.']}
+                    />
+                </ScrollHeading>
 
                 <div className="mt-12 grid gap-12 lg:grid-cols-2">
                     <div>

@@ -6,7 +6,7 @@ export default function ContactPage() {
         <>
             <Head title="Contact — Marketorr" />
             <div className="pt-[72px]">
-                <Contact />
+                <Contact heroHeading />
             </div>
         </>
     );

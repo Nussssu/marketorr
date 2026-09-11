@@ -1,34 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({ theme: 'dark', choice: 'system', toggle: () => {}, setChoice: () => {} });
-
-function systemTheme() {
-    if (typeof window === 'undefined') return 'dark';
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
+const ThemeContext = createContext({ theme: 'light', choice: 'light', toggle: () => {}, setChoice: () => {} });
 
 export function ThemeProvider({ children }) {
     const [choice, setChoiceState] = useState(() => {
-        if (typeof window === 'undefined') return 'system';
+        if (typeof window === 'undefined') return 'light';
         const stored = window.localStorage.getItem('marketorr-theme');
-        return stored === 'dark' || stored === 'light' ? stored : 'system';
+        return stored === 'dark' || stored === 'light' ? stored : 'light';
     });
-    const [theme, setTheme] = useState(() =>
-        choice === 'system' ? systemTheme() : choice,
-    );
+    const [theme, setTheme] = useState(choice);
 
-    // Resolve + apply theme; when following the OS, track it live.
     useEffect(() => {
-        const apply = () => {
-            const resolved = choice === 'system' ? systemTheme() : choice;
-            setTheme(resolved);
-            document.documentElement.setAttribute('data-theme', resolved);
-        };
-        apply();
-        if (choice !== 'system') return undefined;
-        const mq = window.matchMedia('(prefers-color-scheme: light)');
-        mq.addEventListener('change', apply);
-        return () => mq.removeEventListener('change', apply);
+        setTheme(choice);
+        document.documentElement.setAttribute('data-theme', choice);
     }, [choice]);
 
     const setChoice = useCallback((next) => {

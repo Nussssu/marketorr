@@ -1,8 +1,11 @@
+import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
 import { useThemeMotion } from '../../lib/theme';
 import MagneticButton from '../motion/MagneticButton';
+import ScrollHeading from '../motion/ScrollHeading';
+import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
 function BarColumn({ bar, glow }) {
@@ -83,6 +86,7 @@ export default function Hero() {
             >
                 <Stage variant="hero" />
                 <div className="grid-bg absolute inset-0" />
+                <CursorGlow />
             </motion.div>
 
             <motion.div style={exitMotion} className="container-x relative z-10 flex flex-1 flex-col justify-center pb-4 pt-28 sm:pt-32">
@@ -96,24 +100,27 @@ export default function Hero() {
                     Independent creative &amp; digital agency
                 </motion.p>
 
-                <h1 className="display-xl uppercase text-[var(--ink-strong)]">
-                    {[
-                        ['We turn', ''],
-                        ['attention', ''],
-                        ['into results.', 'text-gradient'],
-                    ].map(([line, className], index) => (
-                        <span key={line} className="mask-line">
-                            <motion.span
-                                className={`mask-inner ${className}`}
-                                initial={{ y: '110%' }}
-                                animate={{ y: '0%' }}
-                                transition={{ duration: 0.52, delay: 0.2 + index * 0.08, ease: [...EASE] }}
-                            >
-                                {line}
-                            </motion.span>
-                        </span>
-                    ))}
-                </h1>
+                {/* intensity trimmed: the hero container already carries its own scroll exit */}
+                <ScrollHeading intensity={0.55}>
+                    <h1 className="display-xl uppercase text-[var(--ink-strong)]">
+                        {[
+                            ['We turn', ''],
+                            ['attention', ''],
+                            ['into results.', 'text-gradient'],
+                        ].map(([line, className], index) => (
+                            <span key={line} className="mask-line">
+                                <motion.span
+                                    className={`mask-inner ${className}`}
+                                    initial={{ y: '110%' }}
+                                    animate={{ y: '0%' }}
+                                    transition={{ duration: 0.52, delay: 0.2 + index * 0.08, ease: [...EASE] }}
+                                >
+                                    {line}
+                                </motion.span>
+                            </span>
+                        ))}
+                    </h1>
+                </ScrollHeading>
 
                 <motion.div
                     initial={{ scaleX: 0 }}
@@ -140,14 +147,14 @@ export default function Hero() {
                         className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-4"
                     >
                         <MagneticButton className="w-full sm:w-auto">
-                            <a href="#work" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white sm:w-auto" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            <Link href="/work" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white sm:w-auto" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
                                 View our work <span data-arrow aria-hidden>↗</span>
-                            </a>
+                            </Link>
                         </MagneticButton>
                         <MagneticButton className="w-full sm:w-auto">
-                            <a href="#contact" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--field-line)] px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:border-transparent hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)] sm:w-auto">
+                            <Link href="/contact" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--field-line)] px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:border-transparent hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)] sm:w-auto">
                                 Start a project <span data-arrow="horizontal" aria-hidden>→</span>
-                            </a>
+                            </Link>
                         </MagneticButton>
                     </motion.div>
                 </div>
@@ -160,13 +167,13 @@ export default function Hero() {
                     <span>Result <span className="text-[#1BE2EB]">●</span></span>
                 </div>
                 <Bars glow={fx.barGlow} />
-                <a
-                    href="#about"
+                <Link
+                    href="/about"
                     className="btn-press hidden flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)] hover:text-[var(--ink)] md:flex"
                 >
                     Scroll to explore
                     <span className="block h-10 w-[1px] bg-gradient-to-b from-[#891FFB] via-[#507AF4] to-[#1BE2EB]" aria-hidden />
-                </a>
+                </Link>
             </div>
         </section>
     );
