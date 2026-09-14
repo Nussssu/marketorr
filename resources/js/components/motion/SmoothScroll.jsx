@@ -34,7 +34,12 @@ export default function SmoothScroll() {
             if (path !== '' && path !== window.location.pathname) return;
             const id = raw.slice(hashIndex);
             if (id === '#') return;
-            const el = document.querySelector(id);
+            let el = null;
+            try {
+                el = document.querySelector(id);
+            } catch {
+                return;
+            }
             if (!el) return;
             e.preventDefault();
             lenis.scrollTo(el, { offset: -72, duration: 0.65 });
@@ -45,7 +50,12 @@ export default function SmoothScroll() {
 
         // deep-link: arriving with /#section from another page
         if (window.location.hash) {
-            const el = document.querySelector(window.location.hash);
+            let el = null;
+            try {
+                el = document.querySelector(window.location.hash);
+            } catch {
+                // invalid selector in hash
+            }
             if (el) {
                 requestAnimationFrame(() => {
                     lenis.scrollTo(el, { offset: -72, immediate: true });

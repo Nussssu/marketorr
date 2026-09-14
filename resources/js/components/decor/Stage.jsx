@@ -4,14 +4,14 @@ import { useThemeMotion } from '../../lib/theme';
  * Reusable cinematic background stage.
  *
  * Composes layered radial glows, an optional faint grid, a dynamic
- * atmosphere wash (driven by `--atmo`), logo-inspired three-bar motif,
- * edge glows and a gradient hairline — without ever duplicating the
+ * atmosphere wash (driven by `--atmo`), logo-inspired three-bar motif
+ * and a gradient hairline — without ever duplicating the
  * CSS in every section. Always `aria-hidden` + pointer-events-none so
  * decor can never cover text or intercept clicks.
  *
  * Variants encode intent: hero = strongest tricolor lighting,
  * about = clean + dark, services = reactive atmosphere,
- * work = dark with edge glows, contact = full convergence.
+ * contact = full convergence. The Our Work section runs undecorated.
  */
 const VARIANTS = {
     hero: {
@@ -34,13 +34,6 @@ const VARIANTS = {
         grid: true,
         orbs: [],
         atmosphere: true,
-    },
-    work: {
-        grid: false,
-        orbs: [
-            { color: 'var(--glow-purple)', cls: 'left-[-160px] top-[30%] h-[380px] w-[380px]' },
-        ],
-        edge: true,
     },
     contact: {
         grid: false,
@@ -97,18 +90,6 @@ export default function Stage({ variant = 'about', atmo = null, atmoKey = 'base'
                     className="atmo-wash absolute inset-0"
                     style={{ background: `radial-gradient(55% 45% at 72% 18%, ${atmo}2e, transparent 70%)` }}
                 />
-            )}
-            {v.edge && (
-                <>
-                    <div
-                        className="absolute bottom-0 left-0 top-0 w-[180px]"
-                        style={{ background: 'linear-gradient(180deg, transparent, rgba(137,31,251,0.10), transparent)', opacity: fx.orb }}
-                    />
-                    <div
-                        className="absolute bottom-0 right-0 top-0 w-[180px]"
-                        style={{ background: 'linear-gradient(180deg, transparent, rgba(27,226,235,0.08), transparent)', opacity: fx.orb }}
-                    />
-                </>
             )}
             {v.motif && <Motif cls={v.motif} />}
             {v.hairline && (

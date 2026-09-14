@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Service;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,6 +41,25 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+            ],
+            'settings' => fn () => Setting::current()->toPublicArray(),
+            // Footer service links follow whatever slugs the admin has published.
+            'navServices' => fn () => Service::query()
+                ->published()
+                ->get(['slug', 'name'])
+                ->map(fn (Service $service) => [
+                    'slug' => $service->slug,
+                    'name' => $service->name,
+                ])
+                ->values(),
+            'auth' => [
+                'user' => fn () => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->role->value,
+                    'isSuperAdmin' => $request->user()->isSuperAdmin(),
+                ] : null,
             ],
         ];
     }

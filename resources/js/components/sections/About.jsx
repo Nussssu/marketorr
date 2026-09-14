@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import RevealText from '../motion/RevealText';
@@ -42,14 +42,13 @@ function Counter({ to, suffix = '', decimals = 0 }) {
     );
 }
 
-const METRICS = [
-    { value: 120, suffix: '+', label: 'Projects delivered' },
-    { value: 48, suffix: '', label: 'Brands transformed' },
-    { value: 12, suffix: '', label: 'Industries served' },
-    { value: 6, suffix: 'yrs', label: 'Avg. team experience' },
-];
+/** Accent bar under each stat block, repeating if more metrics are configured. */
+const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
 
 export default function About({ heroHeading = false }) {
+    const { settings } = usePage().props;
+    const { text, metrics } = settings.about;
+
     return (
         <section
             id="about"
@@ -93,9 +92,7 @@ export default function About({ heroHeading = false }) {
                             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
                             className="text-[16px] leading-relaxed text-[var(--mute)]"
                         >
-                            Marketorr is a creative and digital agency focused on helping ambitious brands build stronger identities,
-                            better digital experiences, and measurable business growth. We combine strategy, branding, UI/UX,
-                            technology, content, and performance thinking to create work that looks exceptional and performs even better.
+                            {text}
                         </motion.p>
                         <p className="mt-5 font-display text-[12px] font-bold uppercase tracking-[0.22em]">
                             <span className="text-[#891FFB]">Creative thinking. </span>
@@ -109,15 +106,15 @@ export default function About({ heroHeading = false }) {
                 </div>
 
                 <div className="mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--line)] lg:grid-cols-4">
-                    {METRICS.map((m, i) => (
+                    {metrics.map((m, i) => (
                         <div key={m.label} className="bg-[var(--surface)] p-7 md:p-9">
                             <p className="font-display text-4xl font-extrabold text-[var(--ink-strong)] md:text-5xl">
-                                <Counter to={m.value} suffix={m.suffix} />
+                                <Counter to={Number(m.value)} suffix={m.suffix ?? ''} />
                             </p>
                             <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{m.label}</p>
                             <span
                                 className="mt-4 block h-[2px] w-10"
-                                style={{ background: ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'][i] }}
+                                style={{ background: METRIC_ACCENTS[i % METRIC_ACCENTS.length] }}
                                 aria-hidden
                             />
                         </div>

@@ -1,10 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { SERVICES } from '../../lib/services';
 import { SectionLabel, Tag } from '../../components/ui/primitives';
 import MagneticButton from '../../components/motion/MagneticButton';
 
-export default function ServicePage({ slug }) {
-    const s = SERVICES.find((x) => x.slug === slug) ?? SERVICES[0];
+export default function ServicePage({ service: s, services }) {
     const grad = s.accentTo ? `linear-gradient(90deg, ${s.accent}, ${s.accentTo})` : s.accent;
 
     return (
@@ -66,7 +64,7 @@ export default function ServicePage({ slug }) {
                     </div>
 
                     <nav className="mt-14 flex flex-wrap gap-3" aria-label="Other services">
-                        {SERVICES.filter((x) => x.slug !== s.slug).map((o) => (
+                        {services.filter((x) => x.slug !== s.slug).map((o) => (
                             <Link key={o.slug} href={`/services/${o.slug}`} data-cursor="explore" className="btn-press rounded-full border border-[var(--line)] px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:border-[var(--field-line)] hover:text-[var(--ink)]">
                                 {o.name} →
                             </Link>

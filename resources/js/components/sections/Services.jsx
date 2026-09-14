@@ -1,20 +1,19 @@
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useState } from 'react';
-import { SERVICES } from '../../lib/services';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ScrollHeading from '../motion/ScrollHeading';
 import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
-export default function Services({ heroHeading = false }) {
+export default function Services({ heroHeading = false, services = [] }) {
     const [active, setActive] = useState(null);
     const [hover, setHover] = useState(null);
     const reduce = useReducedMotion();
     // Section atmosphere follows the hovered / tapped service color.
     const atmoSlug = hover ?? active;
-    const atmoService = SERVICES.find((s) => s.slug === atmoSlug);
+    const atmoService = services.find((s) => s.slug === atmoSlug);
     const atmo = atmoService ? atmoService.accent : '#891FFB';
 
     return (
@@ -37,7 +36,7 @@ export default function Services({ heroHeading = false }) {
                 </div>
 
                 <div className="mt-14 border-t border-[var(--line)]">
-                    {SERVICES.map((s) => {
+                    {services.map((s) => {
                         const isOpen = active === s.slug;
                         const isHover = hover === s.slug;
                         const grad = s.accentTo

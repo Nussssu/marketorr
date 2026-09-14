@@ -2,11 +2,9 @@ import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
-import { FEATURED_PROJECTS } from '../../lib/projects';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import CursorGlow from '../decor/CursorGlow';
-import Stage from '../decor/Stage';
 
 /** Parallax + cover-reveal are desktop/tablet only; phones keep a plain fade. */
 function useRichMotion() {
@@ -198,6 +196,8 @@ const ROW = [
 function Marquee({ projects, glow }) {
     const trackRef = useRef(null);
     const hovering = useRef(false);
+    // Keep each card's original proportion, skipping slots the admin has not filled.
+    const row = ROW.filter((r) => projects[r.index]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -255,7 +255,7 @@ function Marquee({ projects, glow }) {
             <div ref={trackRef} className="flex w-max gap-6 px-5 will-change-transform md:gap-10 md:px-8 xl:px-12">
                 {[0, 1].map((copy) => (
                     <div key={copy} className="flex w-max shrink-0 gap-6 md:gap-10" aria-hidden={copy === 1}>
-                        {ROW.map((r) => (
+                        {row.map((r) => (
                             <Card key={`${copy}-${projects[r.index].slug}`} p={projects[r.index]} glow={glow} ratio={r.ratio} />
                         ))}
                     </div>
@@ -265,11 +265,10 @@ function Marquee({ projects, glow }) {
     );
 }
 
-export default function OurWork({ glow }) {
+export default function OurWork({ glow, projects = [] }) {
 
     return (
         <section id="work" className="relative overflow-hidden bg-[var(--bg-soft)] section-pad">
-            <Stage variant="work" />
             <CursorGlow />
             <div className="container-x relative">
                 <SectionLabel index="03" name="OUR WORK" />
@@ -283,7 +282,7 @@ export default function OurWork({ glow }) {
             </div>
 
             {/* continuous right-to-left card row */}
-            <Marquee projects={FEATURED_PROJECTS} glow={glow} />
+            {projects.length > 0 && <Marquee projects={projects} glow={glow} />}
 
             <div className="container-x relative">
                 <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:gap-14">

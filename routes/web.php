@@ -1,44 +1,82 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InquiryController;
+use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-$projectSlugs = implode('|', [
-    'imperial-jute-b2b-seo',
-    'commercial-cleaning-seo',
-    'all-city-duct-cleaning-ads',
-    'city-online-brand-design',
-    'city-online-web',
-    'dusty-vision',
-    'virgin-trend',
-    'imperial-jute-brand-design',
-    'un-point-brand-design',
-    'nature-to-near',
-    'sabdita-fashion',
-    'animateuix-brand-design',
-    'ecohub-essentials',
-    'photo-fix-zone',
-]);
-$serviceSlugs = 'branding|web-ui-ux|software-ui-ux|mobile-app-ui-ux';
+/*
+|--------------------------------------------------------------------------
+| Public marketing site
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/', fn () => Inertia::render('Home'))->name('home');
+Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/about', [PageController::class, 'about'])->name('about');
 
-Route::get('/about', fn () => Inertia::render('About'))->name('about');
+Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
+Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
-Route::get('/services', fn () => Inertia::render('Services/Index'))->name('services.index');
+Route::get('/work', [ProjectController::class, 'index'])->name('work.index');
+Route::get('/work/{slug}', [ProjectController::class, 'show'])->name('work.show');
 
-Route::get('/work', fn () => Inertia::render('Work/Index'))->name('work.index');
-Route::get('/work/{slug}', fn (string $slug) => Inertia::render('Work/Show', [
-    'slug' => $slug,
-]))->where('slug', $projectSlugs)->name('work.show');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
 
-Route::get('/services/{slug}', fn (string $slug) => Inertia::render('Services/Show', [
-    'slug' => $slug,
-]))->where('slug', $serviceSlugs)->name('services.show');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 
-Route::get('/contact', fn () => Inertia::render('ContactPage'))->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+/*
+|--------------------------------------------------------------------------
+| Admin panel
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/privacy', fn () => Inertia::render('Privacy'))->name('privacy');
-Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
+Route::prefix('admin')->name('admin.')->group(function (): void {
+    Route::middleware('guest')->group(function (): void {
+        Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+        Route::post('login', [AuthenticatedSessionController::class, 'store'])
+            ->middleware('throttle:5,1')
+            ->name('login.store');
+    });
+
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->middleware('auth')
+        ->name('logout');
+
+    Route::middleware(['auth', 'admin'])->group(function (): void {
+        Route::get('/', DashboardController::class)->name('dashboard');
+
+        Route::patch('projects/reorder', [AdminProjectController::class, 'reorder'])->name('projects.reorder');
+        Route::patch('projects/{project}/featured', [AdminProjectController::class, 'toggleFeatured'])->name('projects.featured');
+        Route::resource('projects', AdminProjectController::class)->except('show');
+
+        Route::patch('services/reorder', [AdminServiceController::class, 'reorder'])->name('services.reorder');
+        Route::resource('services', AdminServiceController::class)->except('show');
+
+        Route::get('inquiries', [InquiryController::class, 'index'])->name('inquiries.index');
+        Route::get('inquiries/{inquiry}', [InquiryController::class, 'show'])->name('inquiries.show');
+        Route::patch('inquiries/{inquiry}/status', [InquiryController::class, 'updateStatus'])->name('inquiries.status');
+        Route::delete('inquiries/{inquiry}', [InquiryController::class, 'destroy'])->name('inquiries.destroy');
+
+        Route::middleware('super-admin')->group(function (): void {
+            Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
+            Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+            Route::get('users', [UserController::class, 'index'])->name('users.index');
+            Route::post('users', [UserController::class, 'store'])->name('users.store');
+            Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        });
+    });
+});
