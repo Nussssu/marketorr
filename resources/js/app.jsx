@@ -5,9 +5,9 @@ import { ThemeProvider } from './lib/theme';
 import Layout from './components/Layout';
 
 createInertiaApp({
-    resolve: (name) => {
-        const pages = import.meta.glob('./pages/**/*.jsx', { eager: true });
-        const page = pages[`./pages/${name}.jsx`];
+    resolve: async (name) => {
+        const pages = import.meta.glob('./pages/**/*.jsx');
+        const page = await pages[`./pages/${name}.jsx`]();
         page.default.layout =
             page.default.layout || ((children) => <Layout>{children}</Layout>);
         return page;

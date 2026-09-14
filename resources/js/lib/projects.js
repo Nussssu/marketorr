@@ -1,4 +1,13 @@
 /**
+ * HISTORICAL REFERENCE — not the runtime source of truth.
+ *
+ * These entries were transcribed into `database/seeders/ProjectSeeder.php` and
+ * now live in the `projects` table, edited through /admin/projects. The pages
+ * receive them as Inertia props. The `Project` typedef below is still imported
+ * for JSDoc types, so keep it in sync with `Project::toPublicArray()`.
+ */
+
+/**
  * Real Marketorr work, sourced from marketorr.com (case studies + portfolio).
  * Cover images live in `public/images/work/`.
  *

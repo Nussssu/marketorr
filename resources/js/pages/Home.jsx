@@ -32,7 +32,7 @@ function Strip() {
     );
 }
 
-export default function Home() {
+export default function Home({ featuredProjects, services }) {
     const fx = useThemeMotion();
     return (
         <>
@@ -40,8 +40,8 @@ export default function Home() {
             <Hero />
             <Strip />
             <About />
-            <Services />
-            <OurWork glow={fx.barGlow} />
+            <Services services={services} />
+            <OurWork glow={fx.barGlow} projects={featuredProjects} />
             <Contact />
         </>
     );
