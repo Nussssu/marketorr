@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsSuperAdmin;
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,8 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            HandleInertiaRequests::class,
         ]);
+
+        $middleware->alias([
+            'admin' => EnsureUserIsAdmin::class,
+            'super-admin' => EnsureUserIsSuperAdmin::class,
+        ]);
+
+        $middleware->redirectGuestsTo(fn () => route('admin.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

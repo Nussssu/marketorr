@@ -1,9 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { PROJECTS } from '../../lib/projects';
 import { SectionLabel, Tag } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 
-export default function WorkIndex() {
+export default function WorkIndex({ projects }) {
     return (
         <>
             <Head title="Our Work — Marketorr" />
@@ -14,7 +13,7 @@ export default function WorkIndex() {
                         <h1 className="display-lg uppercase text-[var(--ink-strong)]">Work that <span className="text-gradient">creates impact.</span></h1>
                     </ScrollHeading>
                     <div className="mt-12 grid gap-10 md:grid-cols-2">
-                        {PROJECTS.map((p) => (
+                        {projects.map((p) => (
                             <Link key={p.slug} href={`/work/${p.slug}`} data-cursor="view" className="group btn-press block overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]">
                                 <div className="relative aspect-[16/10] overflow-hidden bg-[#111116]">
                                     <img src={p.image} alt={p.imageAlt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />

@@ -1,3 +1,11 @@
+/**
+ * HISTORICAL REFERENCE — not the runtime source of truth.
+ *
+ * These entries were transcribed into `database/seeders/ServiceSeeder.php` and
+ * now live in the `services` table, edited through /admin/services. The pages
+ * receive them as Inertia props (see `Service::toPublicArray()`).
+ */
+
 export const SERVICES = [
     {
         slug: 'branding',

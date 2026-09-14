@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
@@ -71,6 +71,14 @@ export default function Hero() {
         return () => query.removeEventListener('change', update);
     }, []);
 
+    const { settings } = usePage().props;
+    const hero = settings.hero;
+    // The closing line always carries the brand gradient.
+    const headingLines = hero.headingLines.map((line, index) => [
+        line,
+        index === hero.headingLines.length - 1 ? 'text-gradient' : '',
+    ]);
+
     const exitMotion = desktopMotion && !reduce
         ? { y: contentY, opacity: contentOpacity, scale: contentScale }
         : undefined;
@@ -81,7 +89,7 @@ export default function Hero() {
                 initial={{ opacity: 0, scale: 1.015 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.32, ease: [...EASE] }}
-                className="absolute inset-0"
+                className="pointer-events-none absolute inset-0"
                 aria-hidden
             >
                 <Stage variant="hero" />
@@ -97,17 +105,13 @@ export default function Hero() {
                     className="mb-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] sm:mb-6 sm:text-[12px] sm:tracking-[0.28em]"
                 >
                     <span className="inline-block h-[2px] w-8 bg-brand sm:w-10" aria-hidden />
-                    Independent creative &amp; digital agency
+                    {hero.eyebrow}
                 </motion.p>
 
                 {/* intensity trimmed: the hero container already carries its own scroll exit */}
                 <ScrollHeading intensity={0.55}>
                     <h1 className="display-xl uppercase text-[var(--ink-strong)]">
-                        {[
-                            ['We turn', ''],
-                            ['attention', ''],
-                            ['into results.', 'text-gradient'],
-                        ].map(([line, className], index) => (
+                        {headingLines.map(([line, className], index) => (
                             <span key={line} className="mask-line">
                                 <motion.span
                                     className={`mask-inner ${className}`}
@@ -138,7 +142,7 @@ export default function Hero() {
                         transition={{ duration: 0.38, delay: 0.6, ease: [...EASE] }}
                         className="max-w-md text-[15px] leading-relaxed text-[var(--mute)] sm:text-[16px]"
                     >
-                        Marketorr builds brands, digital products, and experiences designed to create measurable growth.
+                        {hero.subtext}
                     </motion.p>
                     <motion.div
                         initial={{ opacity: 0, y: 16 }}

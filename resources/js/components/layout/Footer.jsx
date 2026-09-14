@@ -1,15 +1,8 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const EASE = [0.22, 1, 0.36, 1];
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
-
-const SOCIALS = [
-    { label: 'LinkedIn', href: 'https://www.linkedin.com/company/marketorr' },
-    { label: 'Behance', href: 'https://www.behance.net/marketorr' },
-    { label: 'Dribbble', href: 'https://dribbble.com/marketorr' },
-    { label: 'Instagram', href: 'https://www.instagram.com/marketorr' },
-];
 
 const SITEMAP = [
     { label: 'About', href: '/about' },
@@ -17,13 +10,6 @@ const SITEMAP = [
     { label: 'Our Work', href: '/work' },
     { label: 'Contact', href: '/contact' },
     { label: 'All work', href: '/work' },
-];
-
-const SERVICES = [
-    { label: 'Branding', href: '/services/branding' },
-    { label: 'Web UI/UX', href: '/services/web-ui-ux' },
-    { label: 'Software UI/UX', href: '/services/software-ui-ux' },
-    { label: 'Mobile App UI/UX', href: '/services/mobile-app-ui-ux' },
 ];
 
 function ColumnHeading({ children }) {
@@ -38,6 +24,14 @@ function ColumnHeading({ children }) {
 export default function Footer() {
     const year = new Date().getFullYear();
     const reduce = useReducedMotion();
+    const { settings, navServices } = usePage().props;
+    // Only the socials that have been filled in, in display order.
+    const socials = [
+        { label: 'LinkedIn', href: settings.socials.linkedin },
+        { label: 'Behance', href: settings.socials.behance },
+        { label: 'Dribbble', href: settings.socials.dribbble },
+        { label: 'Instagram', href: settings.socials.instagram },
+    ].filter((s) => s.href);
 
     const container = {
         hidden: {},
@@ -87,7 +81,7 @@ export default function Footer() {
                             <span className="h-6 w-[6px] rounded-[2px] bg-[#507AF4]" />
                             <span className="h-8 w-[6px] rounded-[2px] bg-[#1BE2EB]" />
                         </span>
-                        <span className="font-display text-xl font-extrabold tracking-[-0.02em] text-[var(--ink-strong)]">MARKETORR.</span>
+                        <span className="font-display text-xl font-extrabold tracking-[-0.02em] text-[var(--ink-strong)]">{settings.siteName.toUpperCase()}.</span>
                     </div>
                     <p className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]">
                         Independent creative &amp; digital agency. We turn ideas into experiences, and experiences into measurable results.
@@ -95,7 +89,7 @@ export default function Footer() {
                     <div className="mt-7">
                         <ColumnHeading>Follow</ColumnHeading>
                         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold uppercase tracking-[0.16em]">
-                            {SOCIALS.map((s) => (
+                            {socials.map((s) => (
                                 <a
                                     key={s.label}
                                     href={s.href}
@@ -131,9 +125,9 @@ export default function Footer() {
                 <motion.div variants={item} className="lg:col-span-3 lg:col-start-10">
                     <ColumnHeading>Services</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
-                        {SERVICES.map((s) => (
-                            <li key={s.label}>
-                                <Link href={s.href} className="footer-link block">{s.label}</Link>
+                        {navServices.map((s) => (
+                            <li key={s.slug}>
+                                <Link href={`/services/${s.slug}`} className="footer-link block">{s.name}</Link>
                             </li>
                         ))}
                     </ul>
@@ -149,7 +143,7 @@ export default function Footer() {
                     className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:flex-row md:items-center md:justify-between md:gap-8"
                 >
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                        <span>© {year} Marketorr. All rights reserved.</span>
+                        <span>© {year} {settings.siteName}. All rights reserved.</span>
                         <Link href="/privacy" className="footer-link footer-link--inline">Privacy</Link>
                         <Link href="/terms" className="footer-link footer-link--inline">Terms</Link>
                     </div>

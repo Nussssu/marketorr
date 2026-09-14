@@ -2,24 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreContactSubmissionRequest;
+use App\Mail\NewProjectInquiry;
+use App\Models\ContactSubmission;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(StoreContactSubmissionRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:190'],
-            'company' => ['nullable', 'string', 'max:190'],
-            'type' => ['required', 'string', 'in:Branding,Web UI/UX,Software UI/UX,Mobile App UI/UX,Other'],
-            'budget' => ['nullable', 'string', 'max:120'],
-            'message' => ['required', 'string', 'max:5000'],
+        $data = $request->inquiryData();
+
+        $submission = ContactSubmission::query()->create([
+            ...$data,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
-        // Swap this for Mail::to(...) when a mailbox is ready.
+        Mail::to(Setting::current()->contact_email)->send(new NewProjectInquiry($submission));
+
+        // Kept alongside the database row as an audit trail.
         Log::info('Project inquiry received', $data);
 
         return back()->with('success', 'Thanks — we reply within 24–48h.');
