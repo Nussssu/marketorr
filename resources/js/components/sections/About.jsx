@@ -7,15 +7,28 @@ import ScrollHeading from '../motion/ScrollHeading';
 import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
+/** Phones count up once; desktop keeps replaying on every viewport re-entry. */
+const COUNTER_ONCE_QUERY = '(max-width: 767px)';
+
 function Counter({ to, suffix = '', decimals = 0 }) {
     const ref = useRef(null);
-    const inView = useInView(ref, { once: true, margin: '-15% 0px' });
+    // Each frame of the count sets React state, so a replay re-renders four
+    // counters at 60fps for 1.6s. That is affordable once, but not every time
+    // a thumb scrolls the section back into view on a phone.
+    const [once] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia(COUNTER_ONCE_QUERY).matches,
+    );
+    const inView = useInView(ref, { margin: '-15% 0px', once });
     const reduce = useReducedMotion();
-    const [val, setVal] = useState(0);
+    // Never render zero: the pre-animation state is the final value, and each
+    // replay counts up from a small non-zero floor instead of resetting.
+    const [val, setVal] = useState(to);
 
     useEffect(() => {
+        // Leaving the viewport keeps the final value visible; entering replays.
         if (!inView) return;
-        if (reduce) {
+        const floor = Math.min(to, Math.max(1, Math.floor(to * 0.08)));
+        if (reduce || floor >= to) {
             // Intentional: jump straight to final value when motion is reduced
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setVal(to);
@@ -27,7 +40,7 @@ function Counter({ to, suffix = '', decimals = 0 }) {
         const tick = (t) => {
             const p = Math.min(1, (t - start) / dur);
             const eased = 1 - Math.pow(2, -10 * p);
-            setVal(to * (p === 1 ? 1 : eased));
+            setVal(floor + (to - floor) * (p === 1 ? 1 : eased));
             if (p < 1) raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
@@ -77,7 +90,7 @@ export default function About({ heroHeading = false }) {
                         <motion.div
                             initial={{ scaleX: 0 }}
                             whileInView={{ scaleX: 1 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: false }}
                             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-8 h-[3px] w-48 origin-left"
                             style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
@@ -88,7 +101,7 @@ export default function About({ heroHeading = false }) {
                         <motion.p
                             initial={{ opacity: 0, y: 24 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: false }}
                             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
                             className="text-[16px] leading-relaxed text-[var(--mute)]"
                         >

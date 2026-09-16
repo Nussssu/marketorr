@@ -1,144 +1,235 @@
 import { Link } from '@inertiajs/react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useState } from 'react';
-import { SectionLabel, Tag } from '../ui/primitives';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import { SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ScrollHeading from '../motion/ScrollHeading';
-import CursorGlow from '../decor/CursorGlow';
-import Stage from '../decor/Stage';
+import ScrollServiceShowcase from './ScrollServiceShowcase';
+import ServiceLayerDeck from './ServiceLayerDeck';
+import ServicesSlider from './ServicesSlider';
+import SubServiceTicker from './SubServiceTicker';
+import { useTapIntent } from '../../lib/tapIntent';
+import { EASE } from '../../lib/motion';
 
-export default function Services({ heroHeading = false, services = [] }) {
-    const [active, setActive] = useState(null);
-    const [hover, setHover] = useState(null);
-    const reduce = useReducedMotion();
-    // Section atmosphere follows the hovered / tapped service color.
-    const atmoSlug = hover ?? active;
-    const atmoService = services.find((s) => s.slug === atmoSlug);
-    const atmo = atmoService ? atmoService.accent : '#891FFB';
+const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
+
+/**
+ * Home-page entrance choreography. Replays on every viewport re-entry
+ * (`once: false`); `compact` shortens the travel and the timings on phones,
+ * and the whole thing is skipped when the user prefers reduced motion.
+ */
+const VIEWPORT = { once: false, margin: '-12% 0px -12% 0px' };
+
+/** Phones play the entrance once; replaying it on every pass is wasted work. */
+const VIEWPORT_COMPACT = { once: true, margin: '-12% 0px -12% 0px' };
+
+const cardStagger = (compact) => ({
+    hidden: {},
+    show: { transition: { staggerChildren: compact ? 0.1 : 0.15, delayChildren: compact ? 0.05 : 0.12 } },
+});
+
+/**
+ * Desktop cards arrive as panels standing in depth: they rise, un-tilt and
+ * come forward out of the stage's Z axis into a perfectly flat resting frame.
+ * `mirror` turns the second card's entry the other way so the pair opens like
+ * two leaves rather than two copies. Phones keep the existing flat rise —
+ * rotation and translateZ on a phone buy jank, not depth.
+ *
+ * @param {boolean} compact
+ * @param {boolean} mirror
+ */
+const cardVariants = (compact, mirror = false) => ({
+    hidden: {
+        opacity: 0,
+        y: compact ? 34 : 66,
+        scale: compact ? 0.98 : 0.94,
+        rotateX: compact ? 0 : 13,
+        rotateY: compact ? 0 : (mirror ? -9 : 9),
+        z: compact ? 0 : -240,
+    },
+    show: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        rotateX: 0,
+        rotateY: 0,
+        z: 0,
+        transition: { duration: compact ? 0.44 : 0.72, ease: [...EASE] },
+    },
+});
+
+const COMPACT_QUERY = '(max-width: 767px)';
+
+/**
+ * True on phone-width viewports, so the section can run a lighter version of
+ * the same choreography. Read synchronously on first render — deferring it to
+ * an effect would let the opening frame commit the full-size travel before the
+ * lighter value ever arrived, so the first entrance on a phone was the heavy one.
+ *
+ * @return {boolean}
+ */
+function useCompactViewport() {
+    const [compact, setCompact] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia(COMPACT_QUERY).matches,
+    );
+
+    useEffect(() => {
+        const query = window.matchMedia(COMPACT_QUERY);
+        const update = () => setCompact(query.matches);
+        update();
+        query.addEventListener('change', update);
+
+        return () => query.removeEventListener('change', update);
+    }, []);
+
+    return compact;
+}
+
+function CategoryGateway({ category, index, variants, showStack = false }) {
+    const arrowTapIntent = useTapIntent();
+    const ctaTapIntent = useTapIntent();
+    // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
+    const exploreHref = `/services/${category.slug}`;
+
+    // The card body itself is NOT a navigation target: hovering it, moving the
+    // pointer across it, entering/leaving it or touching the decorative stack
+    // can never start a visit. Only the arrow and the "Explore …" CTA below
+    // navigate. The links perform one native Inertia visit after the tap-intent
+    // guard accepts the gesture; the global PageTransition still supplies the
+    // existing route animation without a second delayed navigation path.
 
     return (
-        <section id="services" className="relative overflow-hidden bg-[var(--bg)] section-pad">
-            <Stage variant="services" atmo={atmo} atmoKey={atmoSlug ?? 'base'} />
-            <CursorGlow />
-            <div className="container-x relative">
+        <motion.article
+            data-cursor="explore"
+            variants={variants}
+            style={variants ? { transformStyle: 'preserve-3d' } : undefined}
+            className={`group relative min-h-[340px] overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-10 lg:p-12 ${variants ? 'services-card' : ''}`.trimEnd()}
+        >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-x-100" style={{ background: BRAND_GRADIENT }} aria-hidden />
+            <div className="relative flex h-full gap-4 sm:gap-7">
+                <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-16">
+                    <div className="flex items-center justify-between">
+                        <span className="font-display text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]">0{index + 1} / Category</span>
+                        <Link
+                            href={exploreHref}
+                            prefetch
+                            aria-label={`Explore ${category.name}`}
+                            {...arrowTapIntent}
+                            className="services-card__arrow flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
+                        >
+                            ↗
+                        </Link>
+                    </div>
+                    <div>
+                        <h2 className={`font-display ${showStack ? 'text-[clamp(2.1rem,8.6vw,3.9rem)]' : 'text-[clamp(2.7rem,6vw,6.5rem)]'} font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2`}>
+                            {category.name}
+                        </h2>
+                        <SubServiceTicker category={category} />
+                        <div className="mt-5 flex items-end justify-between gap-6">
+                            <p className="max-w-sm text-[14px] leading-relaxed text-[var(--mute)] sm:text-[15px]">{category.tagline}</p>
+                            <Link
+                                href={exploreHref}
+                                prefetch
+                                {...ctaTapIntent}
+                                className="hidden text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] transition-colors duration-300 hover:text-[var(--ink)] sm:block"
+                            >
+                                Explore {category.items.length} services
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+                {showStack && <ServiceLayerDeck category={category} mirrored={index % 2 === 1} />}
+            </div>
+        </motion.article>
+    );
+}
+
+/**
+ * @param {{
+ *   heroHeading?: boolean,
+ *   subservices?: Array<object>,
+ *   showSubserviceShowcase?: boolean,
+ *   scrollAnimation?: boolean,
+ * }} props
+ *   `showSubserviceShowcase` false keeps the section to the two category
+ *   gateways only — the Home page wants a simple entry point, while the
+ *   dedicated service pages keep the full slider and scroll showcase.
+ *   `scrollAnimation` opts into the Home-only entrance choreography and the
+ *   card hover treatment; every other mount renders exactly as before.
+ */
+export default function Services({
+    heroHeading = false,
+    subservices = [],
+    showSubserviceShowcase = true,
+    scrollAnimation = false,
+}) {
+    const reduce = useReducedMotion();
+    const compact = useCompactViewport();
+    const animate = scrollAnimation && !reduce;
+    // Stable identities: a fresh variants object every render makes Framer
+    // re-resolve targets mid-flight.
+    const gridVariants = useMemo(() => cardStagger(compact), [compact]);
+    const itemVariants = useMemo(() => cardVariants(compact), [compact]);
+    const mirroredVariants = useMemo(() => cardVariants(compact, true), [compact]);
+
+    return (
+        <section id="services" className="relative overflow-x-clip bg-[var(--bg)] pt-24 lg:pt-32">
+            <div className="container-x relative pb-20 lg:pb-28">
                 <SectionLabel index="02" name="SERVICES" />
                 <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <ScrollHeading enabled={heroHeading}>
-                        <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Branding', '& UI/UX']} />
+                    <ScrollHeading enabled={heroHeading || animate} intensity={heroHeading ? 1 : 0.85}>
+                        <RevealText
+                            as={heroHeading ? 'h1' : 'h2'}
+                            className="display-lg uppercase text-[var(--ink-strong)]"
+                            lines={['Two disciplines.', 'One clear outcome.']}
+                            duration={animate ? 0.58 : undefined}
+                            stagger={animate ? 0.13 : undefined}
+                        />
                     </ScrollHeading>
                     <motion.p
-                        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }} transition={{ duration: 0.7 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.7 }}
                         className="max-w-md text-[15px] leading-relaxed text-[var(--mute)]"
                     >
                         We create brands and digital experiences that are clear, memorable, intuitive, and built for growth.
                     </motion.p>
                 </div>
 
-                <div className="mt-14 border-t border-[var(--line)]">
-                    {services.map((s) => {
-                        const isOpen = active === s.slug;
-                        const isHover = hover === s.slug;
-                        const grad = s.accentTo
-                            ? `linear-gradient(90deg, ${s.accent}, ${s.accentTo})`
-                            : s.accent;
-                        return (
-                            <div key={s.slug} className="group relative border-b border-[var(--line)]">
-                                <Link
-                                    href={`/services/${s.slug}`}
-                                    data-cursor="explore"
-                                    onMouseEnter={() => setHover(s.slug)}
-                                    onMouseLeave={() => setHover(null)}
-                                    onClick={() => setActive(s.slug)}
-                                    className="btn-press relative grid gap-3 rounded-xl px-3 py-8 transition-colors duration-200 hover:bg-[var(--chip)] md:grid-cols-[64px_1fr_auto] md:items-center md:gap-8 md:px-4 md:py-10"
-                                    aria-expanded={isOpen}
-                                >
-                                    {/* accent edge */}
-                                    <span
-                                        className="absolute left-0 top-0 h-full w-[3px] origin-top transition-transform duration-200"
-                                        style={{ background: grad, transform: isHover || isOpen ? 'scaleY(1)' : 'scaleY(0)' }}
-                                        aria-hidden
-                                    />
-                                    <span
-                                        className="font-display text-sm font-bold text-[var(--ink-faint)] transition-colors duration-300"
-                                        style={isHover || isOpen ? { color: s.accent } : undefined}
-                                    >
-                                        {s.index}
-                                    </span>
-                                    <span>
-                                        <span className="flex items-center gap-4">
-                                            <span className="font-display text-3xl font-extrabold uppercase tracking-tight text-[var(--ink-strong)] transition-colors duration-300 md:text-5xl">
-                                                {s.name}
-                                            </span>
-                                            <span
-                                                className={`hidden h-2.5 w-2.5 rounded-full md:block ${reduce ? '' : 'animate-pulse'}`}
-                                                style={{ background: s.accent, boxShadow: `0 0 16px ${s.accent}` }}
-                                                aria-hidden
-                                            />
-                                        </span>
-                                        <span className="mt-2 block max-w-xl text-[14px] text-[var(--mute)]">{s.short}</span>
-                                        <AnimatePresence initial={false}>
-                                            {(isHover || isOpen) && (
-                                                <motion.span
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                                                    className="block overflow-hidden"
-                                                >
-                                                    <span className="mt-4 block text-[14px] leading-relaxed text-[var(--mute)]">{s.description}</span>
-                                                    <span className="mt-4 flex flex-wrap gap-2">
-                                                        {s.capabilities.slice(0, 6).map((c) => (
-                                                            <Tag key={c} accent={s.accent}>{c}</Tag>
-                                                        ))}
-                                                    </span>
-                                                    {/* desktop preview bar */}
-                                                    <span className="mt-5 hidden items-end gap-2 md:flex" aria-hidden>
-                                                        {[38, 62, 92].map((h, i) => (
-                                                            <span
-                                                                key={i}
-                                                                className="w-10 rounded-t-md"
-                                                                style={{
-                                                                    height: h,
-                                                                    background: `linear-gradient(180deg, ${[s.accent, s.accentTo ?? s.accent, '#1BE2EB'][i] ?? s.accent}, transparent)`,
-                                                                    opacity: 0.85,
-                                                                }}
-                                                            />
-                                                        ))}
-                                                        <span className="ml-3 font-display text-[11px] font-bold tracking-[0.2em] text-[var(--ink-faint)]">
-                                                            IDEA → EXPERIENCE → RESULT
-                                                        </span>
-                                                    </span>
-                                                </motion.span>
-                                            )}
-                                        </AnimatePresence>
-                                    </span>
-                                    <span className="flex items-center gap-4">
-                                        <span className="hidden text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] group-hover:text-[var(--ink)] md:block">
-                                            {isOpen ? 'Open' : 'Explore'}
-                                        </span>
-                                        <span
-                                            className="btn-press flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-lg text-[var(--ink)] group-hover:border-transparent group-hover:text-white"
-                                            style={isHover ? { background: grad } : undefined}
-                                            aria-hidden
-                                        >
-                                            <span data-arrow aria-hidden>↗</span>
-                                        </span>
-                                    </span>
-                                </Link>
-                                {/* mobile tap expand */}
-                                <button
-                                    className="btn-press mb-4 ml-1 rounded-full border border-[var(--line)] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] md:hidden"
-                                    onClick={() => setActive(isOpen ? null : s.slug)}
-                                    aria-expanded={isOpen}
-                                >
-                                    {isOpen ? 'Hide details' : 'Tap for details'}
-                                </button>
-                            </div>
-                        );
-                    })}
-                </div>
+                <motion.div
+                    className="mt-14 grid w-full gap-5 lg:grid-cols-2"
+                    style={animate && !compact ? { perspective: '1500px' } : undefined}
+                    {...(animate
+                        ? {
+                            initial: 'hidden',
+                            whileInView: 'show',
+                            viewport: compact ? VIEWPORT_COMPACT : VIEWPORT,
+                            variants: gridVariants,
+                        }
+                        : {})}
+                >
+                    {subservices.map((category, index) => (
+                        <CategoryGateway
+                            key={category.slug}
+                            category={category}
+                            index={index}
+                            variants={animate ? (index % 2 === 1 ? mirroredVariants : itemVariants) : undefined}
+                            showStack={scrollAnimation}
+                        />
+                    ))}
+                </motion.div>
+
+                {showSubserviceShowcase && (
+                    <div className="mt-20 border-t border-[var(--line)] pt-6">
+                        <ServicesSlider categories={subservices} />
+                    </div>
+                )}
             </div>
+
+            {showSubserviceShowcase && heroHeading && subservices.map((category) => (
+                <ScrollServiceShowcase key={category.slug} category={category} />
+            ))}
         </section>
     );
 }

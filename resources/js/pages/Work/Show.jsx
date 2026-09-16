@@ -36,7 +36,7 @@ export default function CaseStudy({ project: p }) {
                         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } }}
                         initial="hidden"
                         whileInView="show"
-                        viewport={{ once: true, margin: '-12% 0px' }}
+                        viewport={{ once: false, margin: '-12% 0px' }}
                         className="mt-10 grid gap-6 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch"
                     >
                         {[

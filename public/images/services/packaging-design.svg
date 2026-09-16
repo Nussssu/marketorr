@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="55%" r="75%">
+      <stop offset="0%" stop-color="#891FFB" stop-opacity="0.38"/>
+      <stop offset="60%" stop-color="#891FFB" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#ffffff" stroke-opacity="0.07"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="#0B0B10"/>
+  <rect width="800" height="600" fill="url(#grid)"/>
+  <rect width="800" height="600" fill="url(#glow)"/>
+  <ellipse cx="400" cy="470" rx="170" ry="26" fill="#000000" opacity="0.5"/>
+  <g stroke-linejoin="round">
+    <polygon points="400,120 560,212 560,396 400,488 240,396 240,212" fill="#891FFB" opacity="0.22"/>
+    <polygon points="400,120 560,212 400,304 240,212" fill="#891FFB"/>
+    <polygon points="240,212 400,304 400,488 240,396" fill="#507AF4"/>
+    <polygon points="560,212 400,304 400,488 560,396" fill="#1BE2EB" opacity="0.85"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="5">
+    <path d="M240 212 L400 304 L560 212"/>
+    <path d="M400 304 V488"/>
+  </g>
+</svg>

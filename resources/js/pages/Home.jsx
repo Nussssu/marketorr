@@ -4,6 +4,7 @@ import About from '../components/sections/About';
 import Services from '../components/sections/Services';
 import OurWork from '../components/sections/OurWork';
 import Contact from '../components/sections/Contact';
+import CinematicScene from '../components/motion/CinematicScene';
 import { useThemeMotion } from '../lib/theme';
 
 // Marquee strip — IDEA → EXPERIENCE → RESULT
@@ -32,17 +33,31 @@ function Strip() {
     );
 }
 
-export default function Home({ featuredProjects, services }) {
+export default function Home({ featuredProjects, subservices }) {
     const fx = useThemeMotion();
     return (
         <>
             <Head title="Marketorr — We Turn Attention Into Results" />
+            {/* Hero is the stage's base layer: it owns the opening frame and its
+                own parallax, so it is never wrapped — a scene that animated in
+                on load would fight both. */}
             <Hero />
-            <Strip />
-            <About />
-            <Services services={services} />
+            <CinematicScene>
+                <Strip />
+            </CinematicScene>
+            <CinematicScene>
+                <About />
+            </CinematicScene>
+            <CinematicScene>
+                <Services subservices={subservices} showSubserviceShowcase={false} scrollAnimation />
+            </CinematicScene>
+            {/* Our Work owns a sticky scroll stage. A transformed scene ancestor
+                would move its supposedly fixed layer with the page. */}
             <OurWork glow={fx.barGlow} projects={featuredProjects} />
-            <Contact />
+            {/* Flat travel only: the contact map does not survive a 3D ancestor. */}
+            <CinematicScene depth={false}>
+                <Contact />
+            </CinematicScene>
         </>
     );
 }

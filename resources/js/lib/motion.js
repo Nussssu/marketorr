@@ -24,6 +24,6 @@ export const fadeUp = (delay = 0, dist = 28) => ({
 });
 
 export const viewportOnce = {
-    once: true,
+    once: false,
     margin: '-12% 0px -12% 0px',
 };
