@@ -26,6 +26,7 @@ class PageController extends Controller
                 ->get()
                 ->map(fn (Service $service) => $service->toPublicArray())
                 ->values(),
+            'subservices' => config('subservices'),
         ]);
     }
 

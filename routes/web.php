@@ -23,6 +23,7 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
+Route::get('/services/{service}/{sub}', [ServiceController::class, 'subShow'])->name('services.subshow');
 Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
 Route::get('/work', [ProjectController::class, 'index'])->name('work.index');

@@ -17,9 +17,14 @@
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-marquee: marquee 28s linear infinite;
   --animate-spin-slow: spin 14s linear infinite;
+  --animate-slider-fill: slider-fill linear forwards;
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
+  }
+  @keyframes slider-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
   }
 }
 
@@ -261,6 +266,54 @@ input, textarea, select { color-scheme: inherit; }
     0 6px 20px -6px rgba(27, 226, 235, calc(0.35 * var(--fx-glow)));
 }
 
+/* Premium 3D inquiry button — Marketorr gradient with depth, inner highlight
+   and a light reflection that sweeps across on hover/press. Transform and
+   box-shadow only, so size and layout never shift. */
+.btn-3d {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.25),
+    0 10px 24px -12px rgba(137, 31, 251, 0.5),
+    0 4px 14px -6px rgba(27, 226, 235, 0.35);
+}
+.btn-3d::after {
+  content: "";
+  position: absolute;
+  top: -20%; bottom: -20%; left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  transform: translateX(-220%) skewX(-18deg);
+  pointer-events: none;
+}
+.btn-press.btn-3d:hover, .btn-press.btn-3d:focus-visible {
+  transform: perspective(900px) rotateX(7deg) rotateY(-8deg) translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.2),
+    0 18px 44px -12px rgba(137, 31, 251, 0.65),
+    0 10px 28px -8px rgba(80, 122, 244, 0.55),
+    0 6px 18px -6px rgba(27, 226, 235, 0.5);
+}
+.btn-3d:hover::after, .btn-3d:focus-visible::after {
+  transform: translateX(320%) skewX(-18deg);
+  transition: transform 0.8s var(--ease);
+}
+.btn-press.btn-3d:active {
+  transform: perspective(900px) translateY(1px) scale(0.97);
+  transition-duration: 0.12s;
+}
+.btn-3d:active::after {
+  transform: translateX(320%) skewX(-18deg);
+  transition: transform 0.5s var(--ease);
+}
+.btn-3d:disabled:hover { transform: none; }
+.btn-3d:disabled::after { display: none; }
+
 /* Atmosphere wash — color driven by --atmo, re-animates whenever its key changes */
 .atmo-wash { animation: atmo-in 0.9s var(--ease); }
 @keyframes atmo-in {
@@ -353,6 +406,21 @@ input, textarea, select { color-scheme: inherit; }
 @media (min-width: 1280px) { .header-shell { padding-inline: 48px; } }
 @media (min-width: 1600px) { .header-shell { padding-inline: 64px; } }
 
+@media (max-width: 1023px) {
+  .mobile-header-shell,
+  .mobile-header-shell.header-shell--float {
+    width: 100%;
+    max-width: none;
+    margin-top: 0;
+    padding-inline: 20px;
+    border-color: transparent;
+    border-radius: 0;
+    background: var(--bg);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+}
+
 .header-shell--float {
   width: calc(100% - 24px);
   max-width: 1180px;
@@ -371,16 +439,148 @@ input, textarea, select { color-scheme: inherit; }
   .header-shell--float { width: calc(100% - 40px); margin-top: 12px; padding-inline: 18px; }
 }
 
-/* ---------- Our Work marquee ---------- */
+/* ---------- Our Work row sizing (shared by the home carousel) ---------- */
 .work-marquee {
   --mq-h: 220px;
 }
 @media (min-width: 768px) { .work-marquee { --mq-h: 300px; } }
 @media (min-width: 1280px) { .work-marquee { --mq-h: 360px; } }
 
-/* Reduced motion: the row stops travelling and becomes swipeable instead. */
+/* The desktop Work runway stays visibly pinned until its final slide. Page
+   scroll remains native; the extra distance becomes carousel progress. */
+@media (min-width: 1024px) {
+  .work-scroll-stage[data-pinned="true"] .work-scroll-stage__sticky {
+    position: sticky;
+    top: 72px;
+    display: flex;
+    height: calc(100svh - 72px);
+    align-items: center;
+    z-index: 2;
+  }
+
+  .work-scroll-stage[data-pinned="true"] {
+    height: var(--work-stage-height);
+  }
+}
+
+/* ---------- Our Work page: flowing portfolio column ---------- */
+/* The visuals need room to travel: each one is given a generous run so it can
+   arrive, be read and leave without colliding with its neighbours. Promotion
+   is declared up front — these are large images transformed on every scroll
+   frame, and letting the compositor discover them mid-scroll is what produces
+   the first-frame stutter. */
+.work-flow__track {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.work-flow__item {
+  min-width: 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+@media (min-width: 769px) {
+  .work-flow__track { gap: 104px; }
+}
+
+@media (min-width: 1024px) {
+  .work-flow__track { gap: 140px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .work-marquee { overflow-x: auto; }
+  .work-flow__item { will-change: auto; }
+  .work-flow__track { gap: 48px; }
+}
+
+/* ---------- Home Work carousel ---------- */
+/* One slide width drives everything: the slides are laid out edge to edge in a
+   flex row and then translated by a percentage of their OWN width, so the
+   geometry needs no measurement and survives every breakpoint. The viewport's
+   side padding is what centres the focused slide. */
+.work-carousel {
+  --slot: 78vw;
+  position: relative;
+  overflow: hidden;
+  /* Horizontal gestures belong to the carousel, vertical ones to the page. */
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.work-carousel:active {
+  cursor: grabbing;
+}
+
+/* Every slide occupies the same grid cell, so the row is exactly as tall as
+   the tallest card and each slide's own transform is the only thing that
+   places it. Laying them out in flow instead would double the spacing — the
+   flow pitch and the transform would both apply. */
+.work-carousel__track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.work-carousel__slide {
+  grid-area: 1 / 1;
+  width: var(--slot);
+  will-change: transform, opacity;
+}
+
+/* Text stays selectable nowhere inside a draggable strip — a drag that starts
+   on a title would otherwise highlight it instead of moving the carousel. */
+.work-carousel__slide,
+.work-carousel__slide * {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@media (min-width: 769px) {
+  .work-carousel { --slot: calc(var(--mq-h) * 1.6); }
+}
+
+/* Reduced motion: no gestures, no depth — a plain snap-scrolling row. */
+.work-carousel--plain {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y pinch-zoom;
+  cursor: auto;
+}
+.work-carousel--plain::-webkit-scrollbar { display: none; }
+.work-carousel__track--plain {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+}
+.work-carousel__track--plain .work-carousel__slide {
+  grid-area: auto;
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  will-change: auto;
+}
+
+.see-all-work__arrow {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .see-all-work__arrow {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.9);
+  }
+
+  .group:hover .see-all-work__arrow,
+  .group:focus-visible .see-all-work__arrow {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 /* ---------- Footer EXPLORE CTA ---------- */
@@ -478,4 +678,641 @@ input, textarea, select { color-scheme: inherit; }
   border-radius: 999px;
   will-change: transform, opacity;
   transition: opacity 0.26s var(--ease);
+}
+
+/* ---------- Office map (Leaflet) ---------- */
+/* Palette is tokenised per theme so the whole widget â€” tiles, chrome, pin,
+   popup â€” flips with the site instead of being filter-hacked. */
+:root,
+:root[data-theme="dark"] {
+  --map-bg: #0b0b10;
+  --map-surface: rgba(17, 17, 22, 0.92);
+  --map-ink: #f7f7f5;
+  --map-mute: rgba(255, 255, 255, 0.6);
+  --map-line: rgba(255, 255, 255, 0.14);
+  --map-shadow: 0 24px 60px -34px rgba(80, 122, 244, 0.55);
+  --map-shadow-hover: 0 30px 74px -30px rgba(137, 31, 251, 0.6);
+  /* Esri's dark canvas is a mid grey; pull it down onto the site's near-black. */
+  --map-tile-filter: saturate(0.9) contrast(1.08) brightness(0.62);
+}
+
+:root[data-theme="light"] {
+  --map-bg: #eeeeea;
+  --map-surface: rgba(255, 255, 255, 0.95);
+  --map-ink: #121216;
+  --map-mute: rgba(18, 18, 22, 0.6);
+  --map-line: rgba(18, 18, 22, 0.14);
+  --map-shadow: 0 18px 44px -32px rgba(80, 122, 244, 0.42);
+  --map-shadow-hover: 0 22px 54px -28px rgba(137, 31, 251, 0.4);
+  --map-tile-filter: saturate(0.95) contrast(1.03);
+}
+
+.mk-map {
+  position: relative;
+  /* Leaflet ships its own z-index scale (panes 400, controls 800, the
+     top/bottom control rails 1000). Those are large enough to beat the fixed
+     header, so the map is made its own stacking context: `isolation: isolate`
+     plus an explicit z-index confines every Leaflet layer inside this box, and
+     the whole map then competes with the header as a single z-index of 1. */
+  z-index: 1;
+  isolation: isolate;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--map-bg);
+  box-shadow: var(--map-shadow);
+  transition:
+    border-color 0.4s var(--ease),
+    box-shadow 0.4s var(--ease),
+    background-color 0.4s var(--ease);
+}
+
+.mk-map::after {
+  /* Brand hairline along the top edge, echoing the service cards. */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 500;
+  background: var(--brand-gradient);
+  opacity: 0.55;
+  transition: opacity 0.4s var(--ease);
+  pointer-events: none;
+}
+
+.mk-map:hover,
+.mk-map:focus-within {
+  border-color: color-mix(in srgb, #507af4 42%, var(--line));
+  box-shadow: var(--map-shadow-hover);
+}
+
+.mk-map:hover::after,
+.mk-map:focus-within::after { opacity: 1; }
+
+.mk-map__canvas {
+  height: 220px;
+  width: 100%;
+  background: var(--map-bg);
+  outline: none;
+}
+
+@media (min-width: 768px) {
+  .mk-map__canvas { height: 280px; }
+}
+
+.mk-map__canvas .leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: var(--map-bg);
+  font-family: var(--font-body);
+  outline: none;
+  /* touch-action is deliberately left to Leaflet. With dragging disabled on
+     coarse pointers it only adds .leaflet-touch-zoom, which resolves to
+     `pan-x pan-y`: one finger scrolls the page, two fingers reach the map. */
+}
+
+.mk-map__canvas .leaflet-tile-pane { filter: var(--map-tile-filter); }
+
+/* Crossfade between the light and dark basemaps on theme switch. */
+.mk-map__canvas .leaflet-layer { transition: opacity 0.42s var(--ease); }
+
+.mk-map__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  background:
+    radial-gradient(70% 90% at 30% 20%, var(--glow-purple), transparent 70%),
+    radial-gradient(60% 80% at 80% 90%, var(--glow-cyan), transparent 70%),
+    var(--map-bg);
+  animation: map-pulse 1.6s var(--ease) infinite;
+}
+
+@keyframes map-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+/* ---- Controls ---- */
+/* Leaflet's own stylesheet is injected by the map chunk, so it lands after this
+   file. Every control rule below is therefore written one step more specific
+   than Leaflet's (.leaflet-touch .leaflet-bar a) to win regardless of order. */
+.mk-map .leaflet-control-zoom.leaflet-bar,
+.mk-map .leaflet-control.leaflet-bar {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.mk-map .leaflet-bar a.leaflet-control-zoom-in,
+.mk-map .leaflet-bar a.leaflet-control-zoom-out,
+.mk-map button.mk-map__recenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-top: 6px;
+  padding: 0;
+  border: 1px solid var(--map-line);
+  border-radius: 12px;
+  background: var(--map-surface);
+  color: var(--map-ink);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    background-color 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    color 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+
+.mk-map .leaflet-bar a.leaflet-control-zoom-in:hover,
+.mk-map .leaflet-bar a.leaflet-control-zoom-in:focus-visible,
+.mk-map .leaflet-bar a.leaflet-control-zoom-out:hover,
+.mk-map .leaflet-bar a.leaflet-control-zoom-out:focus-visible,
+.mk-map button.mk-map__recenter:hover,
+.mk-map button.mk-map__recenter:focus-visible {
+  border-color: transparent;
+  background-image: var(--brand-gradient);
+  color: #fff;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.mk-map .leaflet-bar a.leaflet-control-zoom-in.leaflet-disabled,
+.mk-map .leaflet-bar a.leaflet-control-zoom-out.leaflet-disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+/* ---- Attribution ---- */
+.mk-map .leaflet-control-attribution {
+  padding: 3px 8px;
+  border-radius: 10px 0 0 0;
+  background: var(--map-surface);
+  color: var(--map-mute);
+  font-family: var(--font-body);
+  font-size: 10px;
+  backdrop-filter: blur(8px);
+}
+
+.mk-map .leaflet-control-attribution a {
+  color: var(--map-mute);
+  text-decoration: none;
+}
+
+.mk-map .leaflet-control-attribution a:hover { color: #507af4; }
+
+/* ---- Marker ---- */
+.mk-map__pin-icon { position: relative; }
+
+.mk-map__pin {
+  position: absolute;
+  inset: 5px;
+  border-radius: 999px;
+  background: var(--brand-gradient);
+  box-shadow:
+    0 0 0 3px var(--map-surface),
+    0 6px 16px -6px rgba(137, 31, 251, 0.85);
+  transition: transform 0.25s var(--ease);
+}
+
+.mk-map__pin-icon:hover .mk-map__pin { transform: scale(1.12); }
+
+.mk-map__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1.5px solid #1be2eb;
+  opacity: 0;
+  animation: map-ping 2.6s var(--ease) infinite;
+}
+
+@keyframes map-ping {
+  0% { transform: scale(0.65); opacity: 0.75; }
+  70% { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* ---- Popup ---- */
+.mk-map .mk-map__popup .leaflet-popup-content-wrapper {
+  border: 1px solid var(--map-line);
+  border-radius: 14px;
+  background: var(--map-surface);
+  color: var(--map-ink);
+  box-shadow: 0 20px 44px -26px rgba(8, 8, 10, 0.75);
+  backdrop-filter: blur(10px);
+}
+
+.mk-map .mk-map__popup .leaflet-popup-content {
+  margin: 14px 16px;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+.mk-map .mk-map__popup .leaflet-popup-tip {
+  border: 1px solid var(--map-line);
+  background: var(--map-surface);
+}
+
+.mk-map .mk-map__popup .leaflet-popup-close-button { color: var(--map-mute); }
+.mk-map .mk-map__popup .leaflet-popup-close-button:hover { color: var(--map-ink); }
+
+.mk-map__popup-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mk-map__popup-address {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--map-mute);
+}
+
+.mk-map__popup-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #507af4;
+  text-decoration: none;
+  transition: color 0.25s var(--ease);
+}
+
+.mk-map__popup-link:hover { color: #1be2eb; }
+
+/* ---- Gesture hint ---- */
+.mk-map__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 600;
+  margin: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--map-line);
+  border-radius: 999px;
+  background: var(--map-surface);
+  color: var(--map-ink);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity 0.28s var(--ease), transform 0.28s var(--ease);
+}
+
+.mk-map__hint[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---- Mobile: bigger targets, lighter atmosphere ---- */
+@media (pointer: coarse) {
+  .mk-map,
+  .mk-map:hover,
+  .mk-map:focus-within { box-shadow: none; }
+  .mk-map::after { opacity: 0.7; }
+
+  .mk-map .leaflet-bar a.leaflet-control-zoom-in,
+  .mk-map .leaflet-bar a.leaflet-control-zoom-out,
+  .mk-map button.mk-map__recenter {
+    width: 44px;
+    height: 44px;
+    font-size: 19px;
+  }
+
+  .mk-map .leaflet-bar a.leaflet-control-zoom-in:hover,
+  .mk-map .leaflet-bar a.leaflet-control-zoom-out:hover,
+  .mk-map button.mk-map__recenter:hover { transform: none; }
+
+  .mk-map__pulse { animation: none; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-map,
+  .mk-map::after,
+  .mk-map__canvas .leaflet-layer,
+  .mk-map .leaflet-bar a.leaflet-control-zoom-in,
+  .mk-map .leaflet-bar a.leaflet-control-zoom-out,
+  .mk-map button.mk-map__recenter,
+  .mk-map__hint { transition: none; }
+  .mk-map__pulse,
+  .mk-map__skeleton { animation: none; }
+}
+
+/* ---------- Home Services category cards (scroll-animated variant) ---------- */
+/* Applied only where Services runs with scrollAnimation, so the /services page
+   keeps its original, calmer card. Framer Motion owns the entrance transform
+   (translate/scale), so the hover lift rides on `translate` â€” a separate
+   property in Tailwind v4 and here â€” and never fights it. */
+.services-card {
+  transition:
+    border-color 0.45s var(--ease),
+    translate 0.45s var(--ease);
+  will-change: translate;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .services-card:hover,
+  .services-card:focus-within {
+    translate: 0 -8px;
+    border-color: color-mix(in srgb, #507af4 46%, var(--line));
+    box-shadow: none;
+  }
+
+  /* Tailwind supplies the 45Â° rotate; this adds the outward nudge and halo. */
+  .services-card:hover .services-card__arrow,
+  .services-card:focus-within .services-card__arrow {
+    transform: translate(2px, -2px);
+    box-shadow: 0 10px 26px -10px rgba(80, 122, 244, 0.85);
+  }
+}
+
+.services-card__arrow {
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+
+/* Phones keep the entrance but drop the glow stack and the lift. */
+@media (pointer: coarse), (max-width: 767px) {
+  .services-card,
+  .services-card__arrow { transition: none; will-change: auto; }
+  .services-card:hover,
+  .services-card:focus-within {
+    translate: none;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-card,
+  .services-card__arrow { transition: none; will-change: auto; }
+  .services-card:hover,
+  .services-card:focus-within { translate: none; }
+  .services-card:hover .services-card__arrow,
+  .services-card:focus-within .services-card__arrow { transform: none; }
+}
+
+/* ---------- Brand logo, swapped by the explicit theme choice ---------- */
+/* `data-theme` is stamped on <html> by the blocking script in app.blade.php,
+   so the right lockup paints first time — no post-hydration swap. Tailwind's
+   `dark:` variant follows prefers-color-scheme in v4, which is NOT the site's
+   explicit choice, so the swap is written out here instead.
+   Both variants render, and exactly one of them is displayed: if these rules
+   ever go missing the header shows two logos side by side. */
+.brand-logo__img {
+  display: block;
+  user-select: none;
+}
+
+.brand-logo__img[data-variant='light'],
+[data-theme='light'] .brand-logo__img[data-variant='dark'] {
+  display: none;
+}
+
+[data-theme='light'] .brand-logo__img[data-variant='light'] {
+  display: block;
+}
+
+/* ---------- Home cinematic scroll scenes ---------- */
+/* Each home section rides its own layer so it can come forward out of depth
+   and fall back as the next one arrives. The layer is promoted up front —
+   these are full-viewport surfaces, and letting the compositor discover them
+   mid-scroll is what produces the first-frame stutter. */
+.cine-scene__layer {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Reduced motion drops the scenes entirely — the wrapper still renders, so the
+   flattening is stated here as well as in the component. */
+@media (prefers-reduced-motion: reduce) {
+  .cine-scene__layer {
+    will-change: auto;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ---------- Hero brand object (PrismObject) ---------- */
+/* The ambient life of the object is CSS so it stays on the compositor and can
+   be parked with `animation-play-state` while the hero is off screen. Both
+   keyframes are transform-only. */
+@keyframes prism-spin {
+  from { transform: rotateZ(0deg); }
+  to { transform: rotateZ(360deg); }
+}
+
+@keyframes prism-drift {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -14px; }
+}
+
+.prism__ring--spin {
+  animation: prism-spin linear infinite;
+  will-change: transform;
+}
+
+.prism__shard--drift {
+  animation: prism-drift ease-in-out infinite alternate;
+  will-change: translate;
+}
+
+/* Dark stage: the object reads as emitted light. On paper that blend would
+   erase it, so there it stays a normal, quieter layer. */
+.prism {
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+[data-theme='light'] .prism {
+  mix-blend-mode: normal;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism__ring--spin,
+  .prism__shard--drift { animation: none; }
+}
+
+/* ---------- Home Services sub-service image stack ---------- */
+/* The track holds the list twice, so travelling exactly -50% lands on a
+   pixel-identical frame and the loop never seams. Driven by CSS so it runs on
+   the compositor and can be parked with `animation-play-state` while the card
+   is off screen. */
+@keyframes service-stack-rise {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+
+.service-stack__track {
+  animation-name: service-stack-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+/* The moving tiles stay completely flat in both themes. Keep this scoped to
+   the decorative stack so project cards and CTA treatments are unaffected. */
+.service-stack,
+.service-stack > div,
+.service-stack__track,
+.service-stack__card,
+.service-stack__card > * {
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+.service-stack__card::before,
+.service-stack__card::after {
+  content: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-stack__track { animation: none; }
+}
+
+/* Decorative overlay retained as an inert layout layer. No fade or tint: a
+   gradient over the moving tiles reads as a travelling shadow at the edges. */
+.service-stack__fade {
+  pointer-events: none;
+  background: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-stack__fade {
+    background: none;
+  }
+}
+
+/* ---------- Leaflet stacking, scoped to the map box ---------- */
+/* Belt-and-braces alongside the `isolation: isolate` on `.mk-map`: even if a
+   browser ignored the isolation, these keep every Leaflet layer numerically
+   below the fixed header. Order within the map is preserved exactly — panes
+   under controls, controls under the popup — so the map looks unchanged. */
+.mk-map .leaflet-pane { z-index: 1; }
+.mk-map .leaflet-tile-pane { z-index: 1; }
+.mk-map .leaflet-overlay-pane { z-index: 2; }
+.mk-map .leaflet-shadow-pane { z-index: 3; }
+.mk-map .leaflet-marker-pane { z-index: 4; }
+.mk-map .leaflet-tooltip-pane { z-index: 5; }
+.mk-map .leaflet-popup-pane { z-index: 6; }
+.mk-map .leaflet-control { z-index: 7; }
+.mk-map .leaflet-top,
+.mk-map .leaflet-bottom { z-index: 8; }
+
+/* =====================================================================
+   Touch / coarse-pointer layer
+   ---------------------------------------------------------------------
+   Everything below is gated on `(pointer: coarse)`, so the desktop design
+   is bit-for-bit unchanged. Two jobs: give every control a 44px touch
+   target, and drop the motion that only makes sense with a mouse.
+   ===================================================================== */
+
+@media (pointer: coarse) {
+  /* --- 44px hit areas ------------------------------------------------ */
+
+  /* Inline links inside copy (email, "Explore our services", "View all
+     work", "Open in Google Maps") keep their exact typographic box; the
+     invisible ::before just widens the region a thumb can land on.
+     `::after` is already the gradient underline, hence `::before`. */
+  .link-underline::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 44px;
+    transform: translateY(-50%);
+  }
+
+  /* Opt-in hit area for small links that must keep their exact styling
+     (breadcrumbs), with no visual change of any kind on desktop. */
+  .tap-area {
+    position: relative;
+  }
+  .tap-area::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 44px;
+    transform: translateY(-50%);
+  }
+
+  /* Stacked footer links become real 44px rows rather than 18px of text. */
+  .footer-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* The header is the most-tapped surface on the site: logo, nav links,
+     theme toggle and the menu button all get a full-height target.
+     `min-height` does nothing on a non-replaced inline box, so the links are
+     made inline-flex — they already sit in flex rows, so nothing moves. */
+  header a,
+  header button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* --- Motion that needs a mouse ------------------------------------- */
+
+  /* The inquiry button's hover state is a large 3D rotation. On touch it
+     has no trigger worth the cost and can stick after a tap, so only the
+     press feedback remains. */
+  .btn-press.btn-3d:hover,
+  .btn-press.btn-3d:focus-visible {
+    transform: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.2),
+      0 12px 30px -12px rgba(137, 31, 251, 0.5);
+  }
+  .btn-3d:hover::after,
+  .btn-3d:focus-visible::after { transform: none; }
+
+  /* Hover-driven displacement on links reads as a glitch when a tap
+     leaves a sticky :hover behind. Color still responds. */
+  .footer-link:hover,
+  .footer-link:focus-visible { transform: none; }
+  .footer-link--inline:hover,
+  .footer-link--inline:focus-visible { transform: none; }
+  .footer-motto:hover span { transform: none; }
+
+  /* Tap highlight: we draw our own press states. */
+  a, button { -webkit-tap-highlight-color: transparent; }
 }

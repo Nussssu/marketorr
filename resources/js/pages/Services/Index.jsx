@@ -1,11 +1,11 @@
 import { Head } from '@inertiajs/react';
 import Services from '../../components/sections/Services';
 
-export default function ServicesIndex({ services }) {
+export default function ServicesIndex({ subservices }) {
     return (
         <>
             <Head title="Services — Marketorr" />
-            <Services heroHeading services={services} />
+            <Services heroHeading subservices={subservices} />
         </>
     );
 }

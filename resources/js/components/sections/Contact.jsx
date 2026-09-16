@@ -6,8 +6,11 @@ import RevealText from '../motion/RevealText';
 import { useThemeMotion } from '../../lib/theme';
 import ScrollHeading from '../motion/ScrollHeading';
 import InkField from '../decor/InkField';
+import OfficeMap from '../ui/OfficeMap';
 
 const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
+const OFFICE_ADDRESS = 'Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230';
+const DIRECTIONS_URL = 'https://www.google.com/maps/search/?api=1&query=Natore+Tower+Uttara+Dhaka+1230+Bangladesh';
 
 export default function Contact({ heroHeading = false }) {
     const reduce = useReducedMotion();
@@ -107,6 +110,19 @@ export default function Contact({ heroHeading = false }) {
                                 </p>
                             </div>
                         </div>
+                        <OfficeMap
+                            className="mt-8"
+                            address={OFFICE_ADDRESS}
+                            directionsHref={DIRECTIONS_URL}
+                        />
+                        <a
+                            href={DIRECTIONS_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="link-underline btn-press mt-3 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                        >
+                            Open in Google Maps ↗
+                        </a>
                     </div>
 
                     <form onSubmit={submit} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 md:p-9" aria-label="Project inquiry form">
@@ -167,7 +183,7 @@ export default function Contact({ heroHeading = false }) {
                             type="submit"
                             disabled={processing || wasSuccessful}
                             data-cursor="cta"
-                            className="btn-press mt-8 flex w-full items-center justify-center gap-3 rounded-full py-4 text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
+                            className="btn-press btn-3d mt-8 flex w-full items-center justify-center gap-3 rounded-full py-4 text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
                             style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
                         >
                             {processing ? (

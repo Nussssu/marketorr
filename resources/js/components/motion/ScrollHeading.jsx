@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * Viewport tier for the scroll-linked heading treatment.
- * Mobile drops blur/skew/gradient-drift and softens the travel for performance.
+ * Mobile softens the travel while desktop keeps a restrained skew.
  *
  * @return {{ compact: boolean, rich: boolean }}
  */
 function useHeadingTier() {
-    // Starts plain: the rich tier is opted into after measuring, so small screens never touch filter.
+    // Starts plain so the first mobile frame never receives the richer transform.
     const [tier, setTier] = useState({ compact: false, rich: false });
 
     useEffect(() => {
@@ -31,9 +31,8 @@ function useHeadingTier() {
 /**
  * Wraps a page's large first heading and drives a restrained, scroll-linked
  * exit on top of whatever entrance animation the heading already runs:
- * slight lift, small scale reduction, tighter tracking, soft fade — plus a
- * separate gradient drift for `.text-gradient` words so the brand colors stay
- * livelier than the solid text.
+ * slight lift, small scale reduction and soft fade. The effect stays on
+ * compositor-friendly transform and opacity properties while scrolling.
  *
  * @param {{
  *   children: import('react').ReactNode,
@@ -52,15 +51,12 @@ export default function ScrollHeading({ children, className = '', enabled = true
     const y = useTransform(scrollYProgress, [0, 1], [0, -60 * k]);
     const scale = useTransform(scrollYProgress, [0, 1], [1, 1 - 0.04 * k]);
     const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 1 - 0.45 * k]);
-    const letterSpacing = useTransform(scrollYProgress, [0, 1], ['0em', `${(-0.014 * k).toFixed(4)}em`]);
     const skew = useTransform(scrollYProgress, [0, 1], [0, rich ? -0.6 * k : 0]);
-    const blur = useTransform(scrollYProgress, [0, 1], ['blur(0px)', `blur(${rich ? (1.2 * k).toFixed(2) : 0}px)`]);
-
-    // Gradient words drift a touch further and slide their gradient ramp.
-    const gradientShift = useTransform(scrollYProgress, [0, 1], ['50%', '100%']);
-    const gradientX = useTransform(scrollYProgress, [0, 1], ['0px', `${rich ? (10 * k).toFixed(2) : 0}px`]);
 
     const active = enabled && !reduce;
+
+    // Skew remains desktop-only; every tier otherwise uses transform + opacity.
+    const rest = rich ? { skewY: skew } : {};
 
     return (
         <motion.div
@@ -72,12 +68,8 @@ export default function ScrollHeading({ children, className = '', enabled = true
                           y,
                           scale,
                           opacity,
-                          skewY: skew,
-                          filter: rich ? blur : undefined,
                           willChange: 'transform, opacity',
-                          '--sh-ls': letterSpacing,
-                          '--sh-grad': gradientShift,
-                          '--sh-grad-x': gradientX,
+                          ...rest,
                       }
                     : undefined
             }
