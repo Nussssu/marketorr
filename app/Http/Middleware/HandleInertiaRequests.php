@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Service;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -43,13 +42,13 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'settings' => fn () => Setting::current()->toPublicArray(),
-            // Footer service links follow whatever slugs the admin has published.
-            'navServices' => fn () => Service::query()
-                ->published()
-                ->get(['slug', 'name'])
-                ->map(fn (Service $service) => [
-                    'slug' => $service->slug,
-                    'name' => $service->name,
+            // The header and footer Services menus list the two disciplines only,
+            // each linking straight to its category page.
+            'serviceCategories' => fn () => collect(config('subservices'))
+                ->map(fn (array $category) => [
+                    'slug' => $category['slug'],
+                    'name' => $category['name'],
+                    'short' => $category['tagline'] ?? null,
                 ])
                 ->values(),
             'auth' => [

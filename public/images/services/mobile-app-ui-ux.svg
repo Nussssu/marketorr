@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <radialGradient id="glow" cx="55%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#507AF4" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#507AF4" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#ffffff" stroke-opacity="0.07"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="#0B0B10"/>
+  <rect width="800" height="600" fill="url(#grid)"/>
+  <rect width="800" height="600" fill="url(#glow)"/>
+  <rect x="200" y="130" width="180" height="360" rx="36" fill="#14141B" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+  <rect x="330" y="90" width="210" height="420" rx="40" fill="#1A1A24" stroke="#507AF4" stroke-width="4"/>
+  <rect x="358" y="150" width="120" height="20" rx="10" fill="#507AF4"/>
+  <rect x="358" y="188" width="154" height="12" rx="6" fill="#ffffff" opacity="0.35"/>
+  <rect x="358" y="212" width="154" height="12" rx="6" fill="#ffffff" opacity="0.2"/>
+  <rect x="358" y="250" width="154" height="110" rx="16" fill="#507AF4" opacity="0.45"/>
+  <rect x="358" y="378" width="154" height="44" rx="22" fill="#891FFB"/>
+  <circle cx="435" cy="478" r="8" fill="#1BE2EB"/>
+  <rect x="236" y="180" width="80" height="12" rx="6" fill="#ffffff" opacity="0.3"/>
+  <rect x="236" y="204" width="108" height="80" rx="12" fill="#507AF4" opacity="0.4"/>
+</svg>

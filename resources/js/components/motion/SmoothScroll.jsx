@@ -8,14 +8,15 @@ export default function SmoothScroll() {
         if (window.__lenis) return;
 
         const lenis = new Lenis({
-            duration: 0.65,
+            duration: 0.82,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
-            wheelMultiplier: 1.15,
+            wheelMultiplier: 0.92,
             syncTouch: false,
         });
 
         let raf = 0;
+        let deepLinkRaf = 0;
         const loop = (time) => {
             lenis.raf(time);
             raf = requestAnimationFrame(loop);
@@ -57,7 +58,7 @@ export default function SmoothScroll() {
                 // invalid selector in hash
             }
             if (el) {
-                requestAnimationFrame(() => {
+                deepLinkRaf = requestAnimationFrame(() => {
                     lenis.scrollTo(el, { offset: -72, immediate: true });
                 });
             }
@@ -65,9 +66,10 @@ export default function SmoothScroll() {
 
         return () => {
             cancelAnimationFrame(raf);
+            cancelAnimationFrame(deepLinkRaf);
             document.removeEventListener('click', onClick);
             lenis.destroy();
-            window.__lenis = undefined;
+            if (window.__lenis === lenis) window.__lenis = undefined;
         };
     }, []);
     return null;

@@ -25,7 +25,7 @@ export default function InkField({ theme = 'dark' }) {
 
         // Touch, small screens and reduced motion all fall back to the static wash.
         const coarse = window.matchMedia('(pointer: coarse)').matches;
-        const small = window.matchMedia('(max-width: 767px)').matches;
+        const small = window.matchMedia('(max-width: 1023px)').matches;
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (coarse || small || reduced) return undefined;
 
@@ -35,8 +35,8 @@ export default function InkField({ theme = 'dark' }) {
         setPainting(true);
 
         // Half resolution + a capped DPR: the CSS blur hides every bit of it.
-        const RES = 0.5;
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const RES = 0.42;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
         let w = 1;
         let h = 1;
         let rect = host.getBoundingClientRect();
@@ -115,8 +115,6 @@ export default function InkField({ theme = 'dark' }) {
         };
         resize();
 
-        let maskAge = -Infinity;
-
         const target = { x: w * 0.5, y: h * 0.45 };
         const brush = { x: target.x, y: target.y };
         let prevX = brush.x;
@@ -124,6 +122,7 @@ export default function InkField({ theme = 'dark' }) {
         let lastMove = -Infinity;
         let visible = true;
         let raf = 0;
+        let lastPaint = 0;
 
         const onMove = (e) => {
             const nx = (e.clientX - rect.left) / Math.max(1, rect.width);
@@ -137,6 +136,8 @@ export default function InkField({ theme = 'dark' }) {
         const frame = (time) => {
             raf = requestAnimationFrame(frame);
             if (!visible) return;
+            if (time - lastMove > 2600 || time - lastPaint < 32) return;
+            lastPaint = time;
 
             brush.x += (target.x - brush.x) * 0.075;
             brush.y += (target.y - brush.y) * 0.075;
@@ -154,13 +155,6 @@ export default function InkField({ theme = 'dark' }) {
             ctx.globalAlpha = 0.95;
             ctx.drawImage(canvas, vx * 0.6, vy * 0.6, w, h);
             ctx.globalAlpha = 1;
-
-            // Layout shifts (scroll-linked heading, form growth) refresh the holes.
-            if (time - maskAge > 400) {
-                maskAge = time;
-                rect = host.getBoundingClientRect();
-                buildMask();
-            }
 
             // Wet pigment: three offset blobs, stretched along the stroke.
             ctx.globalCompositeOperation = 'lighter';
@@ -217,10 +211,12 @@ export default function InkField({ theme = 'dark' }) {
         const ro = new ResizeObserver(resize);
         ro.observe(host);
 
-        window.addEventListener('mousemove', onMove, { passive: true });
-        window.addEventListener('scroll', () => {
+        const onScroll = () => {
             rect = host.getBoundingClientRect();
-        }, { passive: true });
+        };
+
+        window.addEventListener('mousemove', onMove, { passive: true });
+        window.addEventListener('scroll', onScroll, { passive: true });
         raf = requestAnimationFrame(frame);
 
         return () => {
@@ -228,6 +224,7 @@ export default function InkField({ theme = 'dark' }) {
             io.disconnect();
             ro.disconnect();
             window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('scroll', onScroll);
         };
     }, []);
 
