@@ -5,7 +5,6 @@ import { EASE } from '../../lib/motion';
 import { useThemeMotion } from '../../lib/theme';
 import MagneticButton from '../motion/MagneticButton';
 import ScrollHeading from '../motion/ScrollHeading';
-import CursorGlow from '../decor/CursorGlow';
 import PrismObject from '../decor/PrismObject';
 import Stage from '../decor/Stage';
 
@@ -153,7 +152,6 @@ export default function Hero() {
                 <Stage variant="hero" />
                 <div className="grid-bg absolute inset-0" />
                 <PrismObject progress={scrollYProgress} />
-                <CursorGlow />
             </motion.div>
 
             <motion.div style={exitMotion} className="container-x relative z-10 flex flex-1 flex-col justify-center pb-4 pt-28 sm:pt-32">

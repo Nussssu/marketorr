@@ -4,7 +4,16 @@ import Footer from './layout/Footer';
 import SmoothScroll from './motion/SmoothScroll';
 import CustomCursor from './motion/CustomCursor';
 import ScrollProgress from './motion/ScrollProgress';
-import PageTransition from './motion/PageTransition';
+import PageTransition, { transitionTo } from './motion/PageTransition';
+
+function navigateToContact(event) {
+    if (event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== undefined && event.button !== 0) return;
+
+    event.preventDefault();
+    transitionTo('/contact');
+}
 
 /**
  * Phone-only vertical CTA, pinned to the middle of the right edge.
@@ -19,6 +28,7 @@ function MobileProjectButton() {
     return (
         <Link
             href="/contact"
+            onClick={navigateToContact}
             data-cursor="cta"
             aria-label="Start a project"
             className="btn-press fixed right-2 top-1/2 z-[120] flex w-10 -translate-y-1/2 flex-col items-center rounded-full py-3.5 text-white shadow-[0_10px_28px_-12px_rgba(80,122,244,0.75)] lg:hidden"
