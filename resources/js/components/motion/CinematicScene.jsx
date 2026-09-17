@@ -1,7 +1,7 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { motion, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-const RICH_QUERY = '(min-width: 768px)';
+const RICH_QUERY = '(min-width: 1024px) and (pointer: fine)';
 
 /**
  * Travel applied while a scene is arriving (`in`) and while it is falling back
@@ -110,6 +110,7 @@ export default function CinematicScene({ children, depth = true, className = '' 
     const ref = useRef(null);
     const reduce = useReducedMotion();
     const rich = useRichStage();
+    const active = useInView(ref, { margin: '40% 0px' });
 
     const { scrollYProgress: enter } = useScroll({
         target: ref,
@@ -144,6 +145,7 @@ export default function CinematicScene({ children, depth = true, className = '' 
         <div
             ref={ref}
             className={`cine-scene ${className}`.trimEnd()}
+            data-active={active ? 'true' : undefined}
             style={dimensional ? { perspective: '1600px' } : undefined}
         >
             <motion.div

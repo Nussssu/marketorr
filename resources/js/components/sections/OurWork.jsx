@@ -143,6 +143,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
     const ref = useRef(null);
     const rich = useRichMotion();
     const reduce = useReducedMotion();
+    const tapIntent = useTapIntent();
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
     const tiltable = rich && !reduce;
 
@@ -187,7 +188,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
                 transformPerspective: 1100,
             }}
         >
-            <Link href={`/work/${p.slug}`} data-cursor="view" className="group block" aria-label={`View ${p.title} case study`}>
+            <Link href={`/work/${p.slug}`} data-cursor="view" {...tapIntent} className="group block" aria-label={`View ${p.title} case study`}>
                 <div
                     className="w-full overflow-hidden rounded-2xl border border-[var(--line)]"
                     style={{ height: 'var(--mq-h)', aspectRatio: ratio }}
@@ -332,13 +333,14 @@ function SeeAllWorkCard({ focus }) {
                     </span>
                 </span>
 
-                <span className="font-display text-[clamp(2rem,8vw,5rem)] font-extrabold uppercase leading-[0.88] tracking-[-0.05em] text-[var(--ink-strong)]">
-                    See all<br />work<span className="text-gradient">.</span>
+                <span className="max-w-[15rem] text-[10px] leading-relaxed text-[var(--mute)] sm:text-[13px]">
+                    Explore the complete collection of brands and digital products.
                 </span>
 
                 <span className="flex items-end justify-between gap-5">
-                    <span className="max-w-[15rem] text-[10px] leading-relaxed text-[var(--mute)] sm:text-[13px]">
-                        Explore the complete collection of brands and digital products.
+                    <span className="inline-flex items-center gap-2 font-display text-[12px] font-semibold uppercase tracking-[0.22em] text-[var(--ink-strong)] sm:text-[13px]">
+                        See all work
+                        <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </span>
                     <span className="see-all-work__arrow flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-base text-[var(--ink)] transition-[opacity,transform,background-color,color,border-color] duration-300 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white group-focus-visible:border-transparent group-focus-visible:bg-[#507AF4] group-focus-visible:text-white sm:h-12 sm:w-12 sm:text-lg" aria-hidden>
                         ↗

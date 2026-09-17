@@ -48,6 +48,8 @@ function useRichScene() {
  */
 export default function CategoryHero({ category }) {
     const wrapRef = useRef(null);
+    const pointerFrame = useRef(0);
+    const nextPointer = useRef({ x: 0, y: 0 });
     const reduce = useReducedMotion();
     const rich = useRichScene();
     const full = rich && !reduce;
@@ -81,34 +83,50 @@ export default function CategoryHero({ category }) {
     const foreX = useTransform(depthX, [-1, 1], full ? [-58, 58] : [0, 0]);
     const foreY = useTransform(depthY, [-1, 1], full ? [-42, 42] : [0, 0]);
 
-    // Scroll journey: the image pushes in slowly, the title rushes up faster,
-    // foreground chrome exits first, and the stage compresses under a dim veil.
-    const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.93 : 0.97]);
-    const veilOpacity = useTransform(scrollYProgress, [0.55, 1], [0, full ? 0.6 : 0.45]);
+    // Scroll journey: the image pushes in slowly, then dissolves away late so
+    // the typography is left floating; title, ghost and chrome exit at
+    // staggered speeds (chrome first, title sweeping furthest) for the
+    // layered hand-off into the next section. Transform + opacity only.
+    const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
+    const veilOpacity = useTransform(scrollYProgress, [0.55, 1], [0, full ? 0.62 : 0.45]);
     const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);
     const bgShiftY = useTransform(scrollYProgress, [0, 1], ['0%', '10%']);
+    const bgFade = useTransform(scrollYProgress, [0.5, 0.92], [1, 0]);
     const ghostShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-52%' : '-24%']);
     const ghostFade = useTransform(scrollYProgress, [0.3, 0.75], [1, 0]);
-    const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-38%' : '-16%']);
-    const titleScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
-    const titleFade = useTransform(scrollYProgress, [0.35, 0.8], [1, 0]);
+    const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-56%' : '-24%']);
+    const titleScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.88 : 0.95]);
+    const titleFade = useTransform(scrollYProgress, [0.3, 0.68], [1, 0]);
     const foreShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-70%' : '-30%']);
     const foreFade = useTransform(scrollYProgress, [0.2, 0.55], [1, 0]);
 
     const onPointerMove = (event) => {
-        if (!full) return;
+        if (!full || event.pointerType !== 'mouse') return;
         const rect = event.currentTarget.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
-        pointerX.set(((event.clientX - rect.left) / rect.width) * 2 - 1);
-        pointerY.set(((event.clientY - rect.top) / rect.height) * 2 - 1);
+        nextPointer.current = {
+            x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            y: ((event.clientY - rect.top) / rect.height) * 2 - 1,
+        };
+        if (pointerFrame.current) return;
+
+        pointerFrame.current = requestAnimationFrame(() => {
+            pointerFrame.current = 0;
+            pointerX.set(nextPointer.current.x);
+            pointerY.set(nextPointer.current.y);
+        });
     };
     const onPointerLeave = () => {
+        cancelAnimationFrame(pointerFrame.current);
+        pointerFrame.current = 0;
         pointerX.set(0);
         pointerY.set(0);
     };
 
+    useEffect(() => () => cancelAnimationFrame(pointerFrame.current), []);
+
     return (
-        <div ref={wrapRef} className="relative" style={{ height: full ? '175svh' : '150svh' }}>
+        <div ref={wrapRef} className="relative" style={{ height: full ? '165svh' : '125svh' }}>
             <div
                 className="sticky top-0 h-svh overflow-hidden bg-[#06060a]"
                 onPointerMove={onPointerMove}
@@ -125,8 +143,8 @@ export default function CategoryHero({ category }) {
                         }
                         className="absolute inset-0"
                     >
-                        {/* PLANE 1 — background image */}
-                        <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale }} className="absolute inset-0">
+                        {/* PLANE 1 — background image (pushes in, then dissolves away) */}
+                        <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale, opacity: bgFade }} className="absolute inset-0">
                             <motion.div style={full ? { x: bgX, y: bgY, z: 0 } : undefined} className="absolute inset-0">
                                 <motion.img
                                     src={image}
@@ -140,24 +158,23 @@ export default function CategoryHero({ category }) {
                                     className="h-full w-full object-cover"
                                 />
                             </motion.div>
+                            {/* legibility scrims + subtle brand lighting dissolve with the photo */}
+                            <div
+                                className="absolute inset-0"
+                                style={{
+                                    background:
+                                        'linear-gradient(180deg, rgba(5,5,10,0.68) 0%, rgba(5,5,10,0.38) 32%, rgba(5,5,10,0.42) 62%, rgba(5,5,10,0.84) 100%)',
+                                }}
+                                aria-hidden
+                            />
+                            <div
+                                className="absolute inset-0"
+                                style={{
+                                    background: `radial-gradient(55% 40% at 12% 6%, ${category.accent}45, transparent 70%), radial-gradient(45% 38% at 88% 96%, rgba(27,226,235,0.20), transparent 70%), radial-gradient(40% 32% at 82% 8%, rgba(80,122,244,0.16), transparent 70%)`,
+                                }}
+                                aria-hidden
+                            />
                         </motion.div>
-
-                        {/* legibility scrims (static) + subtle brand lighting (static) */}
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background:
-                                    'linear-gradient(180deg, rgba(5,5,10,0.68) 0%, rgba(5,5,10,0.38) 32%, rgba(5,5,10,0.42) 62%, rgba(5,5,10,0.84) 100%)',
-                            }}
-                            aria-hidden
-                        />
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background: `radial-gradient(55% 40% at 12% 6%, ${category.accent}45, transparent 70%), radial-gradient(45% 38% at 88% 96%, rgba(27,226,235,0.20), transparent 70%), radial-gradient(40% 32% at 82% 8%, rgba(80,122,244,0.16), transparent 70%)`,
-                            }}
-                            aria-hidden
-                        />
 
                         {/* PLANE 2 — ghost index numeral */}
                         <motion.div

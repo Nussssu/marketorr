@@ -14,6 +14,7 @@ import { Tag } from '../ui/primitives';
 const EASE = [0.22, 1, 0.36, 1];
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 const RICH_QUERY = '(min-width: 1024px)';
+const COMPACT_QUERY = '(max-width: 768px)';
 
 /**
  * The band, as a fraction of the viewport, that decides which project the
@@ -276,11 +277,23 @@ function FixedPanel({ project, count, index, reduce }) {
 export default function WorkShowcase({ projects = [] }) {
     const reduce = useReducedMotion();
     const [rich, setRich] = useState(false);
+    const [compact, setCompact] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia(COMPACT_QUERY).matches,
+    );
     const [active, setActive] = useState(0);
 
     useEffect(() => {
         const query = window.matchMedia(RICH_QUERY);
         const update = () => setRich(query.matches);
+        update();
+        query.addEventListener('change', update);
+
+        return () => query.removeEventListener('change', update);
+    }, []);
+
+    useEffect(() => {
+        const query = window.matchMedia(COMPACT_QUERY);
+        const update = () => setCompact(query.matches);
         update();
         query.addEventListener('change', update);
 
@@ -298,16 +311,39 @@ export default function WorkShowcase({ projects = [] }) {
             <FixedPanel project={focused} count={projects.length} index={active} reduce={reduce} />
 
             <div className="work-flow__track">
-                {projects.map((project, index) => (
-                    <FlowItem
-                        key={project.slug}
-                        project={project}
-                        index={index}
-                        rich={rich && !reduce}
-                        reduce={reduce}
-                        onFocus={setActive}
-                    />
-                ))}
+                {projects.map((project, index) => {
+                    if (!compact) {
+                        return (
+                            <FlowItem
+                                key={project.slug}
+                                project={project}
+                                index={index}
+                                rich={rich && !reduce}
+                                reduce={reduce}
+                                onFocus={setActive}
+                            />
+                        );
+                    }
+
+                    return (
+                        <motion.div
+                            key={project.slug}
+                            className="min-w-0"
+                            initial={reduce ? false : { opacity: 0, y: 22, scale: 0.97 }}
+                            whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                            viewport={{ once: true, amount: 0.18 }}
+                            transition={{ duration: 0.48, delay: (index % 2) * 0.07, ease: [...EASE] }}
+                        >
+                            <FlowItem
+                                project={project}
+                                index={index}
+                                rich={false}
+                                reduce={reduce}
+                                onFocus={setActive}
+                            />
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );

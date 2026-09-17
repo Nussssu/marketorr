@@ -49,7 +49,7 @@ export default function Home({ featuredProjects, subservices }) {
                 <About />
             </CinematicScene>
             <CinematicScene>
-                <Services subservices={subservices} showSubserviceShowcase={false} scrollAnimation />
+                <Services subservices={subservices} showTransition={false} scrollAnimation />
             </CinematicScene>
             {/* Our Work owns a sticky scroll stage. A transformed scene ancestor
                 would move its supposedly fixed layer with the page. */}

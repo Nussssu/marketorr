@@ -42,8 +42,17 @@ export function transitionTo(href) {
 
 export default function PageTransition({ children }) {
     const [cover, setCover] = useState(false);
+    const [cycle, setCycle] = useState(0);
     const coverRef = useRef(false);
     const timers = useRef([]);
+
+    const showCover = () => {
+        if (coverRef.current) return;
+
+        coverRef.current = true;
+        setCycle((current) => current + 1);
+        setCover(true);
+    };
 
     useEffect(() => {
         coverRef.current = cover;
@@ -65,11 +74,7 @@ export default function PageTransition({ children }) {
             if (!isPageNavigation(event.detail.visit)) return;
 
             clear();
-
-            if (!coverRef.current) {
-                coverRef.current = true;
-                setCover(true);
-            }
+            showCover();
         });
         const offFinish = router.on('finish', (event) => {
             const { visit } = event.detail;
@@ -117,8 +122,7 @@ export default function PageTransition({ children }) {
             }
 
             clearNavTimer();
-            coverRef.current = true;
-            setCover(true);
+            showCover();
             timers.current.push(setTimeout(() => {
                 router.visit(href);
             }, COVER_BEFORE_NAV_MS));
@@ -135,6 +139,7 @@ export default function PageTransition({ children }) {
             <AnimatePresence>
                 {cover && (
                     <motion.div
+                        key={cycle}
                         className="pointer-events-none fixed inset-0 z-[10010] flex"
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

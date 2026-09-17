@@ -42,13 +42,22 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'settings' => fn () => Setting::current()->toPublicArray(),
-            // The header and footer Services menus list the two disciplines only,
-            // each linking straight to its category page.
+            // The header and footer Services menus list the two disciplines and
+            // their sub-services, each linking straight to its page. Fields
+            // stay minimal — only what the menus render.
             'serviceCategories' => fn () => collect(config('subservices'))
                 ->map(fn (array $category) => [
                     'slug' => $category['slug'],
                     'name' => $category['name'],
                     'short' => $category['tagline'] ?? null,
+                    'accent' => $category['accent'] ?? null,
+                    'items' => collect($category['items'] ?? [])
+                        ->map(fn (array $item) => [
+                            'slug' => $item['slug'],
+                            'name' => $item['name'],
+                            'accent' => $item['accent'] ?? null,
+                        ])
+                        ->values(),
                 ])
                 ->values(),
             'auth' => [

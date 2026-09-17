@@ -47,7 +47,7 @@ function tileOptions(coarse) {
     return {
         maxZoom: MAX_ZOOM,
         maxNativeZoom: MAX_NATIVE_ZOOM,
-        keepBuffer: 2,
+        keepBuffer: coarse ? 1 : 2,
         // Fewer tile requests mid-gesture keeps panning smooth on phones.
         updateWhenIdle: coarse,
         attribution: ATTRIBUTION,
@@ -76,6 +76,7 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
     const lenisPausedRef = useRef(false);
     const hintTimer = useRef(0);
 
+    const [shouldLoad, setShouldLoad] = useState(false);
     const [ready, setReady] = useState(false);
     const [hint, setHint] = useState('');
 
@@ -97,7 +98,32 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
         }
     }, []);
 
+    // Keep Leaflet, its tile requests and its event system off the main thread
+    // until the map is close enough to be seen. This matters most on Home,
+    // where several animated sections appear before Contact.
     useEffect(() => {
+        const host = hostRef.current;
+        if (!host || shouldLoad) return undefined;
+        if (typeof IntersectionObserver === 'undefined') {
+            setShouldLoad(true);
+
+            return undefined;
+        }
+
+        const observer = new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting) return;
+
+            setShouldLoad(true);
+            observer.disconnect();
+        }, { rootMargin: '400px 0px' });
+        observer.observe(host);
+
+        return () => observer.disconnect();
+    }, [shouldLoad]);
+
+    useEffect(() => {
+        if (!shouldLoad) return undefined;
+
         let cancelled = false;
         const host = hostRef.current;
         if (!host) {
@@ -128,15 +154,15 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
                 scrollWheelZoom: false,
                 doubleClickZoom: true,
                 keyboard: true,
-                inertia: true,
+                inertia: !coarse,
                 inertiaDeceleration: 2600,
                 easeLinearity: 0.22,
                 zoomSnap: 0.25,
                 zoomDelta: 0.5,
                 wheelPxPerZoomLevel: 120,
-                zoomAnimation: !reduce,
-                fadeAnimation: !reduce,
-                markerZoomAnimation: !reduce,
+                zoomAnimation: !reduce && !coarse,
+                fadeAnimation: !reduce && !coarse,
+                markerZoomAnimation: !reduce && !coarse,
             });
             mapRef.current = map;
             map.attributionControl.setPrefix(false);
@@ -241,9 +267,16 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
                 });
             }
 
-            const observer = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+            let resizeFrame = 0;
+            const observer = new ResizeObserver(() => {
+                cancelAnimationFrame(resizeFrame);
+                resizeFrame = requestAnimationFrame(() => map.invalidateSize({ animate: false }));
+            });
             observer.observe(host);
-            cleanups.push(() => observer.disconnect());
+            cleanups.push(() => {
+                cancelAnimationFrame(resizeFrame);
+                observer.disconnect();
+            });
 
             setReady(true);
         });
@@ -263,7 +296,7 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
         // Built once. The theme is applied to the live instance by the effect below,
         // which is what keeps switching instant instead of remounting the map.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [shouldLoad]);
 
     // Theme swap — crossfade a second tile layer in, then drop the old one.
     useEffect(() => {
@@ -315,7 +348,7 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
                 role="application"
                 aria-label="Map of the Marketorr studio in Uttara, Dhaka"
             />
-            {!ready && <div className="mk-map__skeleton" aria-hidden />}
+            {shouldLoad && !ready && <div className="mk-map__skeleton" aria-hidden />}
             <p className="mk-map__hint" data-visible={hint ? 'true' : 'false'} aria-live="polite">
                 {hint}
             </p>

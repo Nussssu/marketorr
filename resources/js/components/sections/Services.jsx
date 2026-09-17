@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ScrollHeading from '../motion/ScrollHeading';
-import ScrollServiceShowcase from './ScrollServiceShowcase';
-import ServiceLayerDeck from './ServiceLayerDeck';
-import ServicesSlider from './ServicesSlider';
+import ServiceShowcaseRail from './ServiceShowcaseRail';
+import ServicesTransition from './ServicesTransition';
 import SubServiceTicker from './SubServiceTicker';
 import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
@@ -18,7 +17,7 @@ const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
  * (`once: false`); `compact` shortens the travel and the timings on phones,
  * and the whole thing is skipped when the user prefers reduced motion.
  */
-const VIEWPORT = { once: false, margin: '-12% 0px -12% 0px' };
+const VIEWPORT = { once: true, margin: '-12% 0px -12% 0px' };
 
 /** Phones play the entrance once; replaying it on every pass is wasted work. */
 const VIEWPORT_COMPACT = { once: true, margin: '-12% 0px -12% 0px' };
@@ -85,15 +84,21 @@ function useCompactViewport() {
     return compact;
 }
 
-function CategoryGateway({ category, index, variants, showStack = false }) {
+function CategoryGateway({ category, index, variants }) {
     const arrowTapIntent = useTapIntent();
     const ctaTapIntent = useTapIntent();
     // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
     const exploreHref = `/services/${category.slug}`;
 
+    // The rail's clock owns the motion: it reports the top screen, and the
+    // ticker below the title follows — image and name always change
+    // together. The reel never pauses for hover; hover only drives the
+    // card's visual effects (border, arrow, CTA) via CSS.
+    const [shot, setShot] = useState(0);
+
     // The card body itself is NOT a navigation target: hovering it, moving the
-    // pointer across it, entering/leaving it or touching the decorative stack
-    // can never start a visit. Only the arrow and the "Explore …" CTA below
+    // pointer across it, entering/leaving it or touching the decorative showcase
+    // rail can never start a visit. Only the arrow and the "Explore …" CTA below
     // navigate. The links perform one native Inertia visit after the tap-intent
     // guard accepts the gesture; the global PageTransition still supplies the
     // existing route animation without a second delayed navigation path.
@@ -121,10 +126,10 @@ function CategoryGateway({ category, index, variants, showStack = false }) {
                         </Link>
                     </div>
                     <div>
-                        <h2 className={`font-display ${showStack ? 'text-[clamp(2.1rem,8.6vw,3.9rem)]' : 'text-[clamp(2.7rem,6vw,6.5rem)]'} font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2`}>
+                        <h2 className="font-display text-[clamp(2.1rem,8.6vw,3.9rem)] font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2">
                             {category.name}
                         </h2>
-                        <SubServiceTicker category={category} />
+                        <SubServiceTicker category={category} index={shot} />
                         <div className="mt-5 flex items-end justify-between gap-6">
                             <p className="max-w-sm text-[14px] leading-relaxed text-[var(--mute)] sm:text-[15px]">{category.tagline}</p>
                             <Link
@@ -138,7 +143,7 @@ function CategoryGateway({ category, index, variants, showStack = false }) {
                         </div>
                     </div>
                 </div>
-                {showStack && <ServiceLayerDeck category={category} mirrored={index % 2 === 1} />}
+                <ServiceShowcaseRail category={category} onActive={setShot} />
             </div>
         </motion.article>
     );
@@ -148,24 +153,27 @@ function CategoryGateway({ category, index, variants, showStack = false }) {
  * @param {{
  *   heroHeading?: boolean,
  *   subservices?: Array<object>,
- *   showSubserviceShowcase?: boolean,
+ *   showTransition?: boolean,
  *   scrollAnimation?: boolean,
  * }} props
- *   `showSubserviceShowcase` false keeps the section to the two category
- *   gateways only — the Home page wants a simple entry point, while the
- *   dedicated service pages keep the full slider and scroll showcase.
+ *   `showTransition` false keeps the section to the two category gateways only
+ *   — the Home page wants a simple entry point and has its own onward flow,
+ *   while the Services page closes on the cinematic hand-off to the dedicated
+ *   Branding and UI/UX pages.
  *   `scrollAnimation` opts into the Home-only entrance choreography and the
- *   card hover treatment; every other mount renders exactly as before.
+ *   card hover treatment; every other mount renders exactly as before. The two
+ *   gateway cards themselves — layout, type scale and the moving showcase rail
+ *   in the composition area — are identical wherever the section mounts.
  */
 export default function Services({
     heroHeading = false,
     subservices = [],
-    showSubserviceShowcase = true,
+    showTransition = true,
     scrollAnimation = false,
 }) {
     const reduce = useReducedMotion();
     const compact = useCompactViewport();
-    const animate = scrollAnimation && !reduce;
+    const animate = !reduce;
     // Stable identities: a fresh variants object every render makes Framer
     // re-resolve targets mid-flight.
     const gridVariants = useMemo(() => cardStagger(compact), [compact]);
@@ -204,7 +212,7 @@ export default function Services({
                         ? {
                             initial: 'hidden',
                             whileInView: 'show',
-                            viewport: compact ? VIEWPORT_COMPACT : VIEWPORT,
+                            viewport: compact || !scrollAnimation ? VIEWPORT_COMPACT : VIEWPORT,
                             variants: gridVariants,
                         }
                         : {})}
@@ -215,21 +223,13 @@ export default function Services({
                             category={category}
                             index={index}
                             variants={animate ? (index % 2 === 1 ? mirroredVariants : itemVariants) : undefined}
-                            showStack={scrollAnimation}
                         />
                     ))}
                 </motion.div>
 
-                {showSubserviceShowcase && (
-                    <div className="mt-20 border-t border-[var(--line)] pt-6">
-                        <ServicesSlider categories={subservices} />
-                    </div>
-                )}
             </div>
 
-            {showSubserviceShowcase && heroHeading && subservices.map((category) => (
-                <ScrollServiceShowcase key={category.slug} category={category} />
-            ))}
+            {showTransition && <ServicesTransition />}
         </section>
     );
 }
