@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
 import ScrollHeading from '../motion/ScrollHeading';
-import CursorGlow from '../decor/CursorGlow';
 import Stage from '../decor/Stage';
 
 /** Phones count up once; desktop keeps replaying on every viewport re-entry. */
@@ -74,7 +73,6 @@ export default function About({ heroHeading = false }) {
             >
                 <Stage variant="about" />
             </div>
-            <CursorGlow />
 
             <div className="container-x relative">
                 <SectionLabel index="01" name="ABOUT" />

@@ -86,7 +86,7 @@ export default function Contact({ heroHeading = false }) {
                                 <span className="relative">Start a project →</span>
                             </a>
                         </MagneticButton>
-                        <div className="mt-10 grid grid-cols-2 gap-6 text-sm">
+                        <div className="mt-10 grid grid-cols-1 gap-6 text-sm min-[420px]:grid-cols-2">
                             <div>
                                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Email</p>
                                 <a href={`mailto:${contactEmail}`} className="link-underline btn-press mt-1 inline-block font-semibold text-[var(--ink)]">{contactEmail}</a>

@@ -121,7 +121,7 @@ section[id], div[id], footer[id] {
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.9;
-  font-size: clamp(2.65rem, 12.5vw, 10.625rem);
+  font-size: clamp(2.2rem, 10.5vw, 10.625rem);
   text-wrap: balance;
   overflow-wrap: break-word;
 }
@@ -133,9 +133,12 @@ section[id], div[id], footer[id] {
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 0.92;
-  font-size: clamp(2.5rem, 6.5vw, 6.5rem);
+  font-size: clamp(2rem, 8.5vw, 6.5rem);
   overflow-wrap: anywhere;
   text-wrap: balance;
+}
+@media (min-width: 640px) {
+  .display-lg { font-size: clamp(2.5rem, 6.5vw, 6.5rem); }
 }
 .display-md {
   font-family: var(--font-display);
@@ -470,9 +473,11 @@ input, textarea, select { color-scheme: inherit; }
    frame, and letting the compositor discover them mid-scroll is what produces
    the first-frame stutter. */
 .work-flow__track {
-  display: flex;
-  flex-direction: column;
-  gap: 56px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  column-gap: 12px;
+  row-gap: 24px;
 }
 
 .work-flow__item {
@@ -482,15 +487,35 @@ input, textarea, select { color-scheme: inherit; }
 }
 
 @media (min-width: 769px) {
-  .work-flow__track { gap: 104px; }
+  .work-flow__track {
+    display: flex;
+    flex-direction: column;
+    gap: 104px;
+  }
 }
 
 @media (min-width: 1024px) {
-  .work-flow__track { gap: 140px; }
+  .work-flow__track {
+    width: 100%;
+    min-width: 0;
+    gap: 140px;
+  }
+
+  .work-flow__item {
+    width: 100%;
+  }
+
+  .work-flow__item > a > div:first-child {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .work-flow__item { will-change: auto; }
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
   .work-flow__track { gap: 48px; }
 }
 
@@ -772,7 +797,7 @@ input, textarea, select { color-scheme: inherit; }
      `pan-x pan-y`: one finger scrolls the page, two fingers reach the map. */
 }
 
-.mk-map__canvas .leaflet-tile-pane { filter: var(--map-tile-filter); }
+.mk-map__canvas .leaflet-tile-pane { filter: none; }
 
 /* Crossfade between the light and dark basemaps on theme switch. */
 .mk-map__canvas .leaflet-layer { transition: opacity 0.42s var(--ease); }
@@ -1076,6 +1101,116 @@ input, textarea, select { color-scheme: inherit; }
   .services-card:focus-within .services-card__arrow { transform: none; }
 }
 
+/* ---------- Services → dedicated pages cinematic transition ---------- */
+/* The whole passage animates transform and opacity only; these rules just
+   describe the stage it happens on. Every colour is either a theme token or a
+   low-opacity brand glow scaled by --fx-glow, so the light theme gets the same
+   choreography at a softer intensity without a second set of keyframes. */
+.services-transition__grid {
+  opacity: 0.85;
+  will-change: transform;
+}
+
+.services-transition__glow {
+  width: min(68vw, 720px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+.services-transition__glow--purple {
+  top: -12%;
+  left: -14%;
+  background: radial-gradient(circle, rgba(137, 31, 251, calc(0.34 * var(--fx-glow))), transparent 68%);
+}
+
+.services-transition__glow--cyan {
+  right: -16%;
+  bottom: -14%;
+  background: radial-gradient(circle, rgba(27, 226, 235, calc(0.26 * var(--fx-glow))), transparent 68%);
+}
+
+/* The headline turns on its own axis, so it needs a 3D context of its own —
+   the section clips its contents, and a clipping ancestor flattens the stage. */
+.services-transition__head {
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* `display-xl` line-height crops descenders inside a masked line, so the mask
+   is opened up and the lost space taken back off the block. */
+.services-transition__line {
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.services-transition__rule {
+  background: linear-gradient(90deg, transparent, #891ffb, #507af4, #1be2eb, transparent);
+}
+
+/* A soft gradient bloom under the primary CTA — the one place in the section
+   where the brand trio is more than a hairline. */
+.services-transition__halo {
+  position: absolute;
+  inset: -14px -18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #891ffb, #507af4, #1be2eb);
+  filter: blur(20px);
+  opacity: calc(0.42 * var(--fx-glow));
+  transition: opacity 0.45s var(--ease);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .services-transition__cta:hover .services-transition__halo {
+    opacity: calc(0.7 * var(--fx-glow));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-transition__grid,
+  .services-transition__head { will-change: auto; }
+  .services-transition__glow { will-change: auto; opacity: 1; }
+  .services-transition__halo { transition: none; }
+}
+
+/* ---------- Service card showcase rail (Branding / UI-UX gateway cards) ---------- */
+/* Stepped sub-service strip beside the gateway title: one continuous column
+   of screens in a tight clipped frame, advanced one screen per shared tick
+   by Framer Motion (transform only, no keyframes). No second plane, no
+   blur, no edge fade masks, no glow — edges cut hard by overflow, and the
+   doubled strip keeps the frame full at every offset.
+   Screen frames are flat bordered cards only — no drop shadow. */
+.svc-screen {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='light'] .svc-screen {
+  background: linear-gradient(160deg, #ffffff, #fbfbf9);
+  border-color: rgba(18, 18, 22, 0.1);
+}
+
+/* The one brand highlight at frame level: the sub-service's accent as a
+   hairline along the top edge. */
+.svc-screen::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--svc-accent, #507af4), transparent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* Slim legibility fade behind the screen caption only — theme-adaptive,
+   confined to the bottom caption zone instead of washing the image. */
+.svc-screen__caption {
+  background: linear-gradient(180deg, transparent, var(--surface) 72%);
+}
+
 /* ---------- Brand logo, swapped by the explicit theme choice ---------- */
 /* `data-theme` is stamped on <html> by the blocking script in app.blade.php,
    so the right lockup paints first time — no post-hydration swap. Tailwind's
@@ -1103,8 +1238,12 @@ input, textarea, select { color-scheme: inherit; }
    these are full-viewport surfaces, and letting the compositor discover them
    mid-scroll is what produces the first-frame stutter. */
 .cine-scene__layer {
-  will-change: transform, opacity;
+  will-change: auto;
   backface-visibility: hidden;
+}
+
+.cine-scene[data-active="true"] .cine-scene__layer {
+  will-change: transform, opacity;
 }
 
 /* Reduced motion drops the scenes entirely — the wrapper still renders, so the
