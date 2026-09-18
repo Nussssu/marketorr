@@ -81,67 +81,55 @@ function NavLabel({ label }) {
 }
 
 /**
- * One sub-service row inside a flyout submenu. Navigates only on a real
- * tap/click — the tap-intent guard swallows scrolls and drags.
+ * Reveal beat for the full-screen menu. The surface wipes down from under the
+ * navbar, then the rail, sections and rows arrive just behind it. Closing
+ * skips the stagger so the overlay never lingers once the pointer leaves.
  */
-function DropdownSubLink({ category, item, onNavigate }) {
+function megaVariants(reduce) {
+    return {
+        scrim: {
+            hidden: { opacity: 0, transition: { duration: 0.2, ease: [...EASE] } },
+            show: { opacity: 1, transition: { duration: 0.34, ease: [...EASE] } },
+        },
+        panel: {
+            hidden: {
+                opacity: 0,
+                clipPath: reduce ? 'inset(0% 0% 0% 0%)' : 'inset(0% 0% 100% 0%)',
+                transition: { duration: 0.24, ease: [...EASE] },
+            },
+            show: {
+                opacity: 1,
+                clipPath: 'inset(0% 0% 0% 0%)',
+                transition: {
+                    duration: reduce ? 0.2 : 0.52,
+                    ease: [...EASE],
+                    staggerChildren: reduce ? 0 : 0.045,
+                    delayChildren: reduce ? 0 : 0.12,
+                },
+            },
+        },
+        item: {
+            hidden: { opacity: 0, y: reduce ? 0 : 14, transition: { duration: 0.12 } },
+            show: { opacity: 1, y: 0, transition: { duration: 0.46, ease: [...EASE] } },
+        },
+        row: {
+            hidden: { opacity: 0, y: reduce ? 0 : 10, transition: { duration: 0.1 } },
+            show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [...EASE] } },
+        },
+    };
+}
+
+/**
+ * One sub-service row inside a discipline section. Ruled top and bottom so the
+ * list reads as a set; the accent bar and arrow only appear under the pointer.
+ * Navigates on a real tap/click only - the tap-intent guard swallows drags.
+ */
+function MegaSubLink({ category, item, variants, onNavigate }) {
     const tapIntent = useTapIntent();
     const href = `/services/${category.slug}/${item.slug}`;
 
     return (
-        <Link
-            href={href}
-            prefetch
-            data-cursor="explore"
-            {...tapIntent}
-            onClick={(event) => {
-                tapIntent.onClick(event);
-                navigateWithCurtain(event, href, onNavigate);
-            }}
-            className="flex items-center gap-2.5 px-4 py-2 transition-colors duration-150 hover:bg-[var(--chip)]"
-        >
-            <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ background: item.accent ?? category.accent }}
-                aria-hidden
-            />
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--ink)]">
-                {item.name}
-            </span>
-        </Link>
-    );
-}
-
-/**
- * Flyout submenu beside its category row. Pure CSS hover/focus reveal —
- * no JS state, so it appears instantly with a short fade/slide. The
- * padding bridge keeps it open while the pointer travels across the gap.
- */
-function ServiceFlyout({ category, onNavigate }) {
-    return (
-        <div className="invisible absolute left-full top-0 z-10 translate-x-1 pl-2 opacity-0 transition-all duration-150 ease-out group-hover/item:visible group-hover/item:translate-x-0 group-hover/item:opacity-100 group-focus-within/item:visible group-focus-within/item:translate-x-0 group-focus-within/item:opacity-100">
-            <ul className="w-60 rounded-xl border border-[var(--line)] bg-[var(--header-bg)] py-1.5 shadow-[0_32px_64px_-24px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                {(category.items ?? []).map((item) => (
-                    <li key={item.slug}>
-                        <DropdownSubLink category={category} item={item} onNavigate={onNavigate} />
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-}
-
-/**
- * One category row in the Services dropdown. The row itself links to the
- * dedicated category page; hovering (or keyboard-focusing) it reveals the
- * flyout submenu beside it.
- */
-function ServiceMenuItem({ category, onNavigate }) {
-    const tapIntent = useTapIntent();
-    const href = `/services/${category.slug}`;
-
-    return (
-        <div className="group/item relative">
+        <motion.li variants={variants} className="border-b border-[var(--line-soft)] last:border-b-0">
             <Link
                 href={href}
                 prefetch
@@ -151,50 +139,198 @@ function ServiceMenuItem({ category, onNavigate }) {
                     tapIntent.onClick(event);
                     navigateWithCurtain(event, href, onNavigate);
                 }}
-                className="flex items-center gap-2.5 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--chip)]"
-                aria-haspopup="true"
+                className="group/row flex items-center gap-4 py-3.5 focus-visible:outline-none"
             >
                 <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ background: category.accent }}
+                    className="h-[2px] w-0 shrink-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/row:w-5 group-focus-visible/row:w-5"
+                    style={{ background: item.accent ?? category.accent }}
                     aria-hidden
                 />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--ink)]">
-                    {category.name}
+                <span className="min-w-0 flex-1 truncate text-[15px] font-medium leading-snug text-[var(--mute)] transition-colors duration-300 group-hover/row:text-[var(--ink)] group-focus-visible/row:text-[var(--ink)]">
+                    {item.name}
                 </span>
-                <span aria-hidden className="shrink-0 text-[13px] leading-none text-[var(--ink-faint)]">›</span>
+                <span
+                    aria-hidden
+                    className="shrink-0 -translate-x-2 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/row:translate-x-0 group-hover/row:opacity-100 group-focus-visible/row:translate-x-0 group-focus-visible/row:opacity-100"
+                >
+                    &rarr;
+                </span>
             </Link>
-            <ServiceFlyout category={category} onNavigate={onNavigate} />
+        </motion.li>
+    );
+}
+
+/**
+ * One discipline section: an oversized heading that links to the category
+ * page, and every sub-service ruled out beneath it.
+ */
+function MegaSection({ category, index, variants, onNavigate }) {
+    const tapIntent = useTapIntent();
+    const href = `/services/${category.slug}`;
+    const items = category.items ?? [];
+
+    return (
+        <div className="min-w-0">
+            <motion.div variants={variants.item}>
+                <Link
+                    href={href}
+                    prefetch
+                    data-cursor="explore"
+                    {...tapIntent}
+                    onClick={(event) => {
+                        tapIntent.onClick(event);
+                        navigateWithCurtain(event, href, onNavigate);
+                    }}
+                    className="group/head block focus-visible:outline-none"
+                >
+                    <span className="flex items-center gap-3">
+                        <span className="font-display text-[11px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
+                            0{index + 1}
+                        </span>
+                        <span
+                            className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/head:w-14"
+                            style={{ background: category.accent }}
+                            aria-hidden
+                        />
+                    </span>
+                    <span className="mt-4 flex items-baseline gap-3">
+                        <span className="min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]">
+                            {category.name}
+                        </span>
+                        <span
+                            aria-hidden
+                            className="shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100"
+                        >
+                            &#8599;
+                        </span>
+                    </span>
+                    {category.short && (
+                        <span className="mt-2.5 block max-w-[30ch] text-[13px] leading-relaxed text-[var(--mute)]">
+                            {category.short}
+                        </span>
+                    )}
+                </Link>
+            </motion.div>
+            <ul className="mt-7 list-none border-t border-[var(--line-soft)]">
+                {items.map((item) => (
+                    <MegaSubLink
+                        key={item.slug}
+                        category={category}
+                        item={item}
+                        variants={variants.row}
+                        onNavigate={onNavigate}
+                    />
+                ))}
+            </ul>
         </div>
     );
 }
 
 /**
- * Minimal Services dropdown: a small box with the two disciplines, each
- * revealing its sub-services in a flyout beside it. No cards, no
- * descriptions, no footer — just navigation. Data-driven, so new
- * sub-services appear automatically. Hover intent (open fast,
- * grace-period close) lives on the parent.
+ * Full-screen Services menu. A full-bleed surface drops from under the navbar
+ * with the two disciplines side by side and every sub-service ruled out
+ * beneath them; the rest of the viewport dims behind it. Data-driven, so new
+ * sub-services appear automatically. Desktop only - small screens use the
+ * Services panel inside the mobile menu.
  */
-function ServicesDropdown({ categories, onNavigate }) {
+function ServicesMegaMenu({ categories, onNavigate, onPointerOpen, onPointerClose }) {
     const reduce = useReducedMotion();
+    const variants = megaVariants(reduce);
 
     return (
-        <div className="absolute left-1/2 top-full hidden -translate-x-1/2 pt-2 lg:block">
+        <div className="fixed inset-0 z-0 hidden lg:block">
+            {/* Everything below the panel dims and softens, so the menu owns the
+                screen. Reaching for the page behind it is a way out, so entering
+                or clicking the scrim closes the menu. */}
             <motion.div
-                initial={{ opacity: 0, y: reduce ? 0 : -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: reduce ? 0 : -4, transition: { duration: 0.14, ease: [...EASE] } }}
-                transition={{ duration: 0.18, ease: [...EASE] }}
-                className="w-60 overflow-visible rounded-xl border border-[var(--line)] bg-[var(--header-bg)] py-1.5 shadow-[0_32px_64px_-24px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+                variants={variants.scrim}
+                initial="hidden"
+                animate="show"
+                exit="hidden"
+                aria-hidden
+                onMouseEnter={onPointerClose}
+                onClick={onNavigate}
+                className="absolute inset-0 backdrop-blur-[3px]"
+                style={{ background: 'color-mix(in srgb, var(--bg) 62%, transparent)' }}
+            />
+            <motion.div
+                variants={variants.panel}
+                initial="hidden"
+                animate="show"
+                exit="hidden"
+                onMouseEnter={onPointerOpen}
+                onMouseLeave={onPointerClose}
+                className="absolute inset-x-0 top-0 overflow-hidden border-b border-[var(--line)] bg-[var(--bg)]"
+                role="group"
+                aria-label="Services menu"
             >
-                {categories.map((category) => (
-                    <ServiceMenuItem
-                        key={category.slug}
-                        category={category}
-                        onNavigate={onNavigate}
-                    />
-                ))}
+                {/* Quiet vertical rhythm behind the content, plus one soft brand wash. */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        backgroundImage: 'linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)',
+                        backgroundSize: '120px 100%',
+                    }}
+                />
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background: 'radial-gradient(70% 120% at 12% 0%, var(--glow-purple), transparent 62%), radial-gradient(60% 110% at 88% 10%, var(--glow-cyan), transparent 60%)',
+                    }}
+                />
+                <div className="container-x relative pb-12 pt-[104px] xl:pb-16">
+                    <div className="grid grid-cols-12 gap-x-10 xl:gap-x-16">
+                        <motion.div variants={variants.item} className="col-span-4 flex min-w-0 flex-col justify-between">
+                            <div>
+                                <span className="block text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--ink-faint)]">
+                                    What we do
+                                </span>
+                                <p className="mt-6 max-w-[16ch] font-display text-[clamp(1.75rem,2.6vw,2.9rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--ink)]">
+                                    Design that <span className="text-gradient">compounds</span>.
+                                </p>
+                                <p className="mt-5 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--mute)]">
+                                    Two disciplines, one standard. Pick a practice, or go straight
+                                    to the specialism you need.
+                                </p>
+                            </div>
+                            <Link
+                                href="/services"
+                                prefetch
+                                data-cursor="explore"
+                                onClick={(event) => navigateWithCurtain(event, '/services', onNavigate)}
+                                className="group/all mt-10 inline-flex w-fit items-center gap-3 rounded-full border border-[var(--line)] px-5 py-3 transition-colors duration-300 hover:border-[var(--field-line)] focus-visible:outline-none"
+                            >
+                                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
+                                    View all services
+                                </span>
+                                <span aria-hidden className="text-[13px] leading-none text-[var(--ink-faint)] transition-transform duration-300 group-hover/all:translate-x-1">
+                                    &rarr;
+                                </span>
+                            </Link>
+                        </motion.div>
+                        {categories.map((category, index) => (
+                            <div
+                                key={category.slug}
+                                className="col-span-4 min-w-0 border-l border-[var(--line-soft)] pl-10 xl:pl-14"
+                            >
+                                <MegaSection
+                                    category={category}
+                                    index={index}
+                                    variants={variants}
+                                    onNavigate={onNavigate}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {/* The brand, reduced to a single hairline along the bottom edge. */}
+                <span
+                    aria-hidden
+                    className="absolute inset-x-0 bottom-0 h-px opacity-90"
+                    style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                />
             </motion.div>
         </div>
     );
@@ -215,72 +351,60 @@ function AccordionChevron({ expanded }) {
 }
 
 /**
- * One expandable category inside the mobile Services accordion. The name
- * itself links to the dedicated category page; the chevron expands the
- * sub-service list in place.
+ * One discipline block inside the mobile Services panel - the small-screen
+ * reading of the full-screen menu. The heading links to the category page and
+ * every sub-service is ruled out under it, so nothing hides behind a second
+ * tap and the list still has room to breathe.
  */
-function MobileServiceCategory({ category, expanded, onToggle, onNavigate }) {
-    const reduce = useReducedMotion();
+function MobileServiceGroup({ category, index, onNavigate }) {
     const items = category.items ?? [];
 
     return (
-        <div className="border-b border-[var(--line-soft)]">
-            <div className="flex items-center gap-2 pl-11 pr-2">
-                <Link
-                    href={`/services/${category.slug}`}
-                    onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}`, onNavigate)}
-                    className="flex min-w-0 flex-1 items-center gap-2.5 py-3 text-left"
-                >
-                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: category.accent }} aria-hidden />
-                    <span className="min-w-0">
-                        <span className="block truncate text-[15px] font-bold text-[var(--ink)]">{category.name}</span>
-                        <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
-                            {items.length} services
-                        </span>
+        <div className="pb-7 pl-11 pr-2 pt-5">
+            <Link
+                href={`/services/${category.slug}`}
+                onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}`, onNavigate)}
+                className="block"
+            >
+                <span className="flex items-center gap-3">
+                    <span className="font-display text-[10px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
+                        0{index + 1}
                     </span>
-                </Link>
-                <button
-                    type="button"
-                    onClick={onToggle}
-                    aria-expanded={expanded}
-                    aria-label={`${expanded ? 'Collapse' : 'Expand'} ${category.name} services`}
-                    className="btn-press shrink-0 p-1"
-                >
-                    <AccordionChevron expanded={expanded} />
-                </button>
-            </div>
-            <AnimatePresence initial={false}>
-                {expanded && (
-                    <motion.ul
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: reduce ? 0 : 0.26, ease: [...EASE] }}
-                        className="overflow-hidden"
-                    >
-                        {items.map((item) => (
-                            <li key={item.slug}>
-                                <Link
-                                    href={`/services/${category.slug}/${item.slug}`}
-                                    onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}/${item.slug}`, onNavigate)}
-                                    className="flex items-center gap-2.5 py-2.5 pl-[52px] pr-5"
-                                >
-                                    <span
-                                        className="h-1.5 w-1.5 shrink-0 rounded-full"
-                                        style={{ background: item.accent ?? category.accent }}
-                                        aria-hidden
-                                    />
-                                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[var(--ink)]">
-                                        {item.name}
-                                    </span>
-                                    <span aria-hidden className="shrink-0 text-[13px] text-[var(--ink-faint)]">→</span>
-                                </Link>
-                            </li>
-                        ))}
-                        <li aria-hidden className="pb-2" />
-                    </motion.ul>
+                    <span className="h-px w-7 shrink-0" style={{ background: category.accent }} aria-hidden />
+                </span>
+                <span className="mt-3 flex items-baseline gap-2.5">
+                    <span className="min-w-0 truncate font-display text-[1.5rem] font-bold leading-[1.1] tracking-[-0.01em] text-[var(--ink)]">
+                        {category.name}
+                    </span>
+                    <span aria-hidden className="shrink-0 text-[13px] leading-none text-[var(--ink-faint)]">&#8599;</span>
+                </span>
+                {category.short && (
+                    <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--mute)]">
+                        {category.short}
+                    </span>
                 )}
-            </AnimatePresence>
+            </Link>
+            <ul className="mt-5 list-none border-t border-[var(--line-soft)]">
+                {items.map((item) => (
+                    <li key={item.slug} className="border-b border-[var(--line-soft)] last:border-b-0">
+                        <Link
+                            href={`/services/${category.slug}/${item.slug}`}
+                            onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}/${item.slug}`, onNavigate)}
+                            className="flex items-center gap-3.5 py-3.5 active:opacity-70"
+                        >
+                            <span
+                                className="h-[2px] w-4 shrink-0 rounded-full"
+                                style={{ background: item.accent ?? category.accent }}
+                                aria-hidden
+                            />
+                            <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-[var(--ink)]">
+                                {item.name}
+                            </span>
+                            <span aria-hidden className="shrink-0 text-[13px] text-[var(--ink-faint)]">&rarr;</span>
+                        </Link>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
@@ -290,7 +414,6 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [mega, setMega] = useState(false);
     const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
-    const [mobileCat, setMobileCat] = useState(null);
     const closeTimer = useRef(null);
     const { url, props } = usePage();
     const serviceCategories = props.serviceCategories ?? [];
@@ -313,6 +436,21 @@ export default function Header() {
     }, []);
 
     useEffect(() => {
+        if (!mega) return undefined;
+
+        // Escape only. The menu stays open until the reader closes it or
+        // goes somewhere - scrolling the page behind it is not a decision to
+        // close, and treating it as one made the menu vanish under the reader.
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') setMega(false);
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [mega]);
+
+    useEffect(() => {
         if (!open) return undefined;
 
         const previousOverflow = document.body.style.overflow;
@@ -329,13 +467,11 @@ export default function Header() {
         setOpen(false);
         setMega(false);
         setMobileServicesOpen(false);
-        setMobileCat(null);
     }, [url]);
 
     useEffect(() => {
         if (!open) {
             setMobileServicesOpen(false);
-            setMobileCat(null);
         }
     }, [open]);
 
@@ -365,7 +501,7 @@ export default function Header() {
     return (
         <header className="fixed inset-x-0 top-0 z-[9999]">
             {/* full-width at the top of the page, compact floating pill once scrolled */}
-            <div className={`header-shell mobile-header-shell ${floating ? 'header-shell--float' : ''}`}>
+            <div className={`header-shell mobile-header-shell relative z-10 ${floating ? 'header-shell--float' : ''}`}>
                 <div
                     className={`flex h-16 items-center justify-between transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                         floating ? 'lg:h-[60px]' : 'lg:h-[72px]'
@@ -391,7 +527,6 @@ export default function Header() {
                                         onMouseLeave={scheduleMegaClose}
                                         onFocus={openMega}
                                         onBlur={handleMegaBlur}
-                                        onKeyDown={(e) => { if (e.key === 'Escape') setMega(false); }}
                                         className="relative"
                                     >
                                         <Link
@@ -413,15 +548,6 @@ export default function Header() {
                                                 </span>
                                             </span>
                                         </Link>
-                                        <AnimatePresence initial={false}>
-                                            {mega && (
-                                                <ServicesDropdown
-                                                    key="services-dropdown"
-                                                    categories={serviceCategories}
-                                                    onNavigate={() => setMega(false)}
-                                                />
-                                            )}
-                                        </AnimatePresence>
                                     </div>
                                 );
                             }
@@ -471,6 +597,17 @@ export default function Header() {
                     </div>
                 </div>
             </div>
+            <AnimatePresence initial={false}>
+                {mega && (
+                    <ServicesMegaMenu
+                        key="services-mega-menu"
+                        categories={serviceCategories}
+                        onNavigate={() => setMega(false)}
+                        onPointerOpen={openMega}
+                        onPointerClose={scheduleMegaClose}
+                    />
+                )}
+            </AnimatePresence>
             <AnimatePresence initial={false}>
                 {open && (
                     <motion.nav
@@ -532,12 +669,11 @@ export default function Header() {
                                                         transition={{ duration: 0.28, ease: [...EASE] }}
                                                         className="overflow-hidden"
                                                     >
-                                                        {serviceCategories.map((category) => (
-                                                            <MobileServiceCategory
+                                                        {serviceCategories.map((category, categoryIndex) => (
+                                                            <MobileServiceGroup
                                                                 key={category.slug}
                                                                 category={category}
-                                                                expanded={mobileCat === category.slug}
-                                                                onToggle={() => setMobileCat((current) => (current === category.slug ? null : category.slug))}
+                                                                index={categoryIndex}
                                                                 onNavigate={() => setOpen(false)}
                                                             />
                                                         ))}
