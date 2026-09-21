@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
@@ -90,11 +90,16 @@ function CategoryGateway({ category, index, variants }) {
     // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
     const exploreHref = `/services/${category.slug}`;
 
-    // The rail's clock owns the motion: it reports the top screen, and the
-    // ticker below the title follows — image and name always change
-    // together. The reel never pauses for hover; hover only drives the
-    // card's visual effects (border, arrow, CTA) via CSS.
-    const [shot, setShot] = useState(0);
+    // The rail's clock owns the motion. It writes its continuous position — a
+    // float in screens — into this value every frame, and the ticker below the
+    // title reads the same value, so the name rises in lockstep with the image
+    // and the two can never drift apart. A motion value rather than state on
+    // purpose: the reel updates it every frame, and re-rendering the card 60
+    // times a second to move two decorative columns would be absurd.
+    //
+    // The reel never pauses for hover, and nothing here reads the pointer;
+    // hover only drives the card's visual effects (border, arrow, CTA) via CSS.
+    const reel = useMotionValue(0);
 
     // The card body itself is NOT a navigation target: hovering it, moving the
     // pointer across it, entering/leaving it or touching the decorative showcase
@@ -129,7 +134,7 @@ function CategoryGateway({ category, index, variants }) {
                         <h2 className="font-display text-[clamp(2.1rem,8.6vw,3.9rem)] font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2">
                             {category.name}
                         </h2>
-                        <SubServiceTicker category={category} index={shot} />
+                        <SubServiceTicker category={category} position={reel} />
                         <div className="mt-5 flex items-end justify-between gap-6">
                             <p className="max-w-sm text-[14px] leading-relaxed text-[var(--mute)] sm:text-[15px]">{category.tagline}</p>
                             <Link
@@ -143,7 +148,7 @@ function CategoryGateway({ category, index, variants }) {
                         </div>
                     </div>
                 </div>
-                <ServiceShowcaseRail category={category} onActive={setShot} />
+                <ServiceShowcaseRail category={category} progress={reel} />
             </div>
         </motion.article>
     );
