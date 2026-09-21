@@ -58,9 +58,14 @@ function ShowcaseScreen({ item, Mockup }) {
  * @param {{
  *   category: { slug: string, name: string, items: Array<{ slug: string, name: string, accent: string }> },
  *   onActive?: (index: number) => void,
+ *   progress?: import('framer-motion').MotionValue<number> | null,
  * }} props
+ *   `progress` receives the reel's continuous position in screens — a float
+ *   wrapped into [0, count) — every frame. The sub-service ticker beneath the
+ *   title rides that same value, so the name rises in lockstep with the image
+ *   instead of stepping between them, and neither can drift from the other.
  */
-export default function ServiceShowcaseRail({ category, onActive = () => {} }) {
+export default function ServiceShowcaseRail({ category, onActive = () => {}, progress = null }) {
     const reduce = useReducedMotion();
     const frameRef = useRef(null);
     const [step, setStep] = useState(0);
@@ -127,8 +132,14 @@ export default function ServiceShowcaseRail({ category, onActive = () => {} }) {
             const dt = Math.min(64, elapsed) / 1000;
             last = now;
             if (hidden) return;
-            travelled.current += dt / SECONDS_PER_SCREEN;
+            // Wrap into a single cycle. The strip holds the screens twice, so
+            // the frame at `count` screens travelled is pixel-identical to the
+            // frame at 0 — wrapping there is invisible, and without it the
+            // offset grows without bound and the reel eventually scrolls past
+            // the end of the doubled strip, leaving the frame empty.
+            travelled.current = (travelled.current + dt / SECONDS_PER_SCREEN) % count;
             y.set(-(travelled.current * stepRef.current));
+            if (progress) progress.set(travelled.current);
             const active = Math.floor(travelled.current) % count;
             if (active !== lastActive.current) {
                 lastActive.current = active;
@@ -141,7 +152,7 @@ export default function ServiceShowcaseRail({ category, onActive = () => {} }) {
             cancelAnimationFrame(raf);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [reduce, count, visible, onActive, y]);
+    }, [reduce, count, visible, onActive, progress, y]);
 
     if (count === 0) {
         return null;
