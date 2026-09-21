@@ -1,11 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Badge, Button, EmptyState, PageHeader, Panel } from '../../../components/admin/ui';
+import { Badge, Button, ConfirmDialog, EmptyState, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
 
 export default function ProjectsIndex({ projects }) {
     // Local copy so the up/down buttons reorder instantly, then persist.
     const [rows, setRows] = useState(projects);
+    const [request, confirm, cancel, run] = useConfirm();
 
     // Reorder updates local state first for instant feedback; every server
     // response (reorder, feature toggle, delete) then resyncs it to the truth.
@@ -28,9 +29,12 @@ export default function ProjectsIndex({ projects }) {
         router.patch(`/admin/projects/${project.id}/featured`, {}, { preserveScroll: true });
     };
 
-    const destroy = (project) => {
-        if (!window.confirm(`Delete “${project.title}”? It can be restored from the database.`)) return;
-        router.delete(`/admin/projects/${project.id}`, { preserveScroll: true });
+    const askDelete = (project) => {
+        confirm({
+            title: `Delete “${project.title}”?`,
+            body: 'The project is soft-deleted and can be restored from the database.',
+            action: () => router.delete(`/admin/projects/${project.id}`, { preserveScroll: true }),
+        });
     };
 
     return (
@@ -123,7 +127,7 @@ export default function ProjectsIndex({ projects }) {
                                                 Edit
                                             </Link>
                                             <button
-                                                onClick={() => destroy(project)}
+                                                onClick={() => askDelete(project)}
                                                 className="ml-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff6b6b] hover:opacity-80"
                                             >
                                                 Delete
@@ -136,6 +140,14 @@ export default function ProjectsIndex({ projects }) {
                     </div>
                 )}
             </Panel>
+
+            <ConfirmDialog
+                open={!!request}
+                title={request?.title ?? ''}
+                body={request?.body}
+                onConfirm={run}
+                onCancel={cancel}
+            />
         </>
     );
 }

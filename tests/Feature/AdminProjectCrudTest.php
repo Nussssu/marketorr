@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
+use App\Models\Category;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ class AdminProjectCrudTest extends TestCase
             'slug' => 'new-case-study',
             'title' => 'New Case Study',
             'client' => 'Acme Co · Manufacturer',
-            'category' => 'B2B SEO · Content Strategy',
+            'category_id' => Category::factory()->create()->id,
             'year' => '2026',
             'description' => 'A short description of the engagement.',
             'metric' => '210%',

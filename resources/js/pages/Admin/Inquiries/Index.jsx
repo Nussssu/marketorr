@@ -19,14 +19,20 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
     return (
         <>
             <Head title="Inquiries — Marketorr Admin" />
-            <PageHeader title="Inquiries" subtitle={`${inquiries.total} submission${inquiries.total === 1 ? '' : 's'} from the contact form.`} />
+            <PageHeader title="Leads" subtitle={`${inquiries.total} submission${inquiries.total === 1 ? '' : 's'} from the contact form.`}>
+                {/* Plain anchor, not a Link: the export is a file download, not
+                    an Inertia visit. */}
+                <Button as="a" href={`/admin/inquiries/export?${new URLSearchParams(filters).toString()}`} variant="secondary">
+                    Export CSV
+                </Button>
+            </PageHeader>
 
             <Panel className="mb-6">
                 <form onSubmit={onSearch} className="grid gap-4 sm:grid-cols-[1fr_auto_auto_auto]">
                     <Input
                         value={form.search}
                         onChange={(e) => setForm({ ...form, search: e.target.value })}
-                        placeholder="Search name or email…"
+                        placeholder="Search name, email or company…"
                         aria-label="Search inquiries"
                     />
                     <Select value={form.status} onChange={(e) => apply({ ...form, status: e.target.value })} aria-label="Filter by status">
@@ -46,12 +52,13 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                     <EmptyState>No inquiries match these filters.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left text-[13px]">
+                        <table className="w-full min-w-[860px] text-left text-[13px]">
                             <thead>
                                 <tr className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
                                     <th className="pb-3 pr-4 font-bold">Name</th>
                                     <th className="pb-3 pr-4 font-bold">Type</th>
                                     <th className="pb-3 pr-4 font-bold">Budget</th>
+                                    <th className="pb-3 pr-4 font-bold">Source</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
                                     <th className="pb-3 pr-4 font-bold">Submitted</th>
                                     <th className="pb-3 font-bold" />
@@ -63,10 +70,12 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                         <td className="py-3 pr-4">
                                             <p className="font-semibold text-[var(--ink)]">{inquiry.name}</p>
                                             <p className="text-[12px] text-[var(--ink-faint)]">{inquiry.email}</p>
+                                            {inquiry.phone && <p className="text-[12px] text-[var(--ink-faint)]">{inquiry.phone}</p>}
                                             {inquiry.company && <p className="text-[12px] text-[var(--ink-faint)]">{inquiry.company}</p>}
                                         </td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.type}</td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.budget ?? '—'}</td>
+                                        <td className="py-3 pr-4 font-mono text-[12px] text-[var(--ink-faint)]">{inquiry.sourcePage ?? '—'}</td>
                                         <td className="py-3 pr-4"><Badge tone={inquiry.status} /></td>
                                         <td className="py-3 pr-4 whitespace-nowrap text-[var(--mute)]">{inquiry.createdAt}</td>
                                         <td className="py-3 text-right">

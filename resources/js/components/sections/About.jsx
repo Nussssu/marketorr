@@ -57,9 +57,14 @@ function Counter({ to, suffix = '', decimals = 0 }) {
 /** Accent bar under each stat block, repeating if more metrics are configured. */
 const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
 
-export default function About({ heroHeading = false }) {
+/**
+ * @param {{ heroHeading?: boolean, content?: { text?: string, metrics?: Array<object> } }} props
+ *   Content from the page's About section, falling back to Settings.
+ */
+export default function About({ heroHeading = false, content }) {
     const { settings } = usePage().props;
-    const { text, metrics } = settings.about;
+    const text = content?.text || settings.about.text;
+    const metrics = content?.metrics?.length ? content.metrics : settings.about.metrics;
 
     return (
         <section

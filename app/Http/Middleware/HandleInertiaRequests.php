@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\GlobalBlock;
+use App\Models\Menu;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -42,6 +44,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'settings' => fn () => Setting::current()->toPublicArray(),
+            // Header and footer navigation, keyed by location.
+            'menus' => fn () => Menu::publicTree(),
+            // The site-wide banner, or null when it is switched off.
+            'announcement' => fn () => GlobalBlock::announcement(),
             // The header and footer Services menus list the two disciplines and
             // their sub-services, each linking straight to its page. Fields
             // stay minimal — only what the menus render.

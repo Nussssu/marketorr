@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Enums\ContentStatus;
+use App\Models\Category;
 use App\Models\Project;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Transcribes the original `resources/js/lib/projects.js` catalogue into the
@@ -21,6 +23,8 @@ class ProjectSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->projects() as $order => $project) {
+            $project['category_id'] = $this->resolveCategory($project['category']);
+            unset($project['category']);
             $project['image_path'] = $this->storeCover($project['image_path']);
             $project['sort_order'] = $order;
             $project['status'] = ContentStatus::Published;
@@ -52,6 +56,44 @@ class ProjectSeeder extends Seeder
         }
 
         return $target;
+    }
+
+    /**
+     * Resolve a `Parent · Child` label to its category, creating whatever the
+     * curated tree in CategorySeeder does not already cover.
+     *
+     * Self-healing rather than a lookup: a project added here with a label the
+     * tree has not caught up with would otherwise seed with no category at all.
+     */
+    private function resolveCategory(string $label): int
+    {
+        $segments = array_values(array_filter(array_map(trim(...), explode('·', $label))));
+        $parent = $this->upsertCategory($segments[0], null);
+
+        if (count($segments) === 1) {
+            return $parent->id;
+        }
+
+        return $this->upsertCategory($segments[1], $parent)->id;
+    }
+
+    /**
+     * Find a category by the slug the seeded tree uses, or create it.
+     */
+    private function upsertCategory(string $name, ?Category $parent): Category
+    {
+        $slug = Str::slug($parent ? "{$parent->name} {$name}" : $name);
+
+        return Category::query()->firstOrCreate(
+            ['slug' => $slug],
+            [
+                'parent_id' => $parent?->id,
+                'name' => $name,
+                'accent' => $parent?->accent ?? '#891FFB',
+                'status' => ContentStatus::Published,
+                'sort_order' => (int) Category::query()->max('sort_order') + 1,
+            ],
+        );
     }
 
     /**

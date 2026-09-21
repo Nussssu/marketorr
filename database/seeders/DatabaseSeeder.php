@@ -22,6 +22,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             SettingSeeder::class,
+            MailSettingSeeder::class,
+            EmailTemplateSeeder::class,
+            MenuSeeder::class,
+            GlobalBlockSeeder::class,
+            PageSeeder::class,
+            CategorySeeder::class,
             ServiceSeeder::class,
             ProjectSeeder::class,
         ]);

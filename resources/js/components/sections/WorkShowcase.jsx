@@ -8,8 +8,7 @@ import {
     useSpring,
     useTransform,
 } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useBoxPointer } from '../../lib/pointer';
+import { useEffect, useRef, useState } from 'react';
 import { Tag } from '../ui/primitives';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -102,15 +101,14 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
         return () => observer.disconnect();
     }, [index, onFocus]);
 
-    const applyTilt = useCallback((fx, fy) => {
-        pointerX.set((fx - 0.5) * 13);
-        pointerY.set((fy - 0.5) * -9);
-    }, [pointerX, pointerY]);
+    const onPointerMove = (event) => {
+        if (!rich || reduce || event.pointerType !== 'mouse') return;
+        const box = event.currentTarget.getBoundingClientRect();
+        pointerX.set(((event.clientX - box.left) / box.width - 0.5) * 13);
+        pointerY.set(((event.clientY - box.top) / box.height - 0.5) * -9);
+    };
 
-    const pointer = useBoxPointer(applyTilt, { enabled: rich && !reduce });
-
-    const onPointerLeave = (event) => {
-        pointer.onPointerLeave(event);
+    const onPointerLeave = () => {
         pointerX.set(0);
         pointerY.set(0);
     };
@@ -130,8 +128,7 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
             ref={ref}
             style={motionStyle}
             className="work-flow__item"
-            onPointerEnter={pointer.onPointerEnter}
-            onPointerMove={pointer.onPointerMove}
+            onPointerMove={onPointerMove}
             onPointerLeave={onPointerLeave}
         >
             <Link

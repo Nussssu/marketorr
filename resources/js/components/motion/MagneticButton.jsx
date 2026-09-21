@@ -1,48 +1,30 @@
-import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
-import { useCallback } from 'react';
-import { matchesCached, useBoxPointer } from '../../lib/pointer';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useRef, useState } from 'react';
 
-const COARSE_QUERY = '(max-width: 1023px), (pointer: coarse)';
-
-/**
- * Button that leans toward the cursor.
- *
- * The offset lives in motion values rather than state: the pull is a transform
- * on one element, so pushing it through React would re-render the button and
- * everything inside it on every mouse move for a result the compositor can
- * handle on its own.
- */
 export default function MagneticButton({ children, strength = 10, className = '', onClick }) {
+    const ref = useRef(null);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
     const reduce = useReducedMotion();
-    const limit = Math.min(strength, 6);
-
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const pullX = useSpring(x, { stiffness: 260, damping: 26, mass: 0.4 });
-    const pullY = useSpring(y, { stiffness: 260, damping: 26, mass: 0.4 });
-
-    const apply = useCallback((fx, fy) => {
-        if (matchesCached(COARSE_QUERY)) return;
-
-        x.set(Math.max(-limit, Math.min(limit, (fx - 0.5) * 2 * limit)));
-        y.set(Math.max(-limit, Math.min(limit, (fy - 0.5) * 2 * limit)));
-    }, [limit, x, y]);
-
-    const pointer = useBoxPointer(apply, { enabled: !reduce });
-
-    const release = (event) => {
-        pointer.onPointerLeave(event);
-        x.set(0);
-        y.set(0);
-    };
 
     return (
         <motion.div
+            ref={ref}
             className={`inline-block ${className}`}
-            style={{ x: pullX, y: pullY }}
-            onPointerEnter={pointer.onPointerEnter}
-            onPointerMove={pointer.onPointerMove}
-            onPointerLeave={release}
+            animate={{ x: pos.x, y: pos.y }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            onMouseMove={(e) => {
+                if (reduce) return;
+                if (window.matchMedia('(max-width: 1023px), (pointer: coarse)').matches) return;
+                const r = ref.current?.getBoundingClientRect();
+                if (!r) return;
+                const x = e.clientX - (r.left + r.width / 2);
+                const y = e.clientY - (r.top + r.height / 2);
+                setPos({
+                    x: Math.max(-Math.min(strength, 6), Math.min(Math.min(strength, 6), x * 0.12)),
+                    y: Math.max(-Math.min(strength, 6), Math.min(Math.min(strength, 6), y * 0.12)),
+                });
+            }}
+            onMouseLeave={() => setPos({ x: 0, y: 0 })}
             onClick={onClick}
             whileTap={{ scale: 0.97 }}
         >

@@ -1,10 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Badge, Button, EmptyState, PageHeader, Panel } from '../../../components/admin/ui';
+import { Badge, Button, ConfirmDialog, EmptyState, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
 
 export default function ServicesIndex({ services }) {
     const [rows, setRows] = useState(services);
+    const [request, confirm, cancel, run] = useConfirm();
 
     // Reorder updates local state first for instant feedback; every server
     // response (reorder, feature toggle, delete) then resyncs it to the truth.
@@ -23,9 +24,12 @@ export default function ServicesIndex({ services }) {
         router.patch('/admin/services/reorder', { ids: next.map((r) => r.id) }, { preserveScroll: true });
     };
 
-    const destroy = (service) => {
-        if (!window.confirm(`Delete “${service.name}”? It can be restored from the database.`)) return;
-        router.delete(`/admin/services/${service.id}`, { preserveScroll: true });
+    const askDelete = (service) => {
+        confirm({
+            title: `Delete “${service.name}”?`,
+            body: 'The service is soft-deleted and can be restored from the database.',
+            action: () => router.delete(`/admin/services/${service.id}`, { preserveScroll: true }),
+        });
     };
 
     return (
@@ -104,7 +108,7 @@ export default function ServicesIndex({ services }) {
                                                 Edit
                                             </Link>
                                             <button
-                                                onClick={() => destroy(service)}
+                                                onClick={() => askDelete(service)}
                                                 className="ml-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff6b6b] hover:opacity-80"
                                             >
                                                 Delete
@@ -117,6 +121,14 @@ export default function ServicesIndex({ services }) {
                     </div>
                 )}
             </Panel>
+
+            <ConfirmDialog
+                open={!!request}
+                title={request?.title ?? ''}
+                body={request?.body}
+                onConfirm={run}
+                onCancel={cancel}
+            />
         </>
     );
 }

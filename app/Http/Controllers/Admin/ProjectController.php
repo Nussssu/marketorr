@@ -6,6 +6,7 @@ use App\Enums\ContentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreProjectRequest;
 use App\Http\Requests\Admin\UpdateProjectRequest;
+use App\Models\Category;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ProjectController extends Controller
     {
         return Inertia::render('Admin/Projects/Index', [
             'projects' => Project::query()
+                ->with('category')
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->get()
@@ -32,6 +34,7 @@ class ProjectController extends Controller
         return Inertia::render('Admin/Projects/Form', [
             'project' => null,
             'statuses' => ContentStatus::values(),
+            'categories' => $this->categoryOptions(),
         ]);
     }
 
@@ -53,6 +56,7 @@ class ProjectController extends Controller
         return Inertia::render('Admin/Projects/Form', [
             'project' => $this->toAdminArray($project),
             'statuses' => ContentStatus::values(),
+            'categories' => $this->categoryOptions(),
         ]);
     }
 
@@ -127,6 +131,30 @@ class ProjectController extends Controller
     }
 
     /**
+     * Published categories as a flat, indented select list — parents first,
+     * each followed by its children.
+     *
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function categoryOptions(): array
+    {
+        $categories = Category::query()->published()->get();
+
+        return $categories
+            ->whereNull('parent_id')
+            ->flatMap(fn (Category $parent) => [
+                ['id' => $parent->id, 'label' => $parent->name],
+                ...$categories
+                    ->where('parent_id', $parent->id)
+                    ->map(fn (Category $child) => ['id' => $child->id, 'label' => '— '.$child->name])
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function toAdminArray(Project $project): array
@@ -136,7 +164,8 @@ class ProjectController extends Controller
             'slug' => $project->slug,
             'title' => $project->title,
             'client' => $project->client,
-            'category' => $project->category,
+            'category_id' => $project->category_id,
+            'category' => $project->category?->name,
             'year' => $project->year,
             'description' => $project->description,
             'metric' => $project->metric,

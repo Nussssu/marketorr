@@ -5,12 +5,15 @@ import BrandLogo from './BrandLogo';
 const EASE = [0.22, 1, 0.36, 1];
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 
-const SITEMAP = [
-    { label: 'About', href: '/about' },
-    { label: 'Services', href: '/services' },
-    { label: 'Our Work', href: '/work' },
-    { label: 'Contact', href: '/contact' },
-    { label: 'All work', href: '/work' },
+/**
+ * Used only when the Footer — Sitemap menu has been emptied in the admin
+ * panel, so the footer is never left without links.
+ */
+const FALLBACK_SITEMAP = [
+    { label: 'About', url: '/about' },
+    { label: 'Services', url: '/services' },
+    { label: 'Our Work', url: '/work' },
+    { label: 'Contact', url: '/contact' },
 ];
 
 function ColumnHeading({ children }) {
@@ -23,9 +26,8 @@ function ColumnHeading({ children }) {
 }
 
 export default function Footer() {
-    const year = new Date().getFullYear();
     const reduce = useReducedMotion();
-    const { settings, serviceCategories } = usePage().props;
+    const { settings, menus } = usePage().props;
     // Only the socials that have been filled in, in display order.
     const socials = [
         { label: 'LinkedIn', href: settings.socials.linkedin },
@@ -33,7 +35,13 @@ export default function Footer() {
         { label: 'Behance', href: settings.socials.behance },
         { label: 'Dribbble', href: settings.socials.dribbble },
         { label: 'Instagram', href: settings.socials.instagram },
+        { label: 'X', href: settings.socials.x },
+        { label: 'YouTube', href: settings.socials.youtube },
     ].filter((s) => s.href);
+
+    const sitemap = menus?.footer_sitemap?.length ? menus.footer_sitemap : FALLBACK_SITEMAP;
+    const serviceLinks = menus?.footer_services ?? [];
+    const legalLinks = menus?.footer_legal ?? [];
 
     const container = {
         hidden: {},
@@ -80,9 +88,11 @@ export default function Footer() {
                     <div className="flex items-center">
                         <BrandLogo height={28} />
                     </div>
-                    <p className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]">
-                        Independent creative &amp; digital agency. We turn ideas into experiences, and experiences into measurable results.
-                    </p>
+                    {settings.footerIntro && (
+                        <p className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]">
+                            {settings.footerIntro}
+                        </p>
+                    )}
                     <div className="mt-7">
                         <ColumnHeading>Follow</ColumnHeading>
                         <div data-cursor="explore" className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold uppercase tracking-[0.16em]">
@@ -111,9 +121,9 @@ export default function Footer() {
                 <motion.nav variants={item} aria-label="Footer" className="lg:col-span-3 lg:col-start-6">
                     <ColumnHeading>Sitemap</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
-                        {SITEMAP.map((s) => (
-                            <li key={s.label}>
-                                <Link href={s.href} className="footer-link block">{s.label}</Link>
+                        {sitemap.map((item) => (
+                            <li key={`${item.label}-${item.url}`}>
+                                <Link href={item.url} className="footer-link block">{item.label}</Link>
                             </li>
                         ))}
                     </ul>
@@ -123,9 +133,9 @@ export default function Footer() {
                 <motion.div variants={item} className="lg:col-span-3 lg:col-start-10">
                     <ColumnHeading>Services</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
-                        {(serviceCategories ?? []).map((category) => (
-                            <li key={category.slug}>
-                                <Link href={`/services/${category.slug}`} className="footer-link block">{category.name}</Link>
+                        {serviceLinks.map((item) => (
+                            <li key={`${item.label}-${item.url}`}>
+                                <Link href={item.url} className="footer-link block">{item.label}</Link>
                             </li>
                         ))}
                     </ul>
@@ -141,9 +151,12 @@ export default function Footer() {
                     className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:flex-row md:items-center md:justify-between md:gap-8"
                 >
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                        <span>© {year} {settings.siteName}. All rights reserved.</span>
-                        <Link href="/privacy" className="footer-link footer-link--inline">Privacy</Link>
-                        <Link href="/terms" className="footer-link footer-link--inline">Terms</Link>
+                        <span>{settings.copyright}</span>
+                        {legalLinks.map((item) => (
+                            <Link key={`${item.label}-${item.url}`} href={item.url} className="footer-link footer-link--inline">
+                                {item.label}
+                            </Link>
+                        ))}
                     </div>
                     <p className="footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em]">
                         <span style={{ color: '#891FFB' }}>IDEA</span>

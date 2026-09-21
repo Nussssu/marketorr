@@ -1,13 +1,11 @@
-import { Head } from '@inertiajs/react';
-import Contact from '../components/sections/Contact';
+import SectionRenderer from '../components/sections/SectionRenderer';
+import PageMeta from '../components/PageMeta';
 
-export default function ContactPage() {
+export default function ContactPage({ page }) {
     return (
         <>
-            <Head title="Contact — Marketorr" />
-            <div className="pt-[72px]">
-                <Contact heroHeading />
-            </div>
+            <PageMeta page={page} fallbackTitle="Contact — Marketorr" />
+            <SectionRenderer sections={page?.sections ?? []} />
         </>
     );
 }

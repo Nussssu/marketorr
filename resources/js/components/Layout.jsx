@@ -1,11 +1,11 @@
 import { Link } from '@inertiajs/react';
+import AnnouncementBanner from './layout/AnnouncementBanner';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
 import SmoothScroll from './motion/SmoothScroll';
 import CustomCursor from './motion/CustomCursor';
 import ScrollProgress from './motion/ScrollProgress';
 import PageTransition, { transitionTo } from './motion/PageTransition';
-import ShowcaseTransition from './motion/ShowcaseTransition';
 
 function navigateToContact(event) {
     if (event.defaultPrevented) return;
@@ -57,13 +57,13 @@ export default function Layout({ children }) {
             <ScrollProgress />
             <CustomCursor />
             <SmoothScroll />
+            <AnnouncementBanner />
             <Header />
             <MobileProjectButton />
             <PageTransition>
                 <main id="main">{children}</main>
                 <Footer />
             </PageTransition>
-            <ShowcaseTransition />
         </>
     );
 }

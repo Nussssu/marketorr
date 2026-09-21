@@ -22,7 +22,9 @@ export default function Dashboard({ stats, recentInquiries }) {
                 <Stat label="Published projects" value={stats.publishedProjects} accent="#891FFB" />
                 <Stat label="Draft projects" value={stats.draftProjects} accent="#507AF4" />
                 <Stat label="Services" value={stats.services} accent="#1BE2EB" />
-                <Stat label="New inquiries" value={stats.newInquiries} accent="#891FFB" />
+                <Stat label="Pages" value={stats.pages} accent="#507AF4" />
+                <Stat label="Categories" value={stats.categories} accent="#1BE2EB" />
+                <Stat label="New leads" value={stats.newInquiries} accent="#891FFB" />
             </div>
 
             <div className="mt-8">
