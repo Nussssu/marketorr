@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import CategoryHero from '../../components/sections/CategoryHero';
-import FloatingServiceCards from '../../components/sections/FloatingServiceCards';
+import SubServiceShowcase from '../../components/sections/SubServiceShowcase';
 
 export default function ServiceCategory({ category }) {
     return (
@@ -9,7 +9,7 @@ export default function ServiceCategory({ category }) {
             <article className="bg-[var(--bg)]">
                 <CategoryHero category={category} />
 
-                <FloatingServiceCards category={category} />
+                <SubServiceShowcase category={category} />
 
                 <section className="container-x pb-24 pt-8 min-[769px]:py-24 lg:py-32">
                     <div className="rounded-3xl border border-[var(--line)] bg-[var(--surface)] px-7 py-16 text-center sm:px-12 lg:py-24">
