@@ -59,65 +59,25 @@ function SocialIcon({ platform }) {
     );
 }
 
-/**
- * Trail palette, purple first.
- *
- * The purple is Marketorr's #891FFB eased toward white just far enough to stay
- * soft under additive blending - it still reads as the brand purple, which the
- * fully pastel version did not. Blue and cyan are pulled further still, so
- * they support the purple rather than competing with it.
- */
-const TRAIL_RGB = ['168,85,251', '150,180,250', '150,225,240'];
-
-/**
- * Which colour each successive mote takes, as indices into `TRAIL_RGB`.
- *
- * Purple is five of every eight, so it stays the colour of the trail whatever
- * speed the cursor moves at, while blue and cyan keep appearing often enough
- * to read as accents rather than as stray dots. A fixed pattern rather than a
- * weighted random: randomness clumps, and a clump of cyan would break it.
- */
-const TRAIL_SEQUENCE = [0, 0, 1, 0, 0, 2, 0, 1];
-
-/** How far each mote's core is lifted toward white, for an airy centre. */
-const CORE_WHITEN = 0.42;
-const TRAIL_MAX = 120;
-/**
- * Share of the gap between cursor and trail head closed per 60fps frame.
- *
- * High enough that the trail never feels like lag, low enough that it reads as
- * something following the cursor rather than glued to it.
- */
-const FOLLOW = 0.3;
+const TRAIL_RGB = ['137,31,251', '80,122,244', '27,226,235'];
+const TRAIL_MAX = 56;
 const DESKTOP_CURSOR_QUERY = '(min-width: 1024px) and (hover: hover) and (pointer: fine)';
 const TOUCH_POINTER_QUERY = '(any-pointer: coarse)';
 
 /**
  * Pre-rendered radial glow sprite — stamping these with drawImage is far
  * cheaper than shadowBlur per particle, so the trail stays at 60fps.
- *
- * The falloff carries a wide, faint outer shoulder as well as a bright core,
- * so each mote reads as a soft glow instead of a disc with a hard edge. That
- * shoulder is why the trail stays visible against both themes without any
- * shadow, filter or second pass.
- *
- * The core is mixed toward white before the hue takes over, which is what
- * gives the trail its soft white-blue centre rather than a dot of flat colour.
  */
 function makeGlowSprite(rgb) {
     const size = 64;
-    const [r, g, b] = rgb.split(',').map(Number);
-    const toward = (channel) => Math.round(channel + (255 - channel) * CORE_WHITEN);
-    const core = `${toward(r)},${toward(g)},${toward(b)}`;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, `rgba(${core},0.98)`);
-    gradient.addColorStop(0.18, `rgba(${rgb},0.86)`);
-    gradient.addColorStop(0.42, `rgba(${rgb},0.54)`);
-    gradient.addColorStop(0.68, `rgba(${rgb},0.26)`);
+    gradient.addColorStop(0, `rgba(${rgb},1)`);
+    gradient.addColorStop(0.18, `rgba(${rgb},0.82)`);
+    gradient.addColorStop(0.42, `rgba(${rgb},0.44)`);
     gradient.addColorStop(1, `rgba(${rgb},0)`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
@@ -127,11 +87,10 @@ function makeGlowSprite(rgb) {
 
 /**
  * Brand particle trail: a fixed, pointer-transparent canvas that releases
- * soft fading glow motes as the pointer travels - mostly brand purple, with
- * blue and cyan threaded through it. Additive blending in dark theme lets overlapping motes bloom
- * toward white; light theme composites normally and carries a little less
- * alpha, so the trail stays airy on pale surfaces rather than turning milky. One rAF loop, capped DPR and particle pool, paused when the tab
- * hides — scrolling, layout and existing animations are never touched.
+ * small fading glow motes as the pointer travels. Additive blending gives
+ * the neon feel in dark theme; light theme uses smaller, softer motes.
+ * One rAF loop, capped DPR and particle pool, paused when the tab hides —
+ * scrolling, layout and existing animations are never touched.
  */
 function CursorTrail() {
     const canvasRef = useRef(null);
@@ -152,18 +111,8 @@ function CursorTrail() {
         let raf = 0;
         let running = false;
         let startTrail = () => {};
-        // `pending` is where the cursor actually is; `head` is where the trail
-        // is being drawn from, easing toward it a fraction of the gap each
-        // frame. That easing is what makes the ribbon follow the cursor rather
-        // than being stamped underneath it, and it absorbs the jitter of a
-        // high-polling mouse. `last` is the head a frame ago, so motes can be
-        // laid along the path travelled instead of at a single point.
         let lastX = -1;
         let lastY = -1;
-        let headX = -1;
-        let headY = -1;
-        let pendingX = -1;
-        let pendingY = -1;
         let colorIndex = 0;
 
         const resize = () => {
@@ -178,15 +127,7 @@ function CursorTrail() {
         const resetPointer = () => {
             lastX = -1;
             lastY = -1;
-            headX = -1;
-            headY = -1;
-            pendingX = -1;
-            pendingY = -1;
         };
-        // The pointer reports far more often than the screen repaints, so the
-        // handler only records where the cursor is. Spawning happens once per
-        // frame, from the travel since the frame before — the trail looks the
-        // same and the input thread stays free.
         const onMove = (event) => {
             if (event.pointerType !== 'mouse') {
                 resetPointer();
@@ -195,61 +136,32 @@ function CursorTrail() {
                 return;
             }
 
-            pendingX = event.clientX;
-            pendingY = event.clientY;
-            startTrail();
-        };
-
-        const spawn = (dt) => {
-            if (pendingX < 0) return;
-
-            // First sight of the cursor: start the head under it, so the trail
-            // never sweeps in from wherever it was left.
-            if (headX < 0) {
-                headX = pendingX;
-                headY = pendingY;
-                lastX = headX;
-                lastY = headY;
-
-                return;
-            }
-
-            // Frame-rate independent easing: the same fraction of the gap is
-            // closed per unit of time whatever the refresh rate.
-            const ease = 1 - Math.pow(1 - FOLLOW, dt);
-            headX += (pendingX - headX) * ease;
-            headY += (pendingY - headY) * ease;
-
-            const x = headX;
-            const y = headY;
-
+            const x = event.clientX;
+            const y = event.clientY;
             if (lastX >= 0) {
                 const dx = x - lastX;
                 const dy = y - lastY;
-                const travel = Math.hypot(dx, dy);
-                if (travel > 1.1) {
-                    // Spread spawns along the frame's travel segment so fast
-                    // flicks leave a continuous ribbon instead of dotted gaps.
-                    const count = travel > 30 ? 5 : travel > 12 ? 4 : 3;
+                if (Math.hypot(dx, dy) > 2.5) {
+                    const travel = Math.hypot(dx, dy);
+                    const count = travel > 40 ? 3 : travel > 18 ? 2 : 1;
                     for (let i = 0; i < count && particles.length < TRAIL_MAX; i++) {
-                        colorIndex = (colorIndex + 1) % TRAIL_SEQUENCE.length;
-                        const t = (i + 1) / count;
+                        colorIndex = (colorIndex + 1) % sprites.length;
                         particles.push({
-                            x: lastX + dx * t + (Math.random() - 0.5) * 3,
-                            y: lastY + dy * t + (Math.random() - 0.5) * 3,
+                            x: x - dx * 0.12 * Math.random(),
+                            y: y - dy * 0.12 * Math.random(),
                             vx: -dx * 0.03 + (Math.random() - 0.5) * 0.4,
                             vy: -dy * 0.03 + (Math.random() - 0.5) * 0.4,
                             life: 1,
-                            decay: 0.011 + Math.random() * 0.01,
-                            size: 16 + Math.random() * 17,
-                            sprite: sprites[TRAIL_SEQUENCE[colorIndex]],
+                            decay: 0.014 + Math.random() * 0.014,
+                            size: 13 + Math.random() * 15,
+                            sprite: sprites[colorIndex],
                         });
                     }
                 }
             }
-
             lastX = x;
             lastY = y;
+            if (particles.length > 0) startTrail();
         };
         const onPointerDown = (event) => {
             if (event.pointerType === 'mouse') return;
@@ -264,12 +176,10 @@ function CursorTrail() {
         document.documentElement.addEventListener('mouseleave', resetPointer);
 
         let lastTime = performance.now();
-        let idleFrames = 0;
         const frame = (time) => {
             if (!running) return;
             const dt = Math.min(50, time - lastTime) / 16.667;
             lastTime = time;
-            spawn(dt);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             if (particles.length > 0) {
@@ -286,33 +196,20 @@ function CursorTrail() {
                     p.y += p.vy * dt;
                     p.vx *= 0.985;
                     p.vy *= 0.985;
-                    const size = p.size * (0.42 + 0.58 * p.life);
-                    // Smoothstep rather than the raw life: the curve flattens
-                    // at both ends, so a mote eases in and, more importantly,
-                    // thins away to nothing instead of winking out.
-                    const fade = p.life * p.life * (3 - 2 * p.life);
-                    ctx.globalAlpha = fade * (dark ? 0.78 : 0.58);
+                    const size = p.size * (dark ? 1 : 0.94) * (0.42 + 0.58 * p.life);
+                    ctx.globalAlpha = p.life * (dark ? 0.74 : 0.46);
                     ctx.drawImage(p.sprite, p.x - size / 2, p.y - size / 2, size, size);
                 }
                 ctx.globalAlpha = 1;
                 ctx.globalCompositeOperation = 'source-over';
             }
-            const settling = headX >= 0 && Math.hypot(pendingX - headX, pendingY - headY) > 0.5;
-
-            if (particles.length > 0 || settling) {
-                idleFrames = 0;
-                raf = requestAnimationFrame(frame);
-            } else if (idleFrames < 12) {
-                // Keep the loop alive briefly so the next move spawns on the
-                // very next frame instead of waiting for a restart.
-                idleFrames += 1;
+            if (particles.length > 0) {
                 raf = requestAnimationFrame(frame);
             } else {
                 running = false;
             }
         };
         startTrail = () => {
-            idleFrames = 0;
             if (running || document.hidden) return;
 
             running = true;
@@ -438,45 +335,19 @@ export default function CustomCursor() {
 
     // Auto-detect interactive hover -> cursor state
     useEffect(() => {
-        if (!enabled) return undefined;
-
-        // One walk up the tree, and a write only when the answer changed:
-        // `mouseover` fires for every element the pointer crosses, and most
-        // of those crossings resolve to the state the cursor is already in.
-        const resolve = (target) => {
-            const social = target.closest?.('[data-social-platform]');
-            if (social) return `social:${social.dataset.socialPlatform}`;
-
-            const marked = target.closest?.('[data-cursor]');
-            if (marked) {
-                const kind = marked.dataset.cursor;
-                if (kind === 'view' || kind === 'cta' || kind === 'explore') return kind;
-            }
-
-            if (target.closest?.('a,button,[role=button]')) return 'hover';
-
-            return 'default';
+        if (!enabled) return;
+        const over = (e) => {
+            const t = e.target;
+            const social = t.closest?.('[data-social-platform]');
+            if (social) return setState(`social:${social.dataset.socialPlatform}`);
+            if (t.closest?.('[data-cursor="view"]')) return setState('view');
+            if (t.closest?.('[data-cursor="cta"]')) return setState('cta');
+            if (t.closest?.('[data-cursor="explore"]')) return setState('explore');
+            if (t.closest?.('a,button,[role=button]')) return setState('hover');
+            setState('default');
         };
-
-        let frame = 0;
-        let pending = null;
-        const over = (event) => {
-            pending = event.target;
-            if (frame) return;
-
-            frame = requestAnimationFrame(() => {
-                frame = 0;
-                const next = resolve(pending);
-                setState((current) => (current === next ? current : next));
-            });
-        };
-
         window.addEventListener('mouseover', over, { passive: true });
-
-        return () => {
-            cancelAnimationFrame(frame);
-            window.removeEventListener('mouseover', over);
-        };
+        return () => window.removeEventListener('mouseover', over);
     }, [enabled]);
 
     if (!enabled) return null;

@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Mail\NewProjectInquiry;
+use App\Enums\EmailTemplateKey;
+use App\Mail\TemplatedMail;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,9 +90,10 @@ class AdminSettingsTest extends TestCase
             'message' => 'Hello there.',
         ]);
 
-        Mail::assertQueued(
-            NewProjectInquiry::class,
-            fn (NewProjectInquiry $mail) => $mail->hasTo('studio@marketorr.com'),
+        Mail::assertSent(
+            TemplatedMail::class,
+            fn (TemplatedMail $mail) => $mail->hasTo('studio@marketorr.com')
+                && $mail->template->key === EmailTemplateKey::AdminLeadNotification,
         );
     }
 

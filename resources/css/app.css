@@ -61,8 +61,6 @@
   --noise-op: 0.07;
   --header-bg: rgba(8, 8, 10, 0.8);
   --invert-btn-hover: #ffffff;
-  --scroll-ink: #d8dcf3;
-  --scroll-sep: rgba(190, 194, 218, 0.32);
 }
 
 /* ---------- Light theme: same brand, softer stage ---------- */
@@ -91,8 +89,6 @@
   --noise-op: 0.05;
   --header-bg: rgba(247, 247, 245, 0.82);
   --invert-btn-hover: #121216;
-  --scroll-ink: #343a66;
-  --scroll-sep: rgba(139, 143, 170, 0.5);
 }
 
 html {
@@ -157,25 +153,6 @@ section[id], div[id], footer[id] {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-
-/* Flowing brand gradient for the scrolling typography highlights: the same
-   purple → blue → cyan, panning slowly so colours transition smoothly while
-   words move. Text only — no shadow, glow or decoration. */
-.progression-highlight {
-  background: linear-gradient(90deg, #891ffb, #507af4, #1be2eb, #507af4, #891ffb);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: progression-sheen 9s ease-in-out infinite alternate;
-}
-@keyframes progression-sheen {
-  from { background-position: 0% 50%; }
-  to { background-position: 100% 50%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .progression-highlight { animation: none; }
 }
 .bg-brand { background: var(--brand-gradient); }
 
@@ -1478,3 +1455,36 @@ input, textarea, select { color-scheme: inherit; }
   /* Tap highlight: we draw our own press states. */
   a, button { -webkit-tap-highlight-color: transparent; }
 }
+
+/* Editor-authored rich text. Only the tags the admin panel documents as
+   allowed are styled — anything else falls back to the surrounding copy. */
+.prose-cms :is(h2, h3) {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  color: var(--ink-strong);
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
+.prose-cms h2 { font-size: 1.35em; }
+.prose-cms h3 { font-size: 1.15em; }
+.prose-cms p { margin-bottom: 1.15em; }
+.prose-cms :is(ul, ol) {
+  margin: 0 0 1.15em 1.25em;
+  list-style-position: outside;
+}
+.prose-cms ul { list-style-type: disc; }
+.prose-cms ol { list-style-type: decimal; }
+.prose-cms li { margin-bottom: 0.4em; }
+.prose-cms a {
+  color: var(--ink-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-cms strong { color: var(--ink-strong); font-weight: 700; }
+.prose-cms blockquote {
+  border-left: 2px solid var(--line);
+  padding-left: 1em;
+  margin: 0 0 1.15em;
+  font-style: italic;
+}
+.prose-cms :last-child { margin-bottom: 0; }

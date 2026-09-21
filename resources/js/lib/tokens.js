@@ -10,3 +10,6 @@ export const STAGES = [
     { key: 'experience', label: 'EXPERIENCE', color: COLORS.iris, index: '02' },
     { key: 'result', label: 'RESULT', color: COLORS.frost, index: '03' },
 ];
+
+/** The brand colours in order, for cycling accents across a variable list. */
+export const BRAND_SEQUENCE = [COLORS.grape, COLORS.iris, COLORS.frost];

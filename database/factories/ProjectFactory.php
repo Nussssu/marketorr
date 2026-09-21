@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ContentStatus;
+use App\Models\Category;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -23,7 +24,7 @@ class ProjectFactory extends Factory
             'slug' => Str::slug($title).'-'.fake()->unique()->randomNumber(4),
             'title' => $title,
             'client' => fake()->company().' · '.fake()->word(),
-            'category' => 'Brand Design · '.fake()->word(),
+            'category_id' => Category::factory(),
             'year' => (string) fake()->numberBetween(2020, 2026),
             'description' => fake()->paragraph(),
             'metric' => fake()->optional()->numerify('##00%'),

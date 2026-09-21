@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 /** Page heading with an optional action slot on the right. */
 export function PageHeader({ title, subtitle, children }) {
@@ -215,4 +216,89 @@ export function slugify(value) {
         .replace(/[̀-ͯ]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Confirmation dialog for destructive actions.
+ *
+ * Rendered as a real modal rather than `window.confirm` so the consequence
+ * can be spelled out — "this also unfiles 12 projects" is worth reading
+ * before clicking, and a native dialog cannot say it.
+ *
+ * @param {{ open: boolean, title: string, body?: string, confirmLabel?: string, onConfirm: () => void, onCancel: () => void }} props
+ */
+export function ConfirmDialog({ open, title, body, confirmLabel = 'Delete', onConfirm, onCancel }) {
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const onKey = (event) => {
+            if (event.key === 'Escape') onCancel();
+        };
+
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, onCancel]);
+
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <button
+                type="button"
+                aria-label="Cancel"
+                onClick={onCancel}
+                className="absolute inset-0 bg-black/60"
+            />
+            <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-label={title}
+                className="relative w-full max-w-md rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-2xl"
+            >
+                <h2 className="font-display text-[16px] font-extrabold text-[var(--ink-strong)]">{title}</h2>
+                {body && <p className="mt-2 text-[13px] leading-relaxed text-[var(--mute)]">{body}</p>}
+                <div className="mt-6 flex justify-end gap-3">
+                    <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                    <Button type="button" variant="danger" onClick={onConfirm}>{confirmLabel}</Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Wires a `ConfirmDialog` to an arbitrary action.
+ *
+ * @returns {[object|null, (request: {title: string, body?: string, confirmLabel?: string, action: () => void}) => void, () => void]}
+ */
+export function useConfirm() {
+    const [request, setRequest] = useState(null);
+
+    const confirm = (next) => setRequest(next);
+    const cancel = () => setRequest(null);
+
+    const run = () => {
+        request?.action?.();
+        setRequest(null);
+    };
+
+    return [request, confirm, cancel, run];
+}
+
+/** Labelled on/off switch. */
+export function Toggle({ checked, onChange, label, hint }) {
+    return (
+        <label className="flex cursor-pointer items-start gap-3">
+            <input
+                type="checkbox"
+                checked={!!checked}
+                onChange={(e) => onChange(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#507AF4]"
+            />
+            <span>
+                <span className="block text-[13px] font-semibold text-[var(--ink)]">{label}</span>
+                {hint && <span className="mt-0.5 block text-[11px] text-[var(--ink-faint)]">{hint}</span>}
+            </span>
+        </label>
+    );
 }

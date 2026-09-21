@@ -4,17 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 
 const PANELS = ['#891FFB', '#507AF4', '#1BE2EB'];
 
-/**
- * Whether a visit is a reader actually going to another page.
- *
- * Only safe to ask at `start`. Inertia hands `start` and `finish` the same
- * visit object and clears `prefetch` on it once the response is cached, so a
- * prefetch that looked like a prefetch on the way out looks like a real
- * navigation on the way back. Prefetches and polls are also always `async`,
- * which a click never is.
- */
 function isPageNavigation(visit) {
-    return visit.method === 'get' && !visit.prefetch && !visit.async;
+    return visit.method === 'get' && !visit.prefetch;
 }
 
 function scrollAfterNav() {
@@ -37,22 +28,6 @@ function scrollAfterNav() {
 const COVER_BEFORE_NAV_MS = 500;
 
 /**
- * Set when another layer is already carrying the reader across, so the cover
- * would hide the thing they are watching. Consumed by the next visit only.
- */
-let coverSuppressed = false;
-
-/**
- * Let the next visit run without the colour cover.
- *
- * Used by the showcase transition, which flies the clicked visual into the
- * next page's hero and needs that visual to stay visible throughout.
- */
-export function skipCoverForNextVisit() {
-    coverSuppressed = true;
-}
-
-/**
  * Ask the PageTransition layer to play the full-screen 3-color cover first
  * and only then complete the route change. Resolves new-tab/modifier clicks
  * by doing nothing — callers must let those fall through to the browser.
@@ -70,12 +45,6 @@ export default function PageTransition({ children }) {
     const [cycle, setCycle] = useState(0);
     const coverRef = useRef(false);
     const timers = useRef([]);
-    /**
-     * Visits this layer decided to animate, judged at `start` while the visit
-     * still says what it is. `finish` acts only on a visit in here, so a
-     * prefetch can never reach the cover or the scroll reset.
-     */
-    const navigating = useRef(new WeakSet());
 
     const showCover = () => {
         if (coverRef.current) return;
@@ -102,26 +71,15 @@ export default function PageTransition({ children }) {
         // lands exactly where its href points. This layer only plays the
         // cinematic cover around real page visits.
         const offStart = router.on('start', (event) => {
-            const { visit } = event.detail;
+            if (!isPageNavigation(event.detail.visit)) return;
 
-            if (!isPageNavigation(visit)) return;
-
-            if (coverSuppressed) {
-                coverSuppressed = false;
-
-                return;
-            }
-
-            navigating.current.add(visit);
             clear();
             showCover();
         });
         const offFinish = router.on('finish', (event) => {
             const { visit } = event.detail;
 
-            if (!navigating.current.has(visit)) return;
-
-            navigating.current.delete(visit);
+            if (!isPageNavigation(visit)) return;
 
             if (!visit.completed || visit.cancelled || visit.interrupted) {
                 clear();

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\ContentStatus;
 use App\Enums\InquiryStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\ContactSubmission;
+use App\Models\Page;
 use App\Models\Project;
 use App\Models\Service;
 use Inertia\Inertia;
@@ -20,6 +22,8 @@ class DashboardController extends Controller
                 'publishedProjects' => Project::query()->where('status', ContentStatus::Published)->count(),
                 'draftProjects' => Project::query()->where('status', ContentStatus::Draft)->count(),
                 'services' => Service::query()->count(),
+                'pages' => Page::query()->count(),
+                'categories' => Category::query()->count(),
                 'newInquiries' => ContactSubmission::query()->where('status', InquiryStatus::New)->count(),
             ],
             'recentInquiries' => ContactSubmission::query()

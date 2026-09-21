@@ -1,12 +1,10 @@
 import { Link } from '@inertiajs/react';
 import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useBoxPointer } from '../../lib/pointer';
+import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
 import { useTapIntent } from '../../lib/tapIntent';
 import { SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
-import ProgressionBands from './ProgressionBands';
 
 /** Every project card shares this ratio, so the strip is one set of equal objects. */
 const CARD_RATIO = 16 / 10;
@@ -102,8 +100,8 @@ function ProjectCover({ p, glow, rich, progress }) {
                     aria-hidden
                 >
                     <p
-                        className="font-display font-extrabold leading-none text-white"
-                        style={{ fontSize: 'clamp(1.35rem, 9cqw, 3.5rem)' }}
+                        className="font-display font-extrabold leading-none text-white/95"
+                        style={{ fontSize: 'clamp(1.35rem, 9cqw, 3.5rem)', textShadow: `0 2px 24px ${p.accent}55` }}
                     >
                         {p.metric}
                     </p>
@@ -155,15 +153,14 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
     const tiltY = useSpring(pointerX, { stiffness: 150, damping: 20, mass: 0.4 });
     const tiltX = useSpring(pointerY, { stiffness: 150, damping: 20, mass: 0.4 });
 
-    const applyTilt = useCallback((fx, fy) => {
-        pointerX.set((fx - 0.5) * 11);
-        pointerY.set((fy - 0.5) * -8);
-    }, [pointerX, pointerY]);
+    const onPointerMove = (event) => {
+        if (!tiltable || event.pointerType !== 'mouse') return;
+        const box = event.currentTarget.getBoundingClientRect();
+        pointerX.set(((event.clientX - box.left) / box.width - 0.5) * 11);
+        pointerY.set(((event.clientY - box.top) / box.height - 0.5) * -8);
+    };
 
-    const pointer = useBoxPointer(applyTilt, { enabled: tiltable });
-
-    const onPointerLeave = (event) => {
-        pointer.onPointerLeave(event);
+    const onPointerLeave = () => {
         pointerX.set(0);
         pointerY.set(0);
     };
@@ -182,8 +179,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
             ref={ref}
             whileTap={{ scale: 0.985 }}
             transition={{ duration: 0.18 }}
-            onPointerEnter={pointer.onPointerEnter}
-            onPointerMove={pointer.onPointerMove}
+            onPointerMove={onPointerMove}
             onPointerLeave={onPointerLeave}
             className={`w-full ${className}`.trimEnd()}
             style={{
@@ -512,8 +508,6 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
 
     const gesture = useRef({ id: null, startX: 0, lastX: 0, lastAt: 0, velocity: 0, moved: false });
     const dragging = useRef(false);
-    /** Strip box, cached while the cursor is over it. */
-    const hoverBox = useRef(null);
 
     useEffect(() => {
         if (!controlledPosition) return undefined;
@@ -558,17 +552,7 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
         // real mouse — a finger resting on the strip must not move it.
         if (!dragging.current) {
             if (event.pointerType !== 'mouse' || !rich) return;
-
-            // Measured once per hover rather than per move: reading a box
-            // inside a pointer handler forces a layout flush, and the strip
-            // does not change size while the cursor crosses it.
-            if (!hoverBox.current) {
-                const rect = event.currentTarget.getBoundingClientRect();
-                if (!rect.width) return;
-                hoverBox.current = rect;
-            }
-
-            const box = hoverBox.current;
+            const box = event.currentTarget.getBoundingClientRect();
             const fromCentre = (event.clientX - box.left) / box.width - 0.5;
             const DEAD_ZONE = 0.2;
             const past = Math.max(0, Math.abs(fromCentre) - DEAD_ZONE) / (0.5 - DEAD_ZONE);
@@ -619,7 +603,6 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
     };
 
     const onPointerLeave = () => {
-        hoverBox.current = null;
         steered.set(0);
     };
 
@@ -670,7 +653,6 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            onPointerEnter={() => { hoverBox.current = null; }}
             onPointerLeave={onPointerLeave}
             onClickCapture={onClickCapture}
             onKeyDown={onKeyDown}
@@ -751,8 +733,29 @@ export default function OurWork({ glow, projects = [] }) {
                 </div>
             )}
 
-            <div className="mt-6 md:mt-8">
-                <ProgressionBands />
+            <div className="container-x relative">
+                <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:gap-14">
+                    <div className="flex flex-col justify-center">
+                        <p className="font-display text-[12px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]">Progression</p>
+                        <p className="mt-3 font-display text-3xl font-bold uppercase leading-tight text-[var(--ink-strong)] md:text-4xl">
+                            Idea <span className="text-[#891FFB]">→</span> Experience <span className="text-[#507AF4]">→</span> Result <span className="text-[#1BE2EB]">→</span>
+                        </p>
+                        <div className="mt-6 h-[3px] w-full" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }} aria-hidden />
+                        <p className="mt-6 max-w-md text-[14px] text-[var(--mute)]">Every engagement moves through the same operating system — sharp idea, crafted experience, measured result.</p>
+                    </div>
+                    <div className="flex flex-col justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-8 md:p-12">
+                        <p className="font-display text-4xl font-extrabold uppercase leading-none text-[var(--ink-strong)]">Your brand<br /><span className="text-gradient">could be next.</span></p>
+                        <Link href="/#contact" data-cursor="cta" className="btn-press mt-8 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            Start a project ↗
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="mt-12 flex justify-center">
+                    <Link href="/work" className="btn-press link-underline text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                        View all work →
+                    </Link>
+                </div>
             </div>
         </section>
     );

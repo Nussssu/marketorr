@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -43,7 +44,16 @@ class AdminAccessTest extends TestCase
     public function test_there_is_no_public_registration_route(): void
     {
         $this->get('/register')->assertStatus(404);
-        $this->post('/register')->assertStatus(404);
+
+        // Asserted against the route table rather than a status code: the CMS
+        // fallback route answers every unmatched GET, so an unrouted POST now
+        // reports a method mismatch instead of a 404.
+        $this->assertTrue(
+            collect(Route::getRoutes()->getRoutes())
+                ->reject(fn ($route) => $route->isFallback)
+                ->every(fn ($route) => ! str_contains($route->uri(), 'register')),
+            'A registration route is registered.',
+        );
     }
 
     public function test_an_admin_can_log_in(): void

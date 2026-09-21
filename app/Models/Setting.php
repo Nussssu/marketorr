@@ -21,6 +21,8 @@ class Setting extends Model
         return [
             'hero_heading_lines' => 'array',
             'about_metrics' => 'array',
+            'schema_markup' => 'array',
+            'sitemap_enabled' => 'boolean',
         ];
     }
 
@@ -60,13 +62,23 @@ class Setting extends Model
     {
         return [
             'site_name' => 'Marketorr',
+            'logo_path' => null,
+            'logo_dark_path' => null,
+            'favicon_path' => null,
             'contact_email' => 'hello@marketorr.com',
             'contact_phone' => null,
             'location_text' => 'Remote-first · Worldwide',
+            'address' => 'Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230',
+            'directions_url' => 'https://www.google.com/maps/search/?api=1&query=Natore+Tower+Uttara+Dhaka+1230+Bangladesh',
+            'copyright_text' => '© {year} {site}. All rights reserved.',
+            'footer_intro' => 'Independent creative & digital agency. We turn ideas into experiences, and experiences into measurable results.',
             'social_linkedin' => 'https://www.linkedin.com/company/marketorr',
+            'social_facebook' => null,
             'social_behance' => 'https://www.behance.net/marketorr',
             'social_dribbble' => 'https://dribbble.com/marketorr',
             'social_instagram' => 'https://www.instagram.com/marketorr',
+            'social_x' => null,
+            'social_youtube' => null,
             'hero_eyebrow' => 'Independent creative & digital agency',
             'hero_heading_lines' => ['We turn', 'attention', 'into results.'],
             'hero_subtext' => 'Marketorr builds brands, digital products, and experiences designed to create measurable growth.',
@@ -80,7 +92,41 @@ class Setting extends Model
             'meta_default_title' => 'Marketorr — We Turn Attention Into Results',
             'meta_default_description' => 'Marketorr is an independent creative & digital agency building brands, digital products and experiences designed for measurable growth.',
             'meta_default_og_image' => null,
+            'head_scripts' => null,
+            'body_scripts' => null,
+            'robots_txt' => null,
+            'schema_markup' => null,
+            'sitemap_enabled' => true,
         ];
+    }
+
+    /**
+     * Public URL for an uploaded asset path, or null when it is unset. Paths
+     * that are already absolute or root-relative are passed through as-is.
+     */
+    public function assetUrl(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        if (str_starts_with($path, '/') || str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        return Project::publicDiskUrl($path);
+    }
+
+    /**
+     * The footer copyright line, with `{year}` and `{site}` filled in.
+     */
+    public function copyrightLine(): string
+    {
+        return str_replace(
+            ['{year}', '{site}'],
+            [(string) now()->year, $this->site_name],
+            $this->copyright_text ?: '© {year} {site}. All rights reserved.',
+        );
     }
 
     /**
@@ -107,11 +153,21 @@ class Setting extends Model
             'contactEmail' => $this->contact_email,
             'contactPhone' => $this->contact_phone,
             'locationText' => $this->location_text,
+            'address' => $this->address,
+            'directionsUrl' => $this->directions_url,
+            'logo' => $this->assetUrl($this->logo_path),
+            'logoDark' => $this->assetUrl($this->logo_dark_path),
+            'favicon' => $this->assetUrl($this->favicon_path),
+            'copyright' => $this->copyrightLine(),
+            'footerIntro' => $this->footer_intro,
             'socials' => [
                 'linkedin' => $this->social_linkedin,
+                'facebook' => $this->social_facebook,
                 'behance' => $this->social_behance,
                 'dribbble' => $this->social_dribbble,
                 'instagram' => $this->social_instagram,
+                'x' => $this->social_x,
+                'youtube' => $this->social_youtube,
             ],
             'hero' => [
                 'eyebrow' => $this->hero_eyebrow,
@@ -126,6 +182,7 @@ class Setting extends Model
                 'title' => $this->meta_default_title,
                 'description' => $this->meta_default_description,
                 'ogImage' => $this->ogImageUrl(),
+                'schema' => $this->schema_markup,
             ],
         ];
     }

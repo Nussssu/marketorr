@@ -9,24 +9,24 @@ import InkField from '../decor/InkField';
 import OfficeMap from '../ui/OfficeMap';
 
 const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
-const OFFICE_ADDRESS = 'Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230';
-const DIRECTIONS_URL = 'https://www.google.com/maps/search/?api=1&query=Natore+Tower+Uttara+Dhaka+1230+Bangladesh';
 
 export default function Contact({ heroHeading = false }) {
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
     const { settings } = usePage().props;
-    const { contactEmail, contactPhone, locationText, socials } = settings;
+    const { contactEmail, contactPhone, locationText, socials, address, directionsUrl } = settings;
     // Only the socials that have been filled in, in display order.
     const socialLinks = [
         { label: 'LinkedIn', href: socials.linkedin },
         { label: 'Behance', href: socials.behance },
         { label: 'Dribbble', href: socials.dribbble },
         { label: 'Instagram', href: socials.instagram },
+        { label: 'Facebook', href: socials.facebook },
     ].filter((s) => s.href);
     const { data, setData, post, processing, wasSuccessful, errors, reset } = useForm({
         name: '',
         email: '',
+        phone: '',
         company: '',
         type: 'Branding',
         budget: '',
@@ -112,11 +112,11 @@ export default function Contact({ heroHeading = false }) {
                         </div>
                         <OfficeMap
                             className="mt-8"
-                            address={OFFICE_ADDRESS}
-                            directionsHref={DIRECTIONS_URL}
+                            address={address}
+                            directionsHref={directionsUrl}
                         />
                         <a
-                            href={DIRECTIONS_URL}
+                            href={directionsUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="link-underline btn-press mt-3 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
@@ -144,6 +144,7 @@ export default function Contact({ heroHeading = false }) {
                             {[
                                 ['Name*', 'name', 'text', 'Jane Cooper'],
                                 ['Email*', 'email', 'email', 'jane@company.com'],
+                                ['Phone', 'phone', 'tel', '+880 1700 000000'],
                                 ['Company', 'company', 'text', 'Company Inc.'],
                                 ['Budget', 'budget', 'text', '$10k – $25k'],
                             ].map(([label, key, type, ph]) => (

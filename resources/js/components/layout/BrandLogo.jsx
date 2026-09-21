@@ -1,4 +1,6 @@
-/** Supplied lockups: dark ink for the light theme, white for the dark theme. */
+import { usePage } from '@inertiajs/react';
+
+/** Shipped lockups, used until an editor uploads their own in Settings. */
 const ON_LIGHT = '/images/logo/marketorr-logo-on-light.png';
 const ON_DARK = '/images/logo/marketorr-logo-on-dark.png';
 
@@ -20,36 +22,51 @@ const NATURAL_HEIGHT = 118;
  * screen-reader-only label, so the name is announced once whichever variant is
  * on screen.
  *
+ * An uploaded logo replaces the shipped artwork. When only one variant has
+ * been uploaded it is used for both themes, so a half-finished upload never
+ * leaves one theme with no logo at all.
+ *
  * @param {{ className?: string, height?: number }} props
  *   `height` is the rendered height in px; the width follows the artwork's
  *   own aspect ratio.
  */
 export default function BrandLogo({ className = '', height = 26 }) {
+    const { settings } = usePage().props;
     const style = { height, width: 'auto' };
+
+    const uploadedLight = settings?.logo ?? settings?.logoDark ?? null;
+    const uploadedDark = settings?.logoDark ?? settings?.logo ?? null;
+    const onLight = uploadedLight ?? ON_LIGHT;
+    const onDark = uploadedDark ?? ON_DARK;
+    const siteName = settings?.siteName ?? 'Marketorr';
+
+    // An uploaded file has its own proportions, so the intrinsic size of the
+    // shipped artwork must not be imposed on it.
+    const intrinsic = uploadedLight
+        ? {}
+        : { width: NATURAL_WIDTH, height: NATURAL_HEIGHT };
 
     return (
         <span className={`brand-logo inline-flex items-center ${className}`.trimEnd()}>
             <img
-                src={ON_DARK}
+                src={onDark}
                 alt=""
-                width={NATURAL_WIDTH}
-                height={NATURAL_HEIGHT}
+                {...intrinsic}
                 style={style}
                 className="brand-logo__img"
                 data-variant="dark"
                 aria-hidden
             />
             <img
-                src={ON_LIGHT}
+                src={onLight}
                 alt=""
-                width={NATURAL_WIDTH}
-                height={NATURAL_HEIGHT}
+                {...intrinsic}
                 style={style}
                 className="brand-logo__img"
                 data-variant="light"
                 aria-hidden
             />
-            <span className="sr-only">Marketorr</span>
+            <span className="sr-only">{siteName}</span>
         </span>
     );
 }

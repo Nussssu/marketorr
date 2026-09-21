@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EmailTemplateKey;
 use App\Enums\InquiryStatus;
-use App\Mail\NewProjectInquiry;
+use App\Mail\TemplatedMail;
 use App\Models\ContactSubmission;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,16 +50,30 @@ class ContactFormTest extends TestCase
         $this->assertNotNull($submission->ip_address);
     }
 
-    public function test_successful_submission_sends_the_notification_email(): void
+    public function test_successful_submission_notifies_the_team(): void
     {
         Mail::fake();
 
         $this->post('/contact', $this->validPayload());
 
-        Mail::assertQueued(
-            NewProjectInquiry::class,
-            fn (NewProjectInquiry $mail) => $mail->hasTo(Setting::current()->contact_email)
-                && $mail->submission->email === 'jane@example.com',
+        Mail::assertSent(
+            TemplatedMail::class,
+            fn (TemplatedMail $mail) => $mail->hasTo(Setting::current()->contact_email)
+                && $mail->template->key === EmailTemplateKey::AdminLeadNotification
+                && $mail->placeholders['email'] === 'jane@example.com',
+        );
+    }
+
+    public function test_successful_submission_acknowledges_the_customer(): void
+    {
+        Mail::fake();
+
+        $this->post('/contact', $this->validPayload());
+
+        Mail::assertSent(
+            TemplatedMail::class,
+            fn (TemplatedMail $mail) => $mail->hasTo('jane@example.com')
+                && $mail->template->key === EmailTemplateKey::LeadAutoResponder,
         );
     }
 

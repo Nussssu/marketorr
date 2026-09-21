@@ -98,7 +98,12 @@ function Bars({ glow, progress, rich, reduce }) {
     );
 }
 
-export default function Hero() {
+/**
+ * @param {{ content?: { eyebrow?: string, headingLines?: string[], subtext?: string } }} props
+ *   Content from the page's Hero section. Falls back to the site-wide hero in
+ *   Settings, so the component still renders on a page with no Hero widget.
+ */
+export default function Hero({ content }) {
     const ref = useRef(null);
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
@@ -129,7 +134,12 @@ export default function Hero() {
     }, []);
 
     const { settings } = usePage().props;
-    const hero = settings.hero;
+    const hero = {
+        ...settings.hero,
+        ...(content?.eyebrow ? { eyebrow: content.eyebrow } : {}),
+        ...(content?.headingLines?.length ? { headingLines: content.headingLines } : {}),
+        ...(content?.subtext ? { subtext: content.subtext } : {}),
+    };
     // The closing line always carries the brand gradient.
     const headingLines = hero.headingLines.map((line, index) => [
         line,

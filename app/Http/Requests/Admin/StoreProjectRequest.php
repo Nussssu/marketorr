@@ -23,7 +23,7 @@ class StoreProjectRequest extends FormRequest
             'slug' => ['required', 'string', 'max:190', 'alpha_dash', $this->slugRule()],
             'title' => ['required', 'string', 'max:190'],
             'client' => ['required', 'string', 'max:190'],
-            'category' => ['required', 'string', 'max:190'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
             'year' => ['required', 'string', 'max:20'],
             'description' => ['required', 'string', 'max:5000'],
             'metric' => ['nullable', 'string', 'max:60'],

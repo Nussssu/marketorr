@@ -1,9 +1,10 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, Field, Input, PageHeader, Panel, Select } from '../../../components/admin/ui';
+import { Button, ConfirmDialog, Field, Input, PageHeader, Panel, Select, useConfirm } from '../../../components/admin/ui';
 
 export default function UsersIndex({ users, roles }) {
     const currentUser = usePage().props.auth?.user;
+    const [request, confirm, cancel, run] = useConfirm();
     const superAdmins = users.filter((u) => u.role === 'super_admin').length;
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -21,9 +22,12 @@ export default function UsersIndex({ users, roles }) {
         router.put(`/admin/users/${user.id}`, { name: user.name, email: user.email, role }, { preserveScroll: true });
     };
 
-    const destroy = (user) => {
-        if (!window.confirm(`Delete ${user.name}? This cannot be undone.`)) return;
-        router.delete(`/admin/users/${user.id}`, { preserveScroll: true });
+    const askDelete = (user) => {
+        confirm({
+            title: `Delete ${user.name}?`,
+            body: 'Their admin access is removed immediately. This cannot be undone.',
+            action: () => router.delete(`/admin/users/${user.id}`, { preserveScroll: true }),
+        });
     };
 
     return (
@@ -74,7 +78,7 @@ export default function UsersIndex({ users, roles }) {
                                                 <td className="py-3 pr-4 whitespace-nowrap text-[var(--mute)]">{user.createdAt}</td>
                                                 <td className="py-3 text-right">
                                                     <button
-                                                        onClick={() => destroy(user)}
+                                                        onClick={() => askDelete(user)}
                                                         disabled={isSelf || isLastSuperAdmin}
                                                         title={isSelf ? 'You cannot delete your own account' : isLastSuperAdmin ? 'At least one super admin must remain' : undefined}
                                                         className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff6b6b] hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
@@ -114,6 +118,14 @@ export default function UsersIndex({ users, roles }) {
                     </form>
                 </Panel>
             </div>
+
+            <ConfirmDialog
+                open={!!request}
+                title={request?.title ?? ''}
+                body={request?.body}
+                onConfirm={run}
+                onCancel={cancel}
+            />
         </>
     );
 }

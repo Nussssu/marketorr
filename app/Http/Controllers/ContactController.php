@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreContactSubmissionRequest;
-use App\Mail\NewProjectInquiry;
 use App\Models\ContactSubmission;
-use App\Models\Setting;
+use App\Services\LeadNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
+    public function __construct(private readonly LeadNotifier $notifier) {}
+
     public function store(StoreContactSubmissionRequest $request): RedirectResponse
     {
         $data = $request->inquiryData();
@@ -22,7 +22,9 @@ class ContactController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        Mail::to(Setting::current()->contact_email)->send(new NewProjectInquiry($submission));
+        // Notifies the team and acknowledges the customer, using the
+        // editor-managed templates and SMTP settings.
+        $this->notifier->send($submission);
 
         // Kept alongside the database row as an audit trail.
         Log::info('Project inquiry received', $data);

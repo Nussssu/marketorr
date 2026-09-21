@@ -14,7 +14,7 @@ import {
     slugify,
 } from '../../../components/admin/ui';
 
-export default function ProjectForm({ project, statuses }) {
+export default function ProjectForm({ project, statuses, categories = [] }) {
     const isEdit = Boolean(project);
     // Only auto-fill the slug while the admin has not hand-edited it.
     const [slugLocked, setSlugLocked] = useState(isEdit);
@@ -26,7 +26,7 @@ export default function ProjectForm({ project, statuses }) {
         slug: project?.slug ?? '',
         title: project?.title ?? '',
         client: project?.client ?? '',
-        category: project?.category ?? '',
+        category_id: project?.category_id ?? '',
         year: project?.year ?? String(new Date().getFullYear()),
         description: project?.description ?? '',
         metric: project?.metric ?? '',
@@ -93,8 +93,18 @@ export default function ProjectForm({ project, statuses }) {
                             <Field label="Client" error={errors.client} required>
                                 <Input value={data.client} onChange={(e) => setData('client', e.target.value)} placeholder="Acme Co · Manufacturer" />
                             </Field>
-                            <Field label="Category" error={errors.category} required>
-                                <Input value={data.category} onChange={(e) => setData('category', e.target.value)} placeholder="B2B SEO · Content Strategy" />
+                            <Field
+                                label="Category"
+                                error={errors.category_id}
+                                required
+                                hint={categories.length === 0 ? 'No categories yet — create one first.' : undefined}
+                            >
+                                <Select value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
+                                    <option value="">Select a category…</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>{category.label}</option>
+                                    ))}
+                                </Select>
                             </Field>
                             <Field label="Year" error={errors.year} required>
                                 <Input value={data.year} onChange={(e) => setData('year', e.target.value)} />

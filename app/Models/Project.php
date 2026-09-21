@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
-    'slug', 'title', 'client', 'category', 'year', 'description',
+    'slug', 'title', 'client', 'category_id', 'year', 'description',
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
 ])]
@@ -35,6 +36,11 @@ class Project extends Model
         ];
     }
 
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     /**
      * Only projects visible on the public site, in admin-defined order.
      *
@@ -44,6 +50,7 @@ class Project extends Model
     protected function published(Builder $query): void
     {
         $query->where('status', ContentStatus::Published)
+            ->with('category')
             ->orderBy('sort_order')
             ->orderBy('id');
     }
@@ -60,6 +67,17 @@ class Project extends Model
     }
 
     /**
+     * Projects filed under a category or any of its descendants.
+     *
+     * @param  Builder<Project>  $query
+     */
+    #[Scope]
+    protected function inCategory(Builder $query, Category $category): void
+    {
+        $query->whereIn('category_id', $category->descendantIds());
+    }
+
+    /**
      * Public URL for the cover image, whether stored on disk or a legacy
      * path already living under `public/`.
      */
@@ -67,6 +85,15 @@ class Project extends Model
     {
         if (str_starts_with($this->image_path, '/') || str_starts_with($this->image_path, 'http')) {
             return $this->image_path;
+        }
+
+        if (file_exists(public_path('storage/'.$this->image_path))) {
+            return self::publicDiskUrl($this->image_path);
+        }
+
+        $legacyPath = 'images/work/'.basename($this->image_path);
+        if (file_exists(public_path($legacyPath))) {
+            return '/'.$legacyPath;
         }
 
         return self::publicDiskUrl($this->image_path);
@@ -87,8 +114,9 @@ class Project extends Model
      * The exact shape the React components consume (see `lib/projects.js`).
      *
      * @return array{
-     *     slug: string, title: string, client: string, category: string,
+     *     slug: string, title: string, client: string, category: string|null,
      *     year: string, description: string, tags: array<int, string>,
+     *     categorySlug: string|null,
      *     accent: string, image: string, imageAlt: string,
      *     metric: string|null, metricLabel: string|null, featured: bool
      * }
@@ -99,7 +127,8 @@ class Project extends Model
             'slug' => $this->slug,
             'title' => $this->title,
             'client' => $this->client,
-            'category' => $this->category,
+            'category' => $this->category?->name,
+            'categorySlug' => $this->category?->slug,
             'year' => $this->year,
             'description' => $this->description,
             'tags' => $this->tags ?? [],
