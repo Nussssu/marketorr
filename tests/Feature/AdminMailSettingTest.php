@@ -147,4 +147,30 @@ class AdminMailSettingTest extends TestCase
             ->post('/admin/mail/test', ['recipient' => 'someone@example.com'])
             ->assertSessionHasErrors('recipient');
     }
+
+    public function test_apply_config_sets_mail_configuration_and_default_driver(): void
+    {
+        $settings = MailSetting::loadFromDatabase();
+        $settings->update($this->validPayload());
+        MailSetting::forgetCurrent();
+
+        MailSetting::current()->applyConfig();
+
+        $this->assertSame('smtp', config('mail.default'));
+        $this->assertSame('smtp.example.com', config('mail.mailers.smtp.host'));
+        $this->assertSame('hello@example.com', config('mail.from.address'));
+    }
+
+    public function test_notification_recipients_parses_comma_separated_addresses(): void
+    {
+        $settings = MailSetting::loadFromDatabase();
+        $settings->update($this->validPayload([
+            'admin_notification_email' => ' first@example.com , second@example.com, invalid-email ',
+        ]));
+        MailSetting::forgetCurrent();
+
+        $recipients = MailSetting::current()->notificationRecipients();
+
+        $this->assertSame(['first@example.com', 'second@example.com'], $recipients);
+    }
 }

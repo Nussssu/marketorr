@@ -141,4 +141,20 @@ class AdminEmailTemplateTest extends TestCase
 
         $this->actingAs($editor)->get('/admin/email-templates')->assertForbidden();
     }
+
+    public function test_convenience_routes_redirect_to_mail_and_templates(): void
+    {
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/email-smtp')
+            ->assertOk()
+            ->assertInertia(fn ($inertia) => $inertia->component('Admin/Mail/Edit'));
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/settings/email')
+            ->assertRedirect('/admin/email-smtp');
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/mail/templates')
+            ->assertRedirect('/admin/email-templates');
+    }
 }

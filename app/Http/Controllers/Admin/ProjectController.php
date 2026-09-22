@@ -41,7 +41,14 @@ class ProjectController extends Controller
     public function store(StoreProjectRequest $request): RedirectResponse
     {
         $data = $request->safe()->except('image');
-        $data['image_path'] = $this->storeImage($request->file('image'));
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $this->storeImage($request->file('image'));
+        } elseif ($request->filled('image')) {
+            $val = $request->input('image');
+            $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+            $val = preg_replace('#^/storage/#', '', $val);
+            $data['image_path'] = $val;
+        }
         $data['sort_order'] = $data['sort_order'] ?? ((int) Project::query()->max('sort_order') + 1);
 
         Project::query()->create($data);
@@ -67,6 +74,11 @@ class ProjectController extends Controller
         if ($request->hasFile('image')) {
             $this->deleteImage($project->image_path);
             $data['image_path'] = $this->storeImage($request->file('image'));
+        } elseif ($request->filled('image') && is_string($request->input('image'))) {
+            $val = $request->input('image');
+            $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+            $val = preg_replace('#^/storage/#', '', $val);
+            $data['image_path'] = $val;
         }
 
         $project->update($data);

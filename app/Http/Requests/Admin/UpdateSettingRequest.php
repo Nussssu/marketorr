@@ -18,9 +18,12 @@ class UpdateSettingRequest extends FormRequest
     {
         return [
             'site_name' => ['required', 'string', 'max:120'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
-            'logo_dark' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
-            'favicon' => ['nullable', 'image', 'mimes:png,svg,ico', 'max:512'],
+            'logo' => ['nullable'],
+            'logo_dark' => ['nullable'],
+            'favicon' => ['nullable'],
+            'header_sticky' => ['required', 'boolean'],
+            'header_cta_text' => ['nullable', 'string', 'max:60'],
+            'header_cta_link' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['required', 'email', 'max:190'],
             'contact_phone' => ['nullable', 'string', 'max:60'],
             'location_text' => ['required', 'string', 'max:190'],
@@ -46,7 +49,7 @@ class UpdateSettingRequest extends FormRequest
             'about_metrics.*.label' => ['required', 'string', 'max:120'],
             'meta_default_title' => ['required', 'string', 'max:190'],
             'meta_default_description' => ['required', 'string', 'max:255'],
-            'meta_default_og_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'meta_default_og_image' => ['nullable'],
             // Rendered verbatim into the page head and body, so only a super
             // admin can reach this form at all.
             'head_scripts' => ['nullable', 'string', 'max:20000'],
@@ -90,6 +93,7 @@ class UpdateSettingRequest extends FormRequest
     {
         $this->merge([
             'sitemap_enabled' => $this->boolean('sitemap_enabled'),
+            'header_sticky' => $this->boolean('header_sticky'),
             'hero_heading_lines' => array_values(array_filter(
                 (array) $this->input('hero_heading_lines', []),
                 static fn ($line) => filled($line),

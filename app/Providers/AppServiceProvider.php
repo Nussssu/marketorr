@@ -33,24 +33,22 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Let the SMTP settings saved in the admin panel win over `.env`.
      *
-     * Deferred until the mailer is first resolved: applying it eagerly would
-     * query the database on every console command, including `migrate` on a
-     * database that has no `mail_settings` table yet.
+     * Deferred until the mail manager or mailer is first resolved: applying
+     * it eagerly would query the database on every console command, including
+     * `migrate` on a database that has no `mail_settings` table yet.
      */
     private function applyStoredMailSettings(): void
     {
-        $this->app->resolving(Mailer::class, function (): void {
+        $apply = function (): void {
             try {
-                $overrides = MailSetting::current()->configOverrides();
+                MailSetting::current()->applyConfig();
             } catch (Throwable) {
                 // Table missing or unreachable — keep the `.env` mailer.
-                return;
             }
+        };
 
-            if ($overrides !== []) {
-                config($overrides);
-            }
-        });
+        $this->app->resolving('mail.manager', $apply);
+        $this->app->resolving(Mailer::class, $apply);
     }
 
     /**

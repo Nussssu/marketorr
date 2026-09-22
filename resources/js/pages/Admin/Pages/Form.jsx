@@ -5,6 +5,7 @@ import {
     Button,
     Field,
     Input,
+    MediaPickerField,
     PageHeader,
     Panel,
     Select,
@@ -44,9 +45,15 @@ export default function PageForm({ page, statuses }) {
         }));
     };
 
-    const onOgChange = (file) => {
-        setData('og_image', file);
-        setPreview(file ? URL.createObjectURL(file) : page?.og_image_url ?? null);
+    const onOgChange = (fileOrUrl) => {
+        setData('og_image', fileOrUrl);
+        if (typeof fileOrUrl === 'string') {
+            setPreview(fileOrUrl || (page?.og_image_url ?? null));
+        } else if (fileOrUrl instanceof File) {
+            setPreview(URL.createObjectURL(fileOrUrl));
+        } else {
+            setPreview(page?.og_image_url ?? null);
+        }
     };
 
     const submit = (e) => {
@@ -136,17 +143,14 @@ export default function PageForm({ page, statuses }) {
 
                 <div className="space-y-6">
                     <Panel title="Social image">
-                        <Field label="OG image" error={errors.og_image} hint="JPG, PNG or WebP. Max 4 MB.">
-                            <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={(e) => onOgChange(e.target.files?.[0] ?? null)}
-                                className="w-full text-[12px] text-[var(--mute)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--chip)] file:px-3 file:py-2 file:text-[11px] file:font-bold file:uppercase file:tracking-[0.14em] file:text-[var(--ink)]"
-                            />
-                        </Field>
-                        {preview && (
-                            <img src={preview} alt="" className="mt-4 w-full rounded-lg border border-[var(--line)] object-cover" />
-                        )}
+                        <MediaPickerField
+                            label="OG image"
+                            error={errors.og_image}
+                            hint="JPG, PNG or WebP. Max 4 MB."
+                            preview={preview}
+                            value={typeof data.og_image === 'string' ? data.og_image : ''}
+                            onChange={(url) => onOgChange(url)}
+                        />
                     </Panel>
 
                     <Panel title="Publishing">

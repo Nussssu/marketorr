@@ -26,7 +26,7 @@ class StorePageRequest extends FormRequest
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'meta_title' => ['nullable', 'string', 'max:190'],
             'meta_description' => ['nullable', 'string', 'max:500'],
-            'og_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'og_image' => ['nullable'],
             'meta_robots' => ['required', 'string', Rule::in([
                 'index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow',
             ])],

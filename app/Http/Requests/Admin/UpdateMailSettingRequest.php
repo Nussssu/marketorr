@@ -30,7 +30,23 @@ class UpdateMailSettingRequest extends FormRequest
             'password' => ['nullable', 'string', 'max:190'],
             'from_address' => ['nullable', 'email', 'max:190'],
             'from_name' => ['nullable', 'string', 'max:190'],
-            'admin_notification_email' => ['nullable', 'email', 'max:190'],
+            'admin_notification_email' => [
+                'nullable',
+                'string',
+                'max:500',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (blank($value)) {
+                        return;
+                    }
+
+                    $emails = array_map('trim', explode(',', (string) $value));
+                    foreach ($emails as $email) {
+                        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            $fail("The {$attribute} contains an invalid email address: {$email}.");
+                        }
+                    }
+                },
+            ],
         ];
     }
 

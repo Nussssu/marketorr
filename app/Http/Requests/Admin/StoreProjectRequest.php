@@ -29,7 +29,9 @@ class StoreProjectRequest extends FormRequest
             'metric' => ['nullable', 'string', 'max:60'],
             'metric_label' => ['nullable', 'string', 'max:120'],
             'accent' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'image' => [$this->imageRequirement(), 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'image' => $this->hasFile('image')
+                ? [$this->imageRequirement(), 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096']
+                : [$this->imageRequirement(), 'string'],
             'image_alt' => ['required', 'string', 'max:190'],
             'external_url' => ['nullable', 'url', 'max:500'],
             'tags' => ['required', 'array', 'min:1'],

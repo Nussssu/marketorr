@@ -51,7 +51,11 @@ class AdminSettingsTest extends TestCase
     public function test_a_super_admin_can_save_settings(): void
     {
         $this->actingAs($this->superAdmin)
-            ->put('/admin/settings', $this->validPayload())
+            ->put('/admin/settings', $this->validPayload([
+                'header_sticky' => false,
+                'header_cta_text' => 'Let us Talk',
+                'header_cta_link' => '/get-in-touch',
+            ]))
             ->assertSessionHas('success');
 
         $settings = Setting::query()->sole();
@@ -59,6 +63,9 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('studio@marketorr.com', $settings->contact_email);
         $this->assertSame('+880 1234 567890', $settings->contact_phone);
         $this->assertSame(['We build', 'what converts.'], $settings->hero_heading_lines);
+        $this->assertFalse($settings->header_sticky);
+        $this->assertSame('Let us Talk', $settings->header_cta_text);
+        $this->assertSame('/get-in-touch', $settings->header_cta_link);
     }
 
     public function test_saved_settings_reach_the_public_site_immediately(): void
@@ -66,6 +73,8 @@ class AdminSettingsTest extends TestCase
         $this->actingAs($this->superAdmin)->put('/admin/settings', $this->validPayload([
             'hero_eyebrow' => 'Studio for ambitious brands',
             'social_dribbble' => null,
+            'header_sticky' => false,
+            'header_cta_text' => 'Get Started',
         ]));
 
         $this->get('/')
@@ -74,7 +83,9 @@ class AdminSettingsTest extends TestCase
                 ->where('settings.contactPhone', '+880 1234 567890')
                 ->where('settings.hero.eyebrow', 'Studio for ambitious brands')
                 ->where('settings.hero.headingLines', ['We build', 'what converts.'])
-                ->where('settings.socials.dribbble', null));
+                ->where('settings.socials.dribbble', null)
+                ->where('settings.headerSticky', false)
+                ->where('settings.headerCtaText', 'Get Started'));
     }
 
     public function test_the_contact_email_is_where_inquiry_notifications_are_sent(): void

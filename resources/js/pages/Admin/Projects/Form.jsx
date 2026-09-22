@@ -6,6 +6,7 @@ import {
     ColorInput,
     Field,
     Input,
+    MediaPickerField,
     PageHeader,
     Panel,
     RepeatableList,
@@ -49,9 +50,19 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
         }));
     };
 
-    const onImageChange = (file) => {
-        setData('image', file);
-        setPreview(file ? URL.createObjectURL(file) : project?.image_url ?? null);
+    const onImageChange = (fileOrUrl, asset) => {
+        setData((current) => ({
+            ...current,
+            image: fileOrUrl,
+            image_alt: current.image_alt || asset?.alt_text || '',
+        }));
+        if (typeof fileOrUrl === 'string') {
+            setPreview(fileOrUrl || (project?.image_url ?? null));
+        } else if (fileOrUrl instanceof File) {
+            setPreview(URL.createObjectURL(fileOrUrl));
+        } else {
+            setPreview(project?.image_url ?? null);
+        }
     };
 
     const submit = (e) => {
@@ -142,28 +153,19 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                     </Panel>
 
                     <Panel title="Cover image">
-                        <div className="grid gap-5 sm:grid-cols-2">
-                            <Field
-                                label="Image"
+                        <div className="space-y-4">
+                            <MediaPickerField
+                                label="Cover Image"
                                 error={errors.image}
                                 required={!isEdit}
-                                hint={isEdit ? 'Leave empty to keep the current image.' : 'JPG, PNG or WebP, up to 4 MB.'}
-                            >
-                                <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    onChange={(e) => onImageChange(e.target.files?.[0] ?? null)}
-                                    className="w-full text-[13px] text-[var(--mute)] file:mr-3 file:rounded-lg file:border file:border-[var(--field-line)] file:bg-[var(--chip)] file:px-3 file:py-2 file:text-[12px] file:font-bold file:uppercase file:tracking-[0.12em] file:text-[var(--ink)]"
-                                />
-                            </Field>
+                                hint={isEdit ? 'Leave empty to keep the current image.' : 'Choose an asset from library or upload new.'}
+                                preview={preview}
+                                value={typeof data.image === 'string' ? data.image : ''}
+                                onChange={(url, asset) => onImageChange(url, asset)}
+                            />
                             <Field label="Image alt text" error={errors.image_alt} required>
                                 <Input value={data.image_alt} onChange={(e) => setData('image_alt', e.target.value)} />
                             </Field>
-                            {preview && (
-                                <div className="sm:col-span-2">
-                                    <img src={preview} alt="" className="aspect-[16/10] w-full max-w-sm rounded-lg border border-[var(--line)] object-cover" />
-                                </div>
-                            )}
                         </div>
                     </Panel>
                 </div>
