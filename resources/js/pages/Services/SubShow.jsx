@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import SubServiceHero from '../../components/sections/SubServiceHero';
 import SubServiceCaseStudy from '../../components/sections/SubServiceCaseStudy';
+import SubServiceWork from '../../components/sections/SubServiceWork';
 import { transitionTo } from '../../components/motion/PageTransition';
 import { useTapIntent } from '../../lib/tapIntent';
 import MagneticButton from '../../components/motion/MagneticButton';
@@ -25,17 +26,8 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
 
                 <div className="container-x">
                     <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--mute)]">{item.description}</p>
-                    <div className="mt-8 flex flex-wrap gap-4">
-                        <MagneticButton>
-                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
-                                Start a project ↗
-                            </Link>
-                        </MagneticButton>
-                        <Link href={parentHref} className="btn-press inline-flex items-center gap-2 rounded-full border border-[var(--field-line)] px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]">
-                            ← {parentName}
-                        </Link>
-                    </div>
 
+                    <SubServiceWork item={item} />
                     <div className="mt-14 grid gap-10 lg:grid-cols-2">
                         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-8">
                             <h2 className="font-display text-xl font-bold uppercase text-[var(--ink-strong)]">What you get</h2>
@@ -58,6 +50,17 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
                                 Discuss this service ↗
                             </Link>
                         </div>
+                    </div>
+
+                    <div className="mt-8 flex flex-wrap gap-4">
+                        <MagneticButton>
+                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                                Start a project ↗
+                            </Link>
+                        </MagneticButton>
+                        <Link href={parentHref} className="btn-press inline-flex items-center gap-2 rounded-full border border-[var(--field-line)] px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]">
+                            ← {parentName}
+                        </Link>
                     </div>
 
                     {item.case_study && <SubServiceCaseStudy study={item.case_study} />}

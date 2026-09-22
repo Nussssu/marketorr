@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import ProjectMotion from '../media/ProjectMotion';
 import {
     AnimatePresence,
     motion,
@@ -151,9 +152,10 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                     />
                     <div
                         className="pointer-events-none absolute inset-0 transition-opacity duration-500 group-hover:opacity-70"
-                        style={{ background: `radial-gradient(120% 100% at 20% 10%, ${project.accent}2e, transparent 55%), linear-gradient(160deg, rgba(24,24,31,0.5), rgba(8,8,10,0.8))` }}
+                        style={{ background: `radial-gradient(120% 100% at 20% 10%, ${project.accent}1a, transparent 58%), linear-gradient(180deg, rgba(8,8,10,0.34) 0%, transparent 26%, transparent 56%, rgba(8,8,10,0.26) 80%, rgba(8,8,10,0.56) 100%)` }}
                         aria-hidden
                     />
+                    <ProjectMotion slug={project.slug} />
                     {project.metric && (
                         <p className="absolute right-2 top-2 font-display text-[13px] font-extrabold text-white min-[769px]:right-6 min-[769px]:top-6 min-[769px]:text-4xl">
                             {project.metric}

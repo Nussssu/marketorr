@@ -12,9 +12,17 @@
 | `image` is the one visual a sub-service is known by: the showcase on the
 | category page, the shared-element transition and the hero of the dedicated
 | page all render this same file, which is what lets the visual the reader
-| clicked become the hero they land on. Replacing a photograph here changes it
-| everywhere, in step. These are real project photographs on purpose - the
-| showcase reads as work, not as iconography.
+| clicked become the hero they land on. Setting it here changes it everywhere,
+| in step. Every entry is currently null and renders the placeholder plate,
+| waiting for the photograph that actually belongs to that discipline; the
+| path each one used before is kept in the comment above it.
+|
+| `work` is the pair of real-project slots on the dedicated page, one per
+| piece of Marketorr work in that exact discipline. A slot with `src` set to
+| null renders as a clean empty frame holding that space; point `src` at an
+| image and that same slot renders the photograph instead, with no other
+| change needed anywhere. `title` is a note for whoever fills the slot - it
+| is never shown on the page.
 |
 */
 
@@ -31,9 +39,22 @@ return [
                 'short' => 'Positioning that makes choosing you obvious.',
                 'description' => 'Research-led positioning, audience insight and messaging hierarchies that give every brand decision a sharp strategic backbone — so the creative that follows has something true to stand on.',
                 'deliverables' => ['Positioning statement', 'Audience & competitor audit', 'Messaging hierarchy', 'Verbal identity starter'],
-                'image' => '/images/work/nature-to-near.jpg',
+                // Previously '/images/work/nature-to-near.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'NTNB Agro visual identity cover from the Marketorr portfolio',
                 'accent' => '#891FFB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Positioning & messaging deck',
+                        'alt' => 'Brand strategy positioning and messaging work by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Audience & competitor audit',
+                        'alt' => 'Brand strategy audience and competitor audit by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'brand-identity-design',
@@ -41,9 +62,22 @@ return [
                 'short' => 'Visual identities with gravity.',
                 'description' => 'Logo systems, typography, color and art direction composed into a distinctive identity toolkit — built to stay recognizable from favicon to facade.',
                 'deliverables' => ['Logo suite & lockups', 'Typography system', 'Color palette', 'Art direction'],
-                'image' => '/images/work/imperial-jute-brand.jpg',
+                // Previously '/images/work/imperial-jute-brand.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Imperial Jute minimal logo and brand cover',
                 'accent' => '#507AF4',
+                'work' => [
+                    [
+                        'src' => '/images/work/dusty-vision-logo.png',
+                        'title' => 'Primary logo & mark system',
+                        'alt' => 'Dusty Vision 3D logo mark from the Marketorr brand identity portfolio',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Identity across collateral',
+                        'alt' => 'Brand identity applied across print and digital collateral by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'rebranding',
@@ -51,9 +85,22 @@ return [
                 'short' => 'New chapters, zero confusion.',
                 'description' => 'End-to-end rebrands — audit, strategy, identity and rollout planning — that move market perception without losing the equity you have already earned.',
                 'deliverables' => ['Brand audit', 'Migration strategy', 'Refreshed identity', 'Launch rollout kit'],
-                'image' => '/images/work/sabdita-fashion.jpg',
+                // Previously '/images/work/sabdita-fashion.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Sabdita Fashion rebranding cover',
                 'accent' => '#1BE2EB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Before / after identity',
+                        'alt' => 'Rebranding before and after identity comparison by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Rollout across touchpoints',
+                        'alt' => 'Rebranding rollout across brand touchpoints by Marketorr',
+                    ],
+                ],
                 'case_study' => [
                     'meta' => 'Published November 2023 · Crafted in Illustrator, Photoshop and After Effects',
                     'sections' => [
@@ -136,9 +183,22 @@ return [
                 'short' => 'Shelf presence that sells.',
                 'description' => 'Structural thinking plus standout surface design for physical products — from dielines to shelf-blocking systems that convert at a glance.',
                 'deliverables' => ['Structural concepts', 'Surface design system', 'Print-ready dielines', 'Mockups & renders'],
-                'image' => '/images/work/commercial-cleaning-seo.jpg',
+                // Previously '/images/work/commercial-cleaning-seo.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Product packaging in hand — spray and pump bottles on shelf',
                 'accent' => '#891FFB',
+                'work' => [
+                    [
+                        'src' => '/images/work/dusty-vision-logo.png',
+                        'title' => 'Primary pack & label',
+                        'alt' => 'Dusty Vision 3D logo mark from the Marketorr packaging design portfolio',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Shelf & unboxing mockups',
+                        'alt' => 'Packaging design shelf presence and unboxing mockups by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'motion-branding',
@@ -146,9 +206,22 @@ return [
                 'short' => 'Identities that move.',
                 'description' => 'Logo animations, kinetic typography and motion principles that give your brand a living rhythm — recognizable across video, social and product.',
                 'deliverables' => ['Motion principles', 'Logo animation suite', 'Kinetic type presets', 'Handoff files (Lottie/MP4)'],
-                'image' => '/images/work/dusty-vision.jpg',
+                // Previously '/images/work/dusty-vision.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Dusty Vision visual identity cover',
                 'accent' => '#507AF4',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Animated logo reveal',
+                        'alt' => 'Motion branding animated logo reveal by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Motion system for social',
+                        'alt' => 'Motion branding social media motion system by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'brand-guidelines',
@@ -156,9 +229,22 @@ return [
                 'short' => 'Consistency, documented.',
                 'description' => 'Living guideline systems — rules, examples, templates and governance — so every team and vendor ships on-brand without guesswork.',
                 'deliverables' => ['Guideline book', "Do & don't library", 'Template starter kit', 'Governance checklist'],
-                'image' => '/images/work/virgin-trend.jpg',
+                // Previously '/images/work/virgin-trend.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Virgin Trend fashion brand identity cover',
                 'accent' => '#1BE2EB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Guidelines — logo rules',
+                        'alt' => 'Brand guidelines spread covering logo usage rules by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Guidelines — colour & type',
+                        'alt' => 'Brand guidelines spread covering colour and typography by Marketorr',
+                    ],
+                ],
             ],
         ],
     ],
@@ -174,9 +260,22 @@ return [
                 'short' => 'Websites engineered to convert.',
                 'description' => 'Marketing sites and web experiences where information architecture, interface and motion are tuned to one metric: turning visitors into customers.',
                 'deliverables' => ['Sitemap & UX flows', 'High-fidelity UI', 'Responsive breakpoints', 'Conversion checklist'],
-                'image' => '/images/work/city-online-web.jpg',
+                // Previously '/images/work/city-online-web.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'City Online website UI design case study cover',
                 'accent' => '#891FFB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Desktop homepage design',
+                        'alt' => 'Website UI/UX desktop homepage design by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Responsive page set',
+                        'alt' => 'Website UI/UX responsive page set by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'mobile-app-ui-ux',
@@ -184,9 +283,22 @@ return [
                 'short' => 'Apps people keep opening.',
                 'description' => 'Native-feel iOS and Android flows with micro-interactions and prototypes tuned for activation, retention and store ratings.',
                 'deliverables' => ['User flows & IA', 'App UI kit', 'Interactive prototype', 'Store assets'],
-                'image' => '/images/work/photo-fix-zone.jpg',
+                // Previously '/images/work/photo-fix-zone.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Photo Fix Zone mobile app interface on a handset',
                 'accent' => '#507AF4',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Core app screens',
+                        'alt' => 'Mobile app UI/UX core screen designs by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Key journey flows',
+                        'alt' => 'Mobile app UI/UX key user journey flows by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'saas-product-design',
@@ -194,9 +306,22 @@ return [
                 'short' => 'Complex products, made clear.',
                 'description' => 'Dashboards, workflows and data-dense SaaS interfaces designed for clarity — plus scalable component systems your team can build on.',
                 'deliverables' => ['Workflow & IA maps', 'Product UI screens', 'Component library', 'Data-viz patterns'],
-                'image' => '/images/work/un-point.jpg',
+                // Previously '/images/work/un-point.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Engineering consulting firm visual identity cover',
                 'accent' => '#1BE2EB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Dashboard interface',
+                        'alt' => 'SaaS product design dashboard interface by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Data & settings screens',
+                        'alt' => 'SaaS product design data and settings screens by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'ux-research-strategy',
@@ -204,9 +329,22 @@ return [
                 'short' => 'Decisions backed by evidence.',
                 'description' => 'Stakeholder interviews, usability testing, journey mapping and heuristic audits that turn assumptions into a prioritized product roadmap.',
                 'deliverables' => ['Research plan & scripts', 'Usability test reports', 'Journey maps', 'Prioritized roadmap'],
-                'image' => '/images/work/imperial-jute-seo.jpg',
+                // Previously '/images/work/imperial-jute-seo.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Research and analytics session — data boards under review',
                 'accent' => '#891FFB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Findings & personas',
+                        'alt' => 'UX research findings and personas by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Journey map & insights',
+                        'alt' => 'UX research journey map and insights by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'wireframing-prototyping',
@@ -214,9 +352,22 @@ return [
                 'short' => 'Validate before you build.',
                 'description' => 'Low-to-high fidelity wireframes and clickable prototypes that de-risk development by testing structure and flows with real users early.',
                 'deliverables' => ['Lo-fi wireframes', 'Clickable prototypes', 'Test & iterate cycles', 'Dev-ready specs'],
-                'image' => '/images/work/animateuix.jpg',
+                // Previously '/images/work/animateuix.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'AnimateUIX prototype in progress — screens wired end to end',
                 'accent' => '#507AF4',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Low-fidelity wireframes',
+                        'alt' => 'Wireframing low-fidelity wireframe set by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Clickable prototype flow',
+                        'alt' => 'Prototyping clickable prototype flow by Marketorr',
+                    ],
+                ],
             ],
             [
                 'slug' => 'design-system',
@@ -224,9 +375,22 @@ return [
                 'short' => 'One language for product.',
                 'description' => 'Token-based design systems — foundations, components, patterns and documentation — that keep quality high and shipping fast as teams grow.',
                 'deliverables' => ['Design tokens', 'Component library', 'Usage documentation', 'Governance model'],
-                'image' => '/images/work/ecohub-essentials.jpg',
+                // Previously '/images/work/ecohub-essentials.jpg'. Upload target: 16:10, 1600x1000.
+                'image' => null,
                 'imageAlt' => 'Ecohub Essentials component library applied across a storefront',
                 'accent' => '#1BE2EB',
+                'work' => [
+                    [
+                        'src' => null,
+                        'title' => 'Component library',
+                        'alt' => 'Design system component library overview by Marketorr',
+                    ],
+                    [
+                        'src' => null,
+                        'title' => 'Tokens, states & docs',
+                        'alt' => 'Design system tokens, states and documentation by Marketorr',
+                    ],
+                ],
             ],
         ],
     ],

@@ -1,4 +1,5 @@
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 import { useEffect, useRef, useState } from 'react';
 import { GradientTitle } from '../ui/primitives';
 
@@ -26,17 +27,21 @@ function ShowcaseScreen({ item, solidTitle = false }) {
                 style={{ '--svc-accent': item.accent }}
             >
                 <div className="absolute inset-x-0 top-0 h-[48%] overflow-hidden bg-[#08080B]">
-                    <img
-                        src={item.image}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        draggable={false}
-                        className="h-full w-full object-cover"
-                    />
+                    {item.image ? (
+                        <img
+                            src={item.image}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                            className="h-full w-full object-cover"
+                        />
+                    ) : (
+                        <MediaPlaceholder label={`${item.name} - image placeholder`} />
+                    )}
                     <span
                         className="absolute inset-0"
-                        style={{ background: 'linear-gradient(180deg, transparent 32%, rgba(6,6,10,0.72) 100%)' }}
+                        style={{ background: 'linear-gradient(180deg, transparent 46%, rgba(6,6,10,0.62) 100%)' }}
                         aria-hidden
                     />
                 </div>

@@ -55,7 +55,7 @@ class MenuSeeder extends Seeder
             ]],
             [MenuLocation::FooterServices, [
                 ['Branding', '/services/branding'],
-                ['UI/UX Design', '/services/ui-ux-design'],
+                ['UI/UX Design', '/services/ui-ux'],
             ]],
             [MenuLocation::FooterLegal, [
                 ['Privacy', '/privacy'],

@@ -1255,41 +1255,6 @@ input, textarea, select { color-scheme: inherit; }
   display: block;
 }
 
-/* ---------- Hero logo reveal ---------- */
-/* The brand reveal that continues the hero. It is not a section of its own:
-   it inherits the hero's own background (`--bg`, `.noise`, `.grid-bg`), so
-   there is no edge between the headline above it and the About section below
-   — only the lighting changes as the logo takes focus.
-
-   The reveal's timing, transforms and scroll coupling live in
-   `HeroLogoReveal.jsx` and never vary by theme. Everything here is a lighting
-   decision, switched on `data-theme`, which the blocking script in
-   app.blade.php stamps before first paint. Reading the theme in JS would
-   paint the reveal in the wrong lighting and correct it after hydration. */
-.hero-logo-reveal {
-  /* Dark: brand light gathers around the lockup and falls away to the hero's
-     own black. Held well below the old full-screen treatment — this sits
-     inside a composition now, it is not the whole frame. */
-  --reveal-lighting:
-    radial-gradient(38% 34% at 28% 34%, rgba(137, 31, 251, 0.26), transparent 70%),
-    radial-gradient(40% 36% at 72% 40%, rgba(80, 122, 244, 0.22), transparent 72%),
-    radial-gradient(46% 38% at 50% 74%, rgba(27, 226, 235, 0.16), transparent 74%);
-  --reveal-sheen: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.88), transparent);
-  --reveal-reflection: 0.16;
-}
-
-:root[data-theme='light'] .hero-logo-reveal {
-  /* Light: the same three colours as a tint in a lit room. The lockup carries
-     the contrast by itself here, so the glow becomes a hint of colour rather
-     than a light source and the whitespace stays clean. */
-  --reveal-lighting:
-    radial-gradient(40% 36% at 28% 32%, rgba(137, 31, 251, 0.10), transparent 72%),
-    radial-gradient(42% 38% at 72% 38%, rgba(80, 122, 244, 0.09), transparent 74%),
-    radial-gradient(48% 40% at 50% 76%, rgba(27, 226, 235, 0.07), transparent 76%);
-  --reveal-sheen: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.65), transparent);
-  --reveal-reflection: 0.08;
-}
-
 /* ---------- Home cinematic scroll scenes ---------- */
 /* Each home section rides its own layer so it can come forward out of depth
    and fall back as the next one arrives. The layer is promoted up front —

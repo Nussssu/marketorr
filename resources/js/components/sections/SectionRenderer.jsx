@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { Fragment } from 'react';
 import { useThemeMotion } from '../../lib/theme';
 import CinematicScene from '../motion/CinematicScene';
+import SectionAppear from '../motion/SectionAppear';
 import About from './About';
 import Contact from './Contact';
 import Cta from './Cta';
@@ -64,9 +65,24 @@ const WIDGETS = {
 /**
  * Renders one page's widget stack.
  *
- * @param {{ sections?: Array<{ id: number, type: string, content: object }> }} props
+ * `appearance` chooses how a section arrives, and nothing else — every widget
+ * keeps its own internal motion either way:
+ *
+ * - `depth` (the default, and what every page other than the landing page
+ *   uses): the full `CinematicScene` stage, where a section comes forward out
+ *   of 3D depth, rests, then falls back and dims as the next one arrives.
+ * - `reveal`: the section lifts into place once and then holds still. No
+ *   perspective, no rotation, no dimming on the way out.
+ *
+ * Widgets registered as `SCENE.None` are unwrapped under both, so the hero
+ * and Our Work's sticky stage are untouched by this choice.
+ *
+ * @param {{
+ *   sections?: Array<{ id: number, type: string, content: object }>,
+ *   appearance?: 'depth'|'reveal',
+ * }} props
  */
-export default function SectionRenderer({ sections = [] }) {
+export default function SectionRenderer({ sections = [], appearance = 'depth' }) {
     const { props } = usePage();
     const fx = useThemeMotion();
     // A page built from a single section reads as that section's own page, so
@@ -82,6 +98,10 @@ export default function SectionRenderer({ sections = [] }) {
 
         if (widget.scene === SCENE.None) {
             return <Fragment key={section.id}>{element}</Fragment>;
+        }
+
+        if (appearance === 'reveal') {
+            return <SectionAppear key={section.id}>{element}</SectionAppear>;
         }
 
         return (

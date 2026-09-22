@@ -3,6 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion
 import { useEffect, useRef, useState } from 'react';
 import { consumeShowcaseArrival } from '../motion/ShowcaseTransition';
 import { EASE } from '../../lib/motion';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 
 
 /** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
@@ -75,17 +76,21 @@ export default function SubServiceHero({ item, parentHref }) {
                 <motion.div style={reduce ? undefined : { scale: stageScale }} className="absolute inset-0">
                     {/* PLANE 1 — topic visual */}
                     <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale }} className="absolute inset-0">
-                            <motion.img
-                                src={item.image}
-                                alt={`${item.name} featured visual`}
-                                fetchPriority="high"
-                                decoding="async"
-                                draggable={false}
-                                initial={reduce || arrived ? false : { scale: 1.3, opacity: 0 }}
-                                animate={{ scale: 1.12, opacity: 1 }}
-                                transition={{ duration: reduce || arrived ? 0 : 1.8, ease: [...EASE] }}
-                                className="h-full w-full object-cover"
-                            />
+                            {item.image ? (
+                                <motion.img
+                                    src={item.image}
+                                    alt={`${item.name} featured visual`}
+                                    fetchPriority="high"
+                                    decoding="async"
+                                    draggable={false}
+                                    initial={reduce || arrived ? false : { scale: 1.3, opacity: 0 }}
+                                    animate={{ scale: 1.12, opacity: 1 }}
+                                    transition={{ duration: reduce || arrived ? 0 : 1.8, ease: [...EASE] }}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <MediaPlaceholder label={`${item.name} - hero image placeholder`} />
+                            )}
                     </motion.div>
 
                     {/* Depth stage. It keeps its perspective — the planes' z

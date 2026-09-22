@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 import { EASE } from '../../lib/motion';
 
 /**
@@ -51,7 +52,7 @@ export default function SubServiceCaseStudy({ study }) {
                                         : 'mt-8 grid gap-4 sm:grid-cols-2'
                                 }
                             >
-                                {section.images.map((image, imageIndex) => (
+                                {section.images.map((image, imageIndex) => (image.src ? (
                                     <img
                                         key={image.src}
                                         src={image.src}
@@ -61,7 +62,17 @@ export default function SubServiceCaseStudy({ study }) {
                                         draggable={false}
                                         className="h-auto w-full rounded-2xl border border-[var(--line)] bg-[var(--surface)]"
                                     />
-                                ))}
+                                ) : (
+                                    /* Reserved: an entry with no `src` yet holds its place
+                                       with the standard placeholder plate rather than
+                                       rendering a broken image. */
+                                    <span
+                                        key={`slot-${imageIndex}`}
+                                        className="relative block aspect-video w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]"
+                                    >
+                                        <MediaPlaceholder label={image.alt ?? 'Case study image placeholder'} />
+                                    </span>
+                                )))}
                             </div>
                         )}
                     </motion.article>
