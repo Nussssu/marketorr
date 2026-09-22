@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import ProjectMotion from '../../components/media/ProjectMotion';
 import { motion } from 'framer-motion';
 import { GradientTitle, SectionLabel, Tag } from '../../components/ui/primitives';
 
@@ -23,7 +24,8 @@ export default function CaseStudy({ project: p }) {
 
                     <div className="relative mt-10 aspect-[16/8] overflow-hidden rounded-2xl border border-[var(--line)]" aria-hidden>
                         <img src={p.image} alt={p.imageAlt} decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-                        <div className="absolute inset-0" style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}33, transparent 55%), linear-gradient(160deg, rgba(24,24,31,0.45), rgba(8,8,10,0.78))` }} />
+                        <div className="absolute inset-0" style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}1f, transparent 58%), linear-gradient(180deg, rgba(8,8,10,0.38) 0%, transparent 30%, transparent 58%, rgba(8,8,10,0.26) 80%, rgba(8,8,10,0.56) 100%)` }} />
+                        <ProjectMotion slug={p.slug} />
                         {p.metric && (
                             <div className="absolute right-10 top-10 text-right">
                                 <p className="font-display text-6xl font-extrabold text-white md:text-8xl">{p.metric}</p>

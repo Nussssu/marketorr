@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import ProjectMotion from '../media/ProjectMotion';
 import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
@@ -75,10 +76,11 @@ function ProjectCover({ p, glow, rich, progress }) {
 
             {/* accent wash — keeps covers cinematic in both themes, lifts on hover */}
             <div
-                className="pointer-events-none absolute inset-0 opacity-70 transition-opacity duration-200 group-hover:opacity-40"
-                style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}2e, transparent 55%), linear-gradient(160deg, rgba(24,24,31,0.55), rgba(8,8,10,0.82))` }}
+                className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-200 group-hover:opacity-70"
+                style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}1f, transparent 58%), linear-gradient(180deg, transparent 0%, transparent 50%, rgba(8,8,10,0.34) 76%, rgba(8,8,10,0.72) 100%)` }}
                 aria-hidden
             />
+            <ProjectMotion slug={p.slug} />
 
             {/* curtain wipe on first entry only — transform-only, never re-runs on scroll */}
             {!reduce && (
@@ -262,9 +264,10 @@ function MobileCard({ p, focus }) {
                         className="absolute inset-0 h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.035]"
                     />
                     <div
-                        className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgba(24,24,31,0.28),rgba(8,8,10,0.62))] transition-opacity duration-200 group-hover:opacity-75"
+                        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.30)_0%,transparent_24%,transparent_54%,rgba(8,8,10,0.28)_78%,rgba(8,8,10,0.58)_100%)] transition-opacity duration-200 group-hover:opacity-75"
                         aria-hidden
                     />
+                    <ProjectMotion slug={p.slug} />
                     {p.metric && (
                         <p className="absolute right-2 top-2 font-display text-[13px] font-extrabold leading-none text-white/95" aria-hidden>
                             {p.metric}

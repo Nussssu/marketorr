@@ -2,24 +2,36 @@ import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
-import RisingTypeLoop from '../motion/RisingTypeLoop';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 
 
 /** Full-screen cinematic hero per discipline — dark photographic work, never SVG. */
 /**
- * Background clip for the discipline heroes.
+ * Background clip for the discipline heroes - one file per discipline.
  *
- * One file per discipline, keyed by slug, so a second clip can be dropped in
- * for UI/UX without touching this component. Falls back to the shared clip.
+ * Both are null while the real discipline films are being produced, so each
+ * hero renders the video placeholder plate instead. Point a slug at an .mp4
+ * and that hero plays it; nothing else has to change.
+ *
+ * Upload target: 16:9, 1920x1080, H.264 .mp4, muted, seamless loop.
  */
 const HERO_VIDEO = {
-    branding: '/videos/hero-discipline.mp4',
-    'ui-ux': '/videos/hero-discipline.mp4',
+    branding: null,
+    'ui-ux': null,
 };
 
+/**
+ * The poster frame for each clip, and what a phone shows in its place.
+ *
+ * Null for the same reason: a poster taken from a film that does not exist
+ * yet would only be a stand-in for a stand-in. Upload target: 16:9, 1920x1080.
+ *
+ * Previously '/images/work/imperial-jute-brand.jpg' (branding) and
+ * '/images/work/city-online-web.jpg' (ui-ux).
+ */
 const HERO_IMAGE = {
-    branding: '/images/work/imperial-jute-brand.jpg',
-    'ui-ux': '/images/work/city-online-web.jpg',
+    branding: null,
+    'ui-ux': null,
 };
 
 const HERO_ALT = {
@@ -48,7 +60,13 @@ function useRichScene() {
  *
  * One large background clip with oversized type layered over it — muted,
  * looping and purely decorative, with the still used as its poster and as the
- * small-screen substitute. Depth comes
+ * small-screen substitute.
+ *
+ * The clip keeps `preload="auto"` on purpose. With `metadata` the browser
+ * asks for the head of the file and then asks again in order to play it, and
+ * a server without byte-range support answers both with the whole clip — two
+ * full downloads instead of one, which measured as 8.0 MB on this page rather
+ * than 4.6 MB. Depth comes
  * from three separated planes (visual / title / foreground chrome): each
  * drifts on the pointer at its own rate inside a perspective stage, and each
  * travels on scroll at its own speed while the whole scene compresses (scale
@@ -57,7 +75,7 @@ function useRichScene() {
  * Motion is transform/opacity/scale only — no blur, no layout animation.
  * Brand colors appear only as subtle lighting accents over the photo.
  *
- * The title remains the single sharp primary layer. Behind it, PLANE 1.5 runs
+ * The title remains the single sharp primary layer. Behind it runs
  * a continuously rising column of this discipline's sub-service names, outlined
  * rather than filled so it reads as depth in the clip instead of as a second
  * headline. This is the one place duplicated background type is wanted — it
@@ -82,8 +100,8 @@ export default function CategoryHero({ category }) {
      * same overlays, none of the download or decode cost, which is what
      * "optimised treatment" has to mean on a metered connection.
      */
-    const video = rich && !reduce ? (HERO_VIDEO[category.slug] ?? HERO_VIDEO.branding) : null;
-    const image = HERO_IMAGE[category.slug] ?? HERO_IMAGE.branding;
+    const video = rich && !reduce ? HERO_VIDEO[category.slug] : null;
+    const image = HERO_IMAGE[category.slug];
     const alt = HERO_ALT[category.slug] ?? `${category.name} featured work`;
     const title = category.name.toUpperCase();
     const chars = title.split('');
@@ -107,14 +125,10 @@ export default function CategoryHero({ category }) {
 
     // The rising column travels more slowly than the title and fades sooner, so
     // it stays read as the layer behind it through the whole scroll hand-off.
-    const loopShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-30%' : '-14%']);
-    const loopFade = useTransform(scrollYProgress, [0.32, 0.72], [1, 0]);
 
     // The column cycles this discipline's own sub-service names — the same
     // content the showcase below the hero lists — falling back to the
     // discipline name when a category has no sub-services yet.
-    const subServiceNames = (category.items ?? []).map((sub) => sub.name).filter(Boolean);
-    const heroLoopWords = subServiceNames.length > 0 ? subServiceNames : [category.name];
 
     return (
         <div ref={wrapRef} className="relative" style={{ height: full ? '165svh' : '125svh' }}>
@@ -149,7 +163,7 @@ export default function CategoryHero({ category }) {
                                     transition={{ duration: reduce ? 0 : 1.8, ease: [...EASE] }}
                                     className="pointer-events-none h-full w-full select-none object-cover"
                                 />
-                            ) : (
+                            ) : image ? (
                                 <motion.img
                                     src={image}
                                     alt={alt}
@@ -161,6 +175,8 @@ export default function CategoryHero({ category }) {
                                     transition={{ duration: reduce ? 0 : 1.8, ease: [...EASE] }}
                                     className="h-full w-full object-cover"
                                 />
+                            ) : (
+                                <MediaPlaceholder kind="video" label={`${category.name} - hero video placeholder`} />
                             )}
                         {/* legibility scrims + subtle brand lighting dissolve with the photo */}
                         <div
@@ -187,17 +203,6 @@ export default function CategoryHero({ category }) {
                         style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}
                         className="absolute inset-0"
                     >
-                        {/* PLANE 1.5 — continuously rising discipline typography */}
-                        <motion.div
-                            style={reduce ? undefined : { y: loopShiftY, opacity: loopFade }}
-                            className="absolute inset-0"
-                            aria-hidden
-                        >
-                            <motion.div style={full ? { z: 20 } : undefined} className="absolute inset-0">
-                                <RisingTypeLoop words={heroLoopWords} />
-                            </motion.div>
-                        </motion.div>
-
                         {/* PLANE 2 — oversized title (single sharp primary layer) */}
                         <motion.div
                             style={reduce ? undefined : { y: titleShiftY, scale: titleScale, opacity: titleFade }}

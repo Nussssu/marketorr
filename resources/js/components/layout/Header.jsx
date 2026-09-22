@@ -539,12 +539,12 @@ export default function Header() {
                                         onBlur={handleMegaBlur}
                                         className="relative"
                                     >
-                                        <Link
-                                            href={l.href}
-                                            onClick={(event) => navigateWithCurtain(event, l.href, () => setMega(false))}
+                                        <button
+                                            type="button"
+                                            onClick={openMega}
                                             aria-haspopup="true"
                                             aria-expanded={mega}
-                                            className={linkClass}
+                                            className={`${linkClass} cursor-pointer`}
                                         >
                                             <span className="flex items-center gap-1.5">
                                                 <NavLabel label={l.label} />
@@ -557,7 +557,7 @@ export default function Header() {
                                                     </svg>
                                                 </span>
                                             </span>
-                                        </Link>
+                                        </button>
                                     </div>
                                 );
                             }
@@ -648,18 +648,19 @@ export default function Header() {
                                                 <span className="w-7 shrink-0 font-display text-[10px] font-bold tracking-[0.16em] text-[var(--ink-faint)]" aria-hidden>
                                                     0{i + 1}
                                                 </span>
-                                                <Link
-                                                    href={l.href}
-                                                    onClick={(event) => navigateWithCurtain(event, l.href, () => setOpen(false))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMobileServicesOpen(true)}
+                                                    aria-expanded={mobileServicesOpen}
                                                     aria-current={active ? 'page' : undefined}
-                                                    className="flex min-w-0 flex-1 items-center"
+                                                    className="flex min-w-0 flex-1 cursor-pointer items-center text-left"
                                                 >
                                                     <span className={`truncate font-display text-[clamp(1.35rem,7vw,1.75rem)] font-bold leading-none ${
                                                         active ? 'text-gradient' : 'text-[var(--ink)]'
                                                     }`}>
                                                         {l.label}
                                                     </span>
-                                                </Link>
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setMobileServicesOpen((v) => !v)}
