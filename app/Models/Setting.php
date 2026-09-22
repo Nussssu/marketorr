@@ -23,6 +23,7 @@ class Setting extends Model
             'about_metrics' => 'array',
             'schema_markup' => 'array',
             'sitemap_enabled' => 'boolean',
+            'header_sticky' => 'boolean',
         ];
     }
 
@@ -97,6 +98,9 @@ class Setting extends Model
             'robots_txt' => null,
             'schema_markup' => null,
             'sitemap_enabled' => true,
+            'header_sticky' => true,
+            'header_cta_text' => 'Start a Project',
+            'header_cta_link' => '/contact',
         ];
     }
 
@@ -184,6 +188,9 @@ class Setting extends Model
                 'ogImage' => $this->ogImageUrl(),
                 'schema' => $this->schema_markup,
             ],
+            'headerSticky' => (bool) ($this->header_sticky ?? true),
+            'headerCtaText' => $this->header_cta_text ?: 'Start a Project',
+            'headerCtaLink' => $this->header_cta_link ?: '/contact',
         ];
     }
 }

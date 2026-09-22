@@ -14,13 +14,16 @@ export function PageHeader({ title, subtitle, children }) {
     );
 }
 
-export function Panel({ title, description, children, className = '' }) {
+export function Panel({ title, description, action, children, className = '' }) {
     return (
         <section className={`rounded-xl border border-[var(--line)] bg-[var(--surface)] ${className}`}>
             {title && (
-                <header className="border-b border-[var(--line)] px-5 py-4">
-                    <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)]">{title}</h2>
-                    {description && <p className="mt-1 text-[12px] text-[var(--mute)]">{description}</p>}
+                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
+                    <div>
+                        <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink)]">{title}</h2>
+                        {description && <p className="mt-1 text-[12px] text-[var(--mute)]">{description}</p>}
+                    </div>
+                    {action && <div>{action}</div>}
                 </header>
             )}
             <div className="p-5">{children}</div>
@@ -61,7 +64,7 @@ export function Field({ label, error, hint, required = false, children, classNam
 }
 
 export const INPUT_CLASS =
-    'w-full rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-[14px] text-[var(--ink)] outline-none focus:border-[#507AF4]';
+    'w-full rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors';
 
 export function Input({ className = '', ...props }) {
     return <input className={`${INPUT_CLASS} ${className}`} {...props} />;
@@ -87,7 +90,7 @@ export function ColorInput({ value, onChange, ...props }) {
                 type="color"
                 value={/^#[0-9a-fA-F]{6}$/.test(value ?? '') ? value : '#891FFB'}
                 onChange={(e) => onChange(e.target.value.toUpperCase())}
-                className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-[var(--field-line)] bg-[var(--bg)] p-1"
+                className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-[var(--field-line)] bg-[var(--bg)] p-1 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
                 aria-label="Colour picker"
             />
             <Input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="#891FFB" {...props} />
@@ -302,3 +305,7 @@ export function Toggle({ checked, onChange, label, hint }) {
         </label>
     );
 }
+
+export { default as MediaPickerModal } from './MediaPickerModal';
+export { default as MediaPickerField } from './MediaPickerField';
+

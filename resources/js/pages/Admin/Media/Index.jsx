@@ -81,7 +81,7 @@ export default function MediaIndex({ media, categories = [] }) {
                             id="media-filter"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
-                            className="rounded-lg border border-[var(--field-line)] bg-transparent px-3 py-2 text-[13px] text-[var(--ink)]"
+                            className="rounded-lg border border-[var(--field-line)] bg-transparent px-3 py-2 text-[13px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
                         >
                             <option value="">All</option>
                             {categories.map((category) => (

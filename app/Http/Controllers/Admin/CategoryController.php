@@ -51,7 +51,14 @@ class CategoryController extends Controller
     public function store(StoreCategoryRequest $request): RedirectResponse
     {
         $data = $request->safe()->except('thumbnail');
-        $data['thumbnail_path'] = $this->storeThumbnail($request->file('thumbnail'));
+        if ($request->hasFile('thumbnail')) {
+            $data['thumbnail_path'] = $this->storeThumbnail($request->file('thumbnail'));
+        } elseif ($request->filled('thumbnail') && is_string($request->input('thumbnail'))) {
+            $val = $request->input('thumbnail');
+            $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+            $val = preg_replace('#^/storage/#', '', $val);
+            $data['thumbnail_path'] = $val;
+        }
         $data['sort_order'] ??= (int) Category::query()->max('sort_order') + 1;
 
         Category::query()->create($data);
@@ -77,6 +84,15 @@ class CategoryController extends Controller
         if ($request->hasFile('thumbnail')) {
             $this->deleteThumbnail($category->thumbnail_path);
             $data['thumbnail_path'] = $this->storeThumbnail($request->file('thumbnail'));
+        } elseif ($request->has('thumbnail')) {
+            $val = $request->input('thumbnail');
+            if (is_string($val)) {
+                $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+                $val = preg_replace('#^/storage/#', '', $val);
+                $data['thumbnail_path'] = $val !== '' ? $val : null;
+            } elseif ($val === null) {
+                $data['thumbnail_path'] = null;
+            }
         }
 
         $category->update($data);

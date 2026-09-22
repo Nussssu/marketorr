@@ -7,7 +7,9 @@ use App\Http\Requests\Admin\FetchMediaRequest;
 use App\Http\Requests\Admin\StoreMediaRequest;
 use App\Http\Requests\Admin\UpdateMediaRequest;
 use App\Models\Media;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -15,18 +17,39 @@ use Inertia\Response;
 
 class MediaController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response|JsonResponse
     {
+        $query = Media::query()->orderByDesc('id');
+
+        if ($search = $request->string('search')->trim()->toString()) {
+            $query->where(function ($q) use ($search) {
+                $q->where('filename', 'like', "%{$search}%")
+                    ->orWhere('alt_text', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+
+        if ($category = $request->string('category')->trim()->toString()) {
+            $query->where('category', $category);
+        }
+
+        $items = $query->get()->map(fn (Media $medium) => $medium->toAdminArray());
+        $categories = Media::query()
+            ->select('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        if ($request->wantsJson() || $request->boolean('json')) {
+            return response()->json([
+                'media' => $items,
+                'categories' => $categories,
+            ]);
+        }
+
         return Inertia::render('Admin/Media/Index', [
-            'media' => Media::query()
-                ->orderByDesc('id')
-                ->get()
-                ->map(fn (Media $medium) => $medium->toAdminArray()),
-            'categories' => Media::query()
-                ->select('category')
-                ->distinct()
-                ->orderBy('category')
-                ->pluck('category'),
+            'media' => $items,
+            'categories' => $categories,
         ]);
     }
 
@@ -35,12 +58,14 @@ class MediaController extends Controller
         return Inertia::render('Admin/Media/Form', ['medium' => null]);
     }
 
-    public function store(StoreMediaRequest $request): RedirectResponse
+    public function store(StoreMediaRequest $request): RedirectResponse|JsonResponse
     {
         $file = $request->file('file');
+        $category = $request->input('category') ?: 'General';
 
-        Media::query()->create([
-            ...$request->safe()->except('file'),
+        $medium = Media::query()->create([
+            ...$request->safe()->except(['file', 'category']),
+            'category' => $category,
             ...$this->describeStoredFile(
                 $file->store('media', 'public'),
                 $file->getClientOriginalName(),
@@ -48,6 +73,13 @@ class MediaController extends Controller
                 $file->getSize()
             ),
         ]);
+
+        if ($request->wantsJson() || $request->boolean('json')) {
+            return response()->json([
+                'success' => true,
+                'medium' => $medium->toAdminArray(),
+            ], 201);
+        }
 
         return redirect()
             ->route('admin.media.index')
@@ -113,10 +145,14 @@ class MediaController extends Controller
             ->with('success', 'Media updated.');
     }
 
-    public function destroy(Media $medium): RedirectResponse
+    public function destroy(Request $request, Media $medium): RedirectResponse|JsonResponse
     {
         $this->deleteFile($medium->path);
         $medium->delete();
+
+        if ($request->wantsJson() || $request->boolean('json')) {
+            return response()->json(['success' => true]);
+        }
 
         return back()->with('success', 'Media deleted.');
     }

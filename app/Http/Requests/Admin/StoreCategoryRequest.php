@@ -24,7 +24,7 @@ class StoreCategoryRequest extends FormRequest
             'slug' => ['required', 'string', 'max:190', 'alpha_dash', $this->slugRule()],
             'name' => ['required', 'string', 'max:190'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'thumbnail' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'thumbnail' => ['nullable'],
             'accent' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'status' => ['required', Rule::enum(ContentStatus::class)],
             'sort_order' => ['nullable', 'integer', 'min:0'],

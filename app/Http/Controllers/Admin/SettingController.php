@@ -22,6 +22,9 @@ class SettingController extends Controller
                 'logo_url' => $settings->assetUrl($settings->logo_path),
                 'logo_dark_url' => $settings->assetUrl($settings->logo_dark_path),
                 'favicon_url' => $settings->assetUrl($settings->favicon_path),
+                'header_sticky' => (bool) ($settings->header_sticky ?? true),
+                'header_cta_text' => $settings->header_cta_text ?? 'Start a Project',
+                'header_cta_link' => $settings->header_cta_link ?? '/contact',
                 'contact_email' => $settings->contact_email,
                 'contact_phone' => $settings->contact_phone,
                 'location_text' => $settings->location_text,
@@ -61,12 +64,19 @@ class SettingController extends Controller
         $data = $request->settingAttributes();
 
         foreach ($this->uploadColumns() as $field => $column) {
-            if (! $request->hasFile($field)) {
-                continue;
+            if ($request->hasFile($field)) {
+                $this->deleteUpload($settings->{$column});
+                $data[$column] = $request->file($field)->store('settings', 'public');
+            } elseif ($request->has($field)) {
+                $val = $request->input($field);
+                if (is_string($val)) {
+                    $cleaned = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+                    $cleaned = preg_replace('#^/storage/#', '', $cleaned);
+                    $data[$column] = $cleaned !== '' ? $cleaned : null;
+                } elseif ($val === null) {
+                    $data[$column] = null;
+                }
             }
-
-            $this->deleteUpload($settings->{$column});
-            $data[$column] = $request->file($field)->store('settings', 'public');
         }
 
         $settings->update($data);

@@ -43,7 +43,14 @@ class PageController extends Controller
     public function store(StorePageRequest $request): RedirectResponse
     {
         $data = $request->pageAttributes();
-        $data['meta_og_image'] = $this->storeOgImage($request->file('og_image'));
+        if ($request->hasFile('og_image')) {
+            $data['meta_og_image'] = $this->storeOgImage($request->file('og_image'));
+        } elseif ($request->filled('og_image') && is_string($request->input('og_image'))) {
+            $val = $request->input('og_image');
+            $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+            $val = preg_replace('#^/storage/#', '', $val);
+            $data['meta_og_image'] = $val;
+        }
         $data['sort_order'] ??= (int) Page::query()->max('sort_order') + 1;
 
         $page = Page::query()->create($data);
@@ -68,6 +75,15 @@ class PageController extends Controller
         if ($request->hasFile('og_image')) {
             $this->deleteOgImage($page->meta_og_image);
             $data['meta_og_image'] = $this->storeOgImage($request->file('og_image'));
+        } elseif ($request->has('og_image')) {
+            $val = $request->input('og_image');
+            if (is_string($val)) {
+                $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
+                $val = preg_replace('#^/storage/#', '', $val);
+                $data['meta_og_image'] = $val !== '' ? $val : null;
+            } elseif ($val === null) {
+                $data['meta_og_image'] = null;
+            }
         }
 
         $page->update($data);

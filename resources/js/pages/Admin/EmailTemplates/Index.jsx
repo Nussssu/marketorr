@@ -1,11 +1,11 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
+import EmailPreviewModal from '../../../components/admin/EmailPreviewModal';
+import MailNav from '../../../components/admin/MailNav';
 import { Button, Field, Input, PageHeader, Panel, Textarea, Toggle } from '../../../components/admin/ui';
 
-function TemplateEditor({ template }) {
-    const [showPreview, setShowPreview] = useState(false);
-
+function TemplateEditor({ template, onPreview }) {
     const { data, setData, put, processing, errors } = useForm({
         subject: template.subject,
         body_html: template.bodyHtml,
@@ -15,6 +15,14 @@ function TemplateEditor({ template }) {
     const submit = (e) => {
         e.preventDefault();
         put(`/admin/email-templates/${template.id}`, { preserveScroll: true });
+    };
+
+    const triggerPreview = () => {
+        onPreview({
+            ...template,
+            subject: data.subject,
+            bodyHtml: data.body_html,
+        });
     };
 
     return (
@@ -51,36 +59,6 @@ function TemplateEditor({ template }) {
                     </ul>
                 </div>
 
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => setShowPreview((v) => !v)}
-                        aria-expanded={showPreview}
-                        className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
-                    >
-                        {showPreview ? 'Hide preview' : 'Show preview'}
-                    </button>
-                    {showPreview && (
-                        <div className="mt-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] p-4">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
-                                Subject
-                            </p>
-                            <p className="mt-1 text-[13px] text-[var(--ink)]">{template.preview.subject}</p>
-                            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
-                                Body
-                            </p>
-                            {/* Rendered from the last saved template, with sample values. */}
-                            <div
-                                className="prose-cms mt-2 text-[13px] leading-relaxed text-[var(--mute)]"
-                                dangerouslySetInnerHTML={{ __html: template.preview.body }}
-                            />
-                            <p className="mt-4 text-[11px] text-[var(--ink-faint)]">
-                                Preview reflects the last save — save to refresh it.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
                 <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
                     <Toggle
                         checked={data.enabled}
@@ -88,9 +66,14 @@ function TemplateEditor({ template }) {
                         label="Send this email"
                         hint="Switching it off stops this message without affecting the other."
                     />
-                    <Button type="submit" disabled={processing}>
-                        {processing ? 'Saving…' : 'Save template'}
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button type="button" variant="secondary" onClick={triggerPreview}>
+                            Preview Template
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : 'Save template'}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Panel>
@@ -98,18 +81,33 @@ function TemplateEditor({ template }) {
 }
 
 export default function EmailTemplatesIndex({ templates }) {
+    const [activePreview, setActivePreview] = useState(null);
+
     return (
         <>
             <Head title="Email templates — Marketorr Admin" />
             <PageHeader
-                title="Email templates"
-                subtitle="The two emails a new lead triggers."
+                title="Email & SMTP"
+                subtitle="Transactional email templates triggered by new inquiries."
             />
+
+            <MailNav activeTab="templates" />
+
             <div className="space-y-6">
                 {templates.map((template) => (
-                    <TemplateEditor key={template.id} template={template} />
+                    <TemplateEditor
+                        key={template.id}
+                        template={template}
+                        onPreview={(item) => setActivePreview(item)}
+                    />
                 ))}
             </div>
+
+            <EmailPreviewModal
+                open={!!activePreview}
+                template={activePreview}
+                onClose={() => setActivePreview(null)}
+            />
         </>
     );
 }
