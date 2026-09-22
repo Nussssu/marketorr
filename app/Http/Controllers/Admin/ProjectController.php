@@ -173,6 +173,7 @@ class ProjectController extends Controller
             'accent' => $project->accent,
             'image_url' => $project->imageUrl(),
             'image_alt' => $project->image_alt,
+            'external_url' => $project->external_url,
             'tags' => $project->tags ?? [],
             'featured' => $project->featured,
             'status' => $project->status->value,

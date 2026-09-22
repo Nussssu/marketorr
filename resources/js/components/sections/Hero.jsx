@@ -29,6 +29,11 @@ const BAR_GAP = 0.17;
  */
 const BAR_HEIGHT = 'clamp(4.5rem, 10vw, 8.25rem)';
 
+/** The shipped lockup, used purely as an alpha mask — never painted directly. */
+const LOGO_MASK = '/images/logo/marketorr-logo-on-dark.png';
+const LOGO_RATIO = 1000 / 118;
+const REVEAL_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB,#507AF4,#891FFB)';
+
 function BarColumn({ bar, glow }) {
     return (
         <div className="flex flex-col items-center gap-2 sm:gap-2.5">
@@ -99,6 +104,132 @@ function Bars({ glow, progress, rich, reduce }) {
 }
 
 /**
+ * The wordmark as a gradient-filled shape.
+ *
+ * The PNG is an alpha mask, not an image: the brand gradient is painted behind
+ * it and the lockup's own transparency cuts the glyphs out of it, so colour
+ * flows *through* the letterforms. The gradient is one wide element sliding
+ * on X — a compositor transform rather than an animated `background-position`.
+ *
+ * `blur` renders the same shape behind a static blur filter. It is crossfaded
+ * against the sharp copy to resolve the logo out of softness — animating a
+ * `filter` value instead would repaint a large surface on every frame.
+ */
+function GradientWordmark({ flow, blur = 0 }) {
+    const mask = {
+        WebkitMaskImage: `url(${LOGO_MASK})`,
+        maskImage: `url(${LOGO_MASK})`,
+        WebkitMaskSize: '100% 100%',
+        maskSize: '100% 100%',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+    };
+
+    return (
+        <div
+            className="relative w-full overflow-hidden"
+            style={{
+                aspectRatio: String(LOGO_RATIO),
+                ...mask,
+                filter: blur ? `blur(${blur}px)` : undefined,
+            }}
+        >
+            <motion.div
+                style={{ x: flow ?? 0, background: REVEAL_GRADIENT, willChange: 'transform' }}
+                className="absolute inset-y-0 left-[-100%] w-[300%]"
+            />
+        </div>
+    );
+}
+
+const SHEEN_MASK = {
+    WebkitMaskImage: `url(${LOGO_MASK})`,
+    maskImage: `url(${LOGO_MASK})`,
+    WebkitMaskSize: '100% 100%',
+    maskSize: '100% 100%',
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+};
+
+/**
+ * The brand reveal that closes the hero from the inside.
+ *
+ * It lives at the bottom of the hero section — directly after the
+ * IDEA · EXPERIENCE · RESULT bar row, which dims as this arrives — so the
+ * bars read as the transition point and the lockup emerges out of the same
+ * composition: headline and CTA above are untouched, and About follows in
+ * normal flow with no pinned stage, no runway and no edge in between. The
+ * block sets no z-index, leaving it below the fixed header and the cursor.
+ *
+ * There is no clock: arrival, sharpening, the colour flow and the single
+ * specular pass are all functions of the hero's own scroll progress, so the
+ * sequence advances, holds and reverses with the reader's gesture and simply
+ * scrolls away into About. Everything animated is a transform or an opacity;
+ * softness resolves by crossfading a statically blurred copy. The lockup never
+ * exceeds the hero's measure, and phones get the same beats without extra
+ * flourishes. Reduced motion renders one still, correctly-lit frame in place.
+ */
+function HeroBrandReveal({ progress, reduce }) {
+    const revealOpacity = useTransform(progress, [0, 0.2], [0.35, 1]);
+    const revealY = useTransform(progress, [0, 1], [28, -28]);
+    const revealScale = useTransform(progress, [0, 0.5], [0.96, 1]);
+    const sharpOpacity = useTransform(progress, [0.15, 0.35], [0, 1]);
+    const softOpacity = useTransform(progress, [0.15, 0.35], [1, 0]);
+    const lightOpacity = useTransform(progress, [0, 0.3], [0.25, 1]);
+    const flow = useTransform(progress, [0, 1], ['0%', '-24%']);
+    const sheenX = useTransform(progress, [0.32, 0.56], ['-140%', '140%']);
+    const sheenOpacity = useTransform(progress, [0.3, 0.38, 0.52, 0.6], [0, 0.8, 0.8, 0]);
+
+    if (reduce) {
+        return (
+            <div className="hero-logo-reveal container-x relative z-10 pb-20 pt-10 sm:pb-28 sm:pt-14" aria-label="Marketorr">
+                <div className="pointer-events-none absolute inset-0" style={{ background: 'var(--reveal-lighting)' }} aria-hidden />
+                <div className="relative mx-auto w-[min(70vw,680px)]">
+                    <GradientWordmark flow={null} />
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="hero-logo-reveal container-x relative z-10 pb-20 pt-10 sm:pb-28 sm:pt-14" aria-label="Marketorr">
+            <motion.div
+                style={{ opacity: lightOpacity }}
+                className="pointer-events-none absolute inset-0"
+                aria-hidden
+            >
+                <div className="absolute inset-0" style={{ background: 'var(--reveal-lighting)' }} />
+            </motion.div>
+            <motion.div
+                style={{ opacity: revealOpacity, y: revealY, scale: revealScale, willChange: 'transform, opacity' }}
+                className="relative mx-auto w-[min(70vw,680px)]"
+            >
+                {/* Soft copy underneath, sharp copy over it. */}
+                <motion.div style={{ opacity: softOpacity }} className="absolute inset-0" aria-hidden>
+                    <GradientWordmark flow={flow} blur={14} />
+                </motion.div>
+                <motion.div style={{ opacity: sharpOpacity }}>
+                    <GradientWordmark flow={flow} />
+                </motion.div>
+
+                {/* Specular pass, cut to the glyphs by the same mask. */}
+                <div
+                    className="pointer-events-none absolute inset-0 overflow-hidden"
+                    style={SHEEN_MASK}
+                    aria-hidden
+                >
+                    <motion.div
+                        style={{ x: sheenX, opacity: sheenOpacity, willChange: 'transform, opacity' }}
+                        className="absolute inset-y-0 left-0 w-[45%]"
+                    >
+                        <div className="h-full w-full" style={{ background: 'var(--reveal-sheen)' }} />
+                    </motion.div>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+/**
  * @param {{ content?: { eyebrow?: string, headingLines?: string[], subtext?: string } }} props
  *   Content from the page's Hero section. Falls back to the site-wide hero in
  *   Settings, so the component still renders on a page with no Hero widget.
@@ -114,6 +245,9 @@ export default function Hero({ content }) {
     const contentY = useTransform(scrollYProgress, [0, 1], [0, -72]);
     const contentOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.84]);
     const contentScale = useTransform(scrollYProgress, [0, 1], [1, 0.97]);
+    // The bar row yields focus as the brand reveal arrives below it — a dim,
+    // never a disappearance, so the transition point stays on screen.
+    const barsDim = useTransform(scrollYProgress, [0.05, 0.4], [1, 0.35]);
 
     useEffect(() => {
         const query = window.matchMedia('(min-width: 1024px)');
@@ -232,7 +366,10 @@ export default function Hero({ content }) {
             </motion.div>
 
             {/* Bars sit behind the headline block so the opening state reads as backdrop. */}
-            <div className="container-x relative z-0 mt-8 flex items-end justify-center pb-8 sm:mt-10 sm:pb-10 md:justify-between">
+            <motion.div
+                style={reduce ? undefined : { opacity: barsDim }}
+                className="container-x relative z-0 mt-8 flex items-end justify-center pb-8 sm:mt-10 sm:pb-10 md:justify-between"
+            >
                 <div className="hidden items-center gap-6 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] md:flex" aria-hidden>
                     <span>Idea <span className="text-[#891FFB]">●</span></span>
                     <span>Experience <span className="text-[#507AF4]">●</span></span>
@@ -246,7 +383,12 @@ export default function Hero({ content }) {
                     Scroll to explore
                     <span className="block h-10 w-[1px] bg-gradient-to-b from-[#891FFB] via-[#507AF4] to-[#1BE2EB]" aria-hidden />
                 </Link>
-            </div>
+            </motion.div>
+
+            {/* The bar row above is the transition point: it dims via `barsDim`
+                as this arrives, so the lockup emerges out of the same
+                composition rather than arriving as a separate block. */}
+            <HeroBrandReveal progress={scrollYProgress} reduce={reduce} />
         </section>
     );
 }

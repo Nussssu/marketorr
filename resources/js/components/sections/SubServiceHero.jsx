@@ -1,7 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useBoxPointer } from '../../lib/pointer';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { consumeShowcaseArrival } from '../motion/ShowcaseTransition';
 import { EASE } from '../../lib/motion';
 
@@ -26,16 +25,14 @@ function useRichScene() {
  * Cinematic 3D hero for every sub-service page (Brand Strategy … Design System).
  *
  * Same architecture as the discipline hero: one large topic visual with an
- * oversized title layered over it, split across three depth planes (visual /
- * title / foreground chrome). Each plane drifts on the pointer at its own
- * rate inside a perspective stage, and each travels on scroll at its own
- * speed while the scene compresses (scale + dim veil) and hands off to the
- * deliverables section.
+ * oversized title layered over it, split across depth planes (visual / title /
+ * foreground chrome). Each plane travels on scroll at its own speed while the
+ * scene compresses (scale + dim veil) and hands off to the deliverables section.
  *
  * Motion is transform/translate3d/scale/rotate/opacity only — no blur, no
  * layout animation. Brand colors appear only as subtle lighting accents.
- * Typography is a single sharp primary layer: no ghost numerals, no
- * duplicated or translucent background type.
+ *
+ * Nothing in this hero reacts to the pointer. Depth is scroll-driven only.
  *
  * @param {{ item: { slug: string, name: string, short: string, image: string, accent: string, position: number, total: number, category: { slug: string, name: string } }, parentHref: string }} props
  */
@@ -59,24 +56,6 @@ export default function SubServiceHero({ item, parentHref }) {
     // Scroll journey across the tall wrapper; the stage is sticky.
     const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
 
-    // Pointer depth, spring-smoothed so the planes glide, never jump.
-    const pointerX = useMotionValue(0);
-    const pointerY = useMotionValue(0);
-    const depthX = useSpring(pointerX, { stiffness: 55, damping: 18, mass: 0.6 });
-    const depthY = useSpring(pointerY, { stiffness: 55, damping: 18, mass: 0.6 });
-
-    // Stage tilt — the whole scene leans into the cursor in 3D.
-    const tiltX = useTransform(depthY, [-1, 1], full ? [4.5, -4.5] : [0, 0]);
-    const tiltY = useTransform(depthX, [-1, 1], full ? [-5.5, 5.5] : [0, 0]);
-
-    // Per-plane pointer drift for the type only. The visual is deliberately
-    // excluded: it sits outside the tilted stage and has no pointer transform,
-    // so hovering the hero never moves the picture.
-    const titleX = useTransform(depthX, [-1, 1], full ? [-30, 30] : [0, 0]);
-    const titleY = useTransform(depthY, [-1, 1], full ? [-22, 22] : [0, 0]);
-    const foreX = useTransform(depthX, [-1, 1], full ? [-58, 58] : [0, 0]);
-    const foreY = useTransform(depthY, [-1, 1], full ? [-42, 42] : [0, 0]);
-
     // Scroll journey: the visual pushes in slowly, the title rushes up faster,
     // foreground chrome exits first, and the stage compresses under a dim veil.
     const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.93 : 0.97]);
@@ -89,27 +68,9 @@ export default function SubServiceHero({ item, parentHref }) {
     const foreShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-70%' : '-30%']);
     const foreFade = useTransform(scrollYProgress, [0.2, 0.55], [1, 0]);
 
-    const applyPointer = useCallback((fx, fy) => {
-        pointerX.set(fx * 2 - 1);
-        pointerY.set(fy * 2 - 1);
-    }, [pointerX, pointerY]);
-
-    const pointer = useBoxPointer(applyPointer, { enabled: full });
-
-    const onPointerLeave = (event) => {
-        pointer.onPointerLeave(event);
-        pointerX.set(0);
-        pointerY.set(0);
-    };
-
     return (
         <div ref={wrapRef} className="relative" style={{ height: full ? '175svh' : '150svh' }}>
-            <div
-                className="sticky top-0 h-svh overflow-hidden bg-[#06060a]"
-                onPointerEnter={pointer.onPointerEnter}
-                onPointerMove={pointer.onPointerMove}
-                onPointerLeave={onPointerLeave}
-            >
+            <div className="sticky top-0 h-svh overflow-hidden bg-[#06060a]">
                 {/* compress on scroll */}
                 <motion.div style={reduce ? undefined : { scale: stageScale }} className="absolute inset-0">
                     {/* PLANE 1 — topic visual */}
@@ -127,13 +88,12 @@ export default function SubServiceHero({ item, parentHref }) {
                             />
                     </motion.div>
 
-                    {/* 3D stage */}
+                    {/* Depth stage. It keeps its perspective — the planes' z
+                        values are what set their scale — but never tilts:
+                        a tilt rotates every plane, type included, and nothing
+                        here may react to the pointer. */}
                     <motion.div
-                        style={
-                            full
-                                ? { rotateX: tiltX, rotateY: tiltY, transformStyle: 'preserve-3d', perspective: 1200 }
-                                : undefined
-                        }
+                        style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}
                         className="absolute inset-0"
                     >
                         {/* legibility scrims (static) + subtle brand lighting (static) */}
@@ -158,7 +118,7 @@ export default function SubServiceHero({ item, parentHref }) {
                             style={reduce ? undefined : { y: titleShiftY, scale: titleScale, opacity: titleFade }}
                             className="absolute inset-0 flex items-center"
                         >
-                            <motion.div style={full ? { x: titleX, y: titleY, z: 90 } : undefined} className="container-x w-full">
+                            <motion.div style={full ? { z: 90 } : undefined} className="container-x w-full">
                                 <h1 className="max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white" style={{ fontSize: 'clamp(2.6rem, 10vw, 8.5rem)' }} aria-label={item.name}>
                                     {words.map((word, w) => (
                                         <span key={w} className="mr-[0.24em] inline-block whitespace-nowrap last:mr-0" aria-hidden={w > 0}>
@@ -188,7 +148,7 @@ export default function SubServiceHero({ item, parentHref }) {
                             style={reduce ? undefined : { y: foreShiftY, opacity: foreFade }}
                             className="absolute inset-0"
                         >
-                            <motion.div style={full ? { x: foreX, y: foreY, z: 150 } : undefined} className="absolute inset-0">
+                            <motion.div style={full ? { z: 150 } : undefined} className="absolute inset-0">
                                 <motion.nav
                                     initial={reduce ? false : { opacity: 0, y: -12 }}
                                     animate={{ opacity: 1, y: 0 }}

@@ -32,7 +32,7 @@ return [
                 'description' => 'Research-led positioning, audience insight and messaging hierarchies that give every brand decision a sharp strategic backbone — so the creative that follows has something true to stand on.',
                 'deliverables' => ['Positioning statement', 'Audience & competitor audit', 'Messaging hierarchy', 'Verbal identity starter'],
                 'image' => '/images/work/nature-to-near.jpg',
-                'imageAlt' => 'Near To Nature brand campaign — harvester at golden hour under the brand mark',
+                'imageAlt' => 'NTNB Agro visual identity cover from the Marketorr portfolio',
                 'accent' => '#891FFB',
             ],
             [
@@ -42,7 +42,7 @@ return [
                 'description' => 'Logo systems, typography, color and art direction composed into a distinctive identity toolkit — built to stay recognizable from favicon to facade.',
                 'deliverables' => ['Logo suite & lockups', 'Typography system', 'Color palette', 'Art direction'],
                 'image' => '/images/work/imperial-jute-brand.jpg',
-                'imageAlt' => 'Imperial Jute identity system — signage, stationery and logo construction',
+                'imageAlt' => 'Imperial Jute minimal logo and brand cover',
                 'accent' => '#507AF4',
             ],
             [
@@ -52,8 +52,83 @@ return [
                 'description' => 'End-to-end rebrands — audit, strategy, identity and rollout planning — that move market perception without losing the equity you have already earned.',
                 'deliverables' => ['Brand audit', 'Migration strategy', 'Refreshed identity', 'Launch rollout kit'],
                 'image' => '/images/work/sabdita-fashion.jpg',
-                'imageAlt' => 'Sabdita fashion brand refresh — relaunch campaign photography',
+                'imageAlt' => 'Sabdita Fashion rebranding cover',
                 'accent' => '#1BE2EB',
+                'case_study' => [
+                    'meta' => 'Published November 2023 · Crafted in Illustrator, Photoshop and After Effects',
+                    'sections' => [
+                        [
+                            'eyebrow' => 'About the project',
+                            'heading' => 'A women\'s clothing brand, reimagined',
+                            'body' => 'Tasked with rebranding Sabdita Fashion, a women\'s clothing brand, the goal was to infuse the identity with modern minimalism — reflecting the elegance of today\'s fashion-forward woman.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/about.jpg', 'alt' => 'About Sabdita Fashion'],
+                                ['src' => '/images/work/sabdita/logo-presentation.jpg', 'alt' => 'Sabdita Fashion logo presentation'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'Design journey',
+                            'heading' => 'From ethos to identity',
+                            'body' => 'The process began with understanding Sabdita\'s ethos and audience, leading to a design that balances sophistication with contemporary style.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/brand-positioning.jpg', 'alt' => 'Sabdita Fashion brand positioning'],
+                                ['src' => '/images/work/sabdita/brand-messaging.jpg', 'alt' => 'Sabdita Fashion brand messaging'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'Audience',
+                            'heading' => 'Made for the fashion-forward woman',
+                            'body' => 'Every choice speaks to a style-conscious female audience — elegance expressed through restraint, in line with the brand\'s vision of empowering women through fashion.',
+                            'images' => [],
+                        ],
+                        [
+                            'eyebrow' => 'Colour & typography',
+                            'heading' => 'Clean, modern, deliberate',
+                            'body' => 'The chosen colour palette and typography carry the same idea throughout: a clean, modern look that stays legible from hangtag to billboard.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/typo-color-animation.gif', 'alt' => 'Sabdita Fashion typography and colour presentation'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'Final identity',
+                            'heading' => 'Minimalist beauty, explained',
+                            'body' => 'The new logo encapsulates minimalist beauty — a mark whose concept, construction and backgrounds are documented as part of the system.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/logo-explainer.jpg', 'alt' => 'Sabdita Fashion logo concept explanation'],
+                                ['src' => '/images/work/sabdita/logo-backgrounds.jpg', 'alt' => 'Sabdita Fashion logo on different backgrounds'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'In motion',
+                            'heading' => 'The identity, alive',
+                            'body' => 'Logo animations bring the mark to life across screens and social.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/logo-intro-animation.gif', 'alt' => 'Sabdita Fashion logo intro animation'],
+                                ['src' => '/images/work/sabdita/logo-motion-s.gif', 'alt' => 'Sabdita Fashion S logo animation'],
+                                ['src' => '/images/work/sabdita/logo-animation.gif', 'alt' => 'Sabdita Fashion animated logo'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'Applications',
+                            'heading' => 'One system, every touchpoint',
+                            'body' => 'The theme extends across all branding elements — stationery, packaging and out-of-home — reinforcing Sabdita\'s presence in the women\'s fashion sector.',
+                            'images' => [
+                                ['src' => '/images/work/sabdita/thank-you-card.jpg', 'alt' => 'Sabdita Fashion thank you card design'],
+                                ['src' => '/images/work/sabdita/envelope.jpg', 'alt' => 'Sabdita Fashion envelope design'],
+                                ['src' => '/images/work/sabdita/packaging.jpg', 'alt' => 'Sabdita Fashion packaging design'],
+                                ['src' => '/images/work/sabdita/ribbon.jpg', 'alt' => 'Sabdita Fashion ribbon design'],
+                                ['src' => '/images/work/sabdita/hangtag.jpg', 'alt' => 'Sabdita Fashion hangtag design'],
+                                ['src' => '/images/work/sabdita/billboard.jpg', 'alt' => 'Sabdita Fashion billboard design'],
+                            ],
+                        ],
+                        [
+                            'eyebrow' => 'Impact',
+                            'heading' => 'Engagement, elevated',
+                            'body' => 'Post-redesign, Sabdita Fashion has seen a positive shift in market engagement, resonating well with a style-conscious female audience and elevating the brand\'s appeal.',
+                            'images' => [],
+                        ],
+                    ],
+                ],
             ],
             [
                 'slug' => 'packaging-design',
@@ -72,7 +147,7 @@ return [
                 'description' => 'Logo animations, kinetic typography and motion principles that give your brand a living rhythm — recognizable across video, social and product.',
                 'deliverables' => ['Motion principles', 'Logo animation suite', 'Kinetic type presets', 'Handoff files (Lottie/MP4)'],
                 'image' => '/images/work/dusty-vision.jpg',
-                'imageAlt' => 'Motion branding render — golden letterform turning in dark space',
+                'imageAlt' => 'Dusty Vision visual identity cover',
                 'accent' => '#507AF4',
             ],
             [
@@ -82,7 +157,7 @@ return [
                 'description' => 'Living guideline systems — rules, examples, templates and governance — so every team and vendor ships on-brand without guesswork.',
                 'deliverables' => ['Guideline book', "Do & don't library", 'Template starter kit', 'Governance checklist'],
                 'image' => '/images/work/virgin-trend.jpg',
-                'imageAlt' => 'Brand world in magenta — monogram applied across a 3D set',
+                'imageAlt' => 'Virgin Trend fashion brand identity cover',
                 'accent' => '#1BE2EB',
             ],
         ],
@@ -100,7 +175,7 @@ return [
                 'description' => 'Marketing sites and web experiences where information architecture, interface and motion are tuned to one metric: turning visitors into customers.',
                 'deliverables' => ['Sitemap & UX flows', 'High-fidelity UI', 'Responsive breakpoints', 'Conversion checklist'],
                 'image' => '/images/work/city-online-web.jpg',
-                'imageAlt' => 'City Online marketing site shown across desktop screens',
+                'imageAlt' => 'City Online website UI design case study cover',
                 'accent' => '#891FFB',
             ],
             [
@@ -120,7 +195,7 @@ return [
                 'description' => 'Dashboards, workflows and data-dense SaaS interfaces designed for clarity — plus scalable component systems your team can build on.',
                 'deliverables' => ['Workflow & IA maps', 'Product UI screens', 'Component library', 'Data-viz patterns'],
                 'image' => '/images/work/un-point.jpg',
-                'imageAlt' => 'SaaS product interface on a laptop in a dark studio',
+                'imageAlt' => 'Engineering consulting firm visual identity cover',
                 'accent' => '#1BE2EB',
             ],
             [

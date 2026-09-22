@@ -7,6 +7,7 @@ import {
 import { useCallback, useRef } from 'react';
 import { EASE } from '../../lib/motion';
 import { useTapIntent } from '../../lib/tapIntent';
+import RisingTypeLoop from '../motion/RisingTypeLoop';
 import { expandTo } from '../motion/ShowcaseTransition';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
@@ -76,11 +77,16 @@ function useOpenSubService(category, item) {
  * at different rates while staying locked to the same scroll input.
  * Everything is a pure function of scroll: scrolling back runs it backwards.
  * Type stays a single sharp primary layer throughout — no ghost numerals, no
- * duplicated or translucent background text, no blur, no heavy shadows.
+ * blur, no heavy shadows. The one exception lives inside the photograph: a
+ * continuously rising column of this scene's own name drifts bottom-to-top on
+ * its own CSS clock, clipped hard by the visual frame. It is time-driven
+ * only — nothing here reads the pointer — so it never shakes, follows or
+ * reacts to the cursor, and the scrims above it keep the sharp title primary.
  */
 function DesktopScene({ category, item, index, count, activeFloat, dimensional }) {
     const { visualRef, tapIntent, href, open } = useOpenSubService(category, item);
     const side = index % 2 === 0 ? 1 : -1;
+    const loopWords = (item.name ?? '').toUpperCase().split(' ').filter(Boolean);
 
     const rel = useTransform(activeFloat, (v) => v - index);
 
@@ -206,6 +212,7 @@ function DesktopScene({ category, item, index, count, activeFloat, dimensional }
                                 style={{ y: imageY, scale: imageScale }}
                                 className="absolute inset-0 h-full w-full object-cover"
                             />
+                            <RisingTypeLoop words={loopWords} className="rising-type--in-visual" />
                             <span
                                 aria-hidden
                                 className="absolute inset-0"
@@ -320,6 +327,7 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
     const ref = useRef(null);
     const { visualRef, tapIntent, href, open } = useOpenSubService(category, item);
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'center center'] });
+    const loopWords = (item.name ?? '').toUpperCase().split(' ').filter(Boolean);
     // Settle transform only — entrance opacity lives on the inner article so
     // the two never write to the same motion value.
     const settle = useTransform(scrollYProgress, [0, 1], reduce ? [1, 1] : [0.94, 1]);
@@ -362,6 +370,7 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
                         style={reduce ? undefined : { y: imageY, scale: 1.1 }}
                         className="absolute inset-0 h-full w-full object-cover"
                     />
+                    <RisingTypeLoop words={loopWords} className="rising-type--in-visual" />
                     <span
                         aria-hidden
                         className="absolute inset-0"

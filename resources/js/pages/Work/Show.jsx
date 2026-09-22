@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { SectionLabel, Tag } from '../../components/ui/primitives';
+import { GradientTitle, SectionLabel, Tag } from '../../components/ui/primitives';
 
 /** Entrance for each progression step — lifts in, staggered by the parent. */
 const STEP_ITEM = {
@@ -17,7 +17,7 @@ export default function CaseStudy({ project: p }) {
                 <div className="container-x">
                     <SectionLabel index="03" name="CASE STUDY" />
                     <p className="mt-6 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">{p.client} · {p.category} · {p.year}</p>
-                    <h1 className="display-lg mt-4 uppercase text-[var(--ink-strong)]">{p.title}</h1>
+                    <h1 className="display-lg mt-4 uppercase text-[var(--ink-strong)]"><GradientTitle text={p.title} /></h1>
                     <p className="mt-5 max-w-2xl text-lg text-[var(--mute)]">{p.description}</p>
                     <div className="mt-4 flex flex-wrap gap-2">{p.tags.map((t) => <Tag key={t} accent={p.accent}>{t}</Tag>)}</div>
 
@@ -65,7 +65,7 @@ export default function CaseStudy({ project: p }) {
                                             <span className="mr-1.5 text-[13px] font-bold tracking-[0.18em]" style={{ color: step.accent }}>
                                                 {step.index} /
                                             </span>{' '}
-                                            {step.label}
+                                            <GradientTitle text={step.label} />
                                         </h2>
                                         <p className="step-card__copy mt-3 text-[15px] leading-[1.7] text-[var(--mute)]">{step.copy}</p>
                                     </div>

@@ -10,7 +10,7 @@ import {
 } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
-import { Tag } from '../ui/primitives';
+import { GradientTitle, Tag } from '../ui/primitives';
 
 const EASE = [0.22, 1, 0.36, 1];
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
@@ -173,7 +173,7 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                         {project.client} · {project.year}
                     </p>
                     <h2 className="mt-1 overflow-hidden font-display text-[13px] font-extrabold uppercase leading-[1.05] text-[var(--ink-strong)] min-[769px]:text-2xl min-[769px]:leading-normal">
-                        {project.title}
+                        <GradientTitle text={project.title} />
                     </h2>
                     {project.tags.length > 0 && (
                         <div className="mt-2 flex min-w-0 items-center gap-1 min-[769px]:hidden">
@@ -228,7 +228,7 @@ function FixedPanel({ project, count, index, reduce }) {
                         </p>
                         <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3.25rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.03em] text-[var(--ink-strong)]">
                             <Link href={`/work/${project.slug}`} data-cursor="view" className="link-underline">
-                                {project.title}
+                                <GradientTitle text={project.title} />
                             </Link>
                         </h2>
                         <p className="mt-5 max-w-md text-[15px] leading-relaxed text-[var(--mute)]">

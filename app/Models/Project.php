@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
     'slug', 'title', 'client', 'category_id', 'year', 'description',
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
+    'external_url', 'case_study',
 ])]
 class Project extends Model
 {
@@ -30,6 +31,7 @@ class Project extends Model
     {
         return [
             'tags' => 'array',
+            'case_study' => 'array',
             'featured' => 'boolean',
             'status' => ContentStatus::class,
             'sort_order' => 'integer',
@@ -138,6 +140,66 @@ class Project extends Model
             'metric' => $this->metric,
             'metricLabel' => $this->metric_label,
             'featured' => $this->featured,
+            'externalUrl' => $this->external_url,
+            'caseStudy' => $this->publicCaseStudy(),
         ];
+    }
+
+    /**
+     * The case study as the page consumes it: ordered sections, each with its
+     * image URLs already resolved, and anything empty dropped.
+     *
+     * Sections are filtered here rather than in the component so a project
+     * whose story has not been written yet sends an empty array and the page
+     * falls back to its cover, instead of shipping placeholder headings.
+     *
+     * @return array<int, array{label: string, note: string|null, images: array<int, array{src: string, alt: string, wide: bool}>}>
+     */
+    public function publicCaseStudy(): array
+    {
+        return collect($this->case_study ?? [])
+            ->map(function (array $section): array {
+                $images = collect($section['images'] ?? [])
+                    ->filter(fn ($image) => filled($image['src'] ?? null))
+                    ->map(fn (array $image): array => [
+                        'src' => self::mediaUrl($image['src']),
+                        'alt' => $image['alt'] ?? '',
+                        'wide' => (bool) ($image['wide'] ?? false),
+                    ])
+                    ->values()
+                    ->all();
+
+                return [
+                    'label' => $section['label'] ?? '',
+                    'note' => $section['note'] ?? null,
+                    'images' => $images,
+                ];
+            })
+            ->filter(fn (array $section): bool => $section['images'] !== [])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Resolve one case-study image path the same way a cover resolves: an
+     * absolute path or URL is taken as-is, an uploaded file comes off the
+     * public disk, and a legacy `public/images/work/...` file is served from
+     * where it already sits.
+     */
+    public static function mediaUrl(string $path): string
+    {
+        if (str_starts_with($path, '/') || str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        if (file_exists(public_path('storage/'.$path))) {
+            return self::publicDiskUrl($path);
+        }
+
+        $legacyPath = 'images/work/'.basename($path);
+
+        return file_exists(public_path($legacyPath))
+            ? '/'.$legacyPath
+            : self::publicDiskUrl($path);
     }
 }
