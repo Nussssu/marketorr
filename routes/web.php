@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\GlobalBlockController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\MailSettingController;
+use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PageSectionController;
@@ -75,6 +76,9 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::patch('services/reorder', [AdminServiceController::class, 'reorder'])->name('services.reorder');
         Route::resource('services', AdminServiceController::class)->except('show');
+
+        Route::post('media/fetch', [MediaController::class, 'fetch'])->name('media.fetch');
+        Route::resource('media', MediaController::class)->except('show');
 
         Route::patch('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
         Route::resource('categories', CategoryController::class)->except('show');

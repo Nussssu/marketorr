@@ -39,6 +39,15 @@ class SubServicePagesTest extends TestCase
         }
     }
 
+    public function test_the_rebranding_page_carries_its_case_study(): void
+    {
+        $this->get('/services/branding/rebranding')
+            ->assertInertia(fn ($page) => $page
+                ->component('Services/SubShow')
+                ->has('item.case_study.sections', 8)
+                ->where('item.case_study.sections.6.images', fn ($images) => count($images) === 6));
+    }
+
     public function test_unknown_sub_service_slugs_return_404(): void
     {
         $this->get('/services/branding/no-such-sub-service')->assertStatus(404);
@@ -57,13 +66,21 @@ class SubServicePagesTest extends TestCase
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->component('Home')
-                ->has('subservices', 2)
-                ->has('subservices.0.items', 6)
-                ->has('subservices.1.items', 6));
+                ->where('subservices', config('subservices')));
 
         $this->get('/services')
             ->assertInertia(fn ($page) => $page
                 ->component('Services/Index')
-                ->has('subservices', 2));
+                ->where('subservices', config('subservices')));
+    }
+
+    public function test_dedicated_category_pages_receive_the_same_sub_service_copy_as_the_landing_page(): void
+    {
+        foreach (config('subservices') as $category) {
+            $this->get("/services/{$category['slug']}")
+                ->assertInertia(fn ($page) => $page
+                    ->component('Services/Category')
+                    ->where('category', $category));
+        }
     }
 }

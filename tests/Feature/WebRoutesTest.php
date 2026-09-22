@@ -46,8 +46,8 @@ class WebRoutesTest extends TestCase
 
     public function test_the_seeded_catalogue_matches_the_seeder_definitions(): void
     {
-        $this->assertSame(14, Project::query()->count());
-        $this->assertSame(4, Project::query()->featured()->count());
+        $this->assertSame(18, Project::query()->count());
+        $this->assertSame(5, Project::query()->featured()->count());
         $this->assertSame(12, Service::query()->count());
     }
 
@@ -122,7 +122,7 @@ class WebRoutesTest extends TestCase
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->component('Home')
-                ->has('featuredProjects', 4)
+                ->has('featuredProjects', 5)
                 ->has('services', 12)
                 ->has('settings.hero.headingLines', 3)
                 ->where('featuredProjects.0.slug', 'imperial-jute-b2b-seo'));
@@ -133,6 +133,6 @@ class WebRoutesTest extends TestCase
         $this->get('/work')
             ->assertInertia(fn ($page) => $page
                 ->component('Work/Index')
-                ->has('projects', 14));
+                ->has('projects', 18));
     }
 }

@@ -88,6 +88,7 @@ export default function About({ heroHeading = false, content }) {
                                 as="h2"
                                 className="display-lg uppercase text-[var(--ink-strong)]"
                                 lines={['We build brands', 'and digital', 'experiences', 'that move people.']}
+                                highlightedLines={[3]}
                             />
                         </ScrollHeading>
                         <motion.div

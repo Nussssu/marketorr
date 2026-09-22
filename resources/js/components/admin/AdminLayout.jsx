@@ -17,6 +17,7 @@ const NAV = [
             { label: 'Projects', href: '/admin/projects' },
             { label: 'Categories', href: '/admin/categories' },
             { label: 'Services', href: '/admin/services' },
+            { label: 'Media', href: '/admin/media' },
             { label: 'Global blocks', href: '/admin/blocks' },
             { label: 'Menus', href: '/admin/menus' },
         ],

@@ -1,4 +1,4 @@
-import { GradientButton, SectionLabel } from '../ui/primitives';
+import { GradientButton, GradientTitle, SectionLabel } from '../ui/primitives';
 
 /**
  * @param {{ content?: { heading?: string, body?: string, buttonLabel?: string, buttonUrl?: string } }} props
@@ -13,7 +13,7 @@ export default function Cta({ content }) {
             <div className="container-x max-w-3xl text-center">
                 <SectionLabel index="§" name="NEXT STEP" />
                 {heading && (
-                    <h2 className="display-md mt-8 uppercase text-[var(--ink-strong)]">{heading}</h2>
+                    <h2 className="display-md mt-8 uppercase text-[var(--ink-strong)]"><GradientTitle text={heading} /></h2>
                 )}
                 {body && <p className="mt-5 text-[16px] leading-[1.75] text-[var(--mute)]">{body}</p>}
                 {buttonLabel && buttonUrl && (

@@ -86,6 +86,26 @@ function TickerRow({ item, index, count, position, full }) {
 }
 
 /**
+ * The dedicated sub-service's short copy, moving on the same clock as its
+ * ticker name and showcase screen. Keeping this text sourced from `item.short`
+ * means the landing widget cannot drift from the category page catalogue.
+ */
+function CopyRow({ item, index, count, position }) {
+    const offset = useTransform(position, (p) => rowOffset(index, p, count));
+    const y = useTransform(offset, (off) => off * 18);
+    const opacity = useTransform(offset, (off) => Math.max(0, 1 - Math.abs(off) * 2));
+
+    return (
+        <motion.p
+            style={{ y, opacity }}
+            className="pointer-events-none absolute inset-x-0 top-0 text-[14px] leading-relaxed text-[var(--mute)] sm:text-[15px]"
+        >
+            {item.short}
+        </motion.p>
+    );
+}
+
+/**
  * Vertical 3D sub-service ticker that lives inside a Branding / UI-UX gateway
  * card, beneath the dominant title.
  *
@@ -137,7 +157,7 @@ export default function SubServiceTicker({ category, position }) {
         <div className="relative mt-5 h-[84px]">
             <ul className="sr-only">
                 {items.map((item) => (
-                    <li key={item.slug}>{item.name}</li>
+                    <li key={item.slug}>{item.name}: {item.short}</li>
                 ))}
             </ul>
             <div
@@ -156,6 +176,37 @@ export default function SubServiceTicker({ category, position }) {
                     />
                 ))}
             </div>
+        </div>
+    );
+}
+
+/**
+ * Synchronized short copy for the active sub-service. This occupies the same
+ * space as the former static category tagline, so the card layout stays fixed
+ * while the real dedicated-page copy travels bottom-to-top with the reel.
+ *
+ * @param {{
+ *   category: { items: Array<{ slug: string, short: string }> },
+ *   position: import('framer-motion').MotionValue<number>,
+ * }} props
+ */
+export function SubServiceCopy({ category, position }) {
+    const items = category.items ?? [];
+    const count = items.length;
+
+    if (count === 0) return null;
+
+    return (
+        <div className="relative h-12 min-w-0 max-w-sm flex-1 overflow-hidden" aria-hidden>
+            {items.map((item, index) => (
+                <CopyRow
+                    key={item.slug}
+                    item={item}
+                    index={index}
+                    count={count}
+                    position={position}
+                />
+            ))}
         </div>
     );
 }

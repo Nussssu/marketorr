@@ -23,8 +23,8 @@ const HERO_IMAGE = {
 };
 
 const HERO_ALT = {
-    branding: 'Imperial Jute brand identity system — signage, stationery and logo construction',
-    'ui-ux': 'City Online website interface presented on a dark laptop mockup',
+    branding: 'Imperial Jute minimal logo and brand cover artwork',
+    'ui-ux': 'City Online website UI design case study cover',
 };
 
 /** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
@@ -65,9 +65,8 @@ function useRichScene() {
  * the rising-typography treatment.
  *
  * Nothing in this hero reacts to the pointer. The visual never did, and the
- * type no longer does: the stage tilt and the per-plane drift are gone, so the
- * title and chrome cannot shake or follow the cursor. Depth is now scroll and
- * time only.
+ * stage tilt and per-plane drift are gone, so the title and chrome cannot
+ * shake or follow the cursor. Depth is now scroll-driven only.
  *
  * @param {{ category: { slug: string, name: string, tagline: string, accent: string, items: Array<object> } }} props
  */
@@ -92,10 +91,9 @@ export default function CategoryHero({ category }) {
     // Scroll journey across the tall wrapper; the stage is sticky.
     const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
 
-    // Scroll journey: the image pushes in slowly, then dissolves away late so
-    // the typography is left floating; title and chrome exit at staggered
-    // speeds (chrome first, title sweeping furthest) for the layered hand-off
-    // into the next section. Transform + opacity only.
+    // Scroll journey: the image pushes in slowly, then dissolves away late;
+    // title and chrome exit at staggered speeds for the layered hand-off into
+    // the next section. Transform + opacity only.
     const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
     const veilOpacity = useTransform(scrollYProgress, [0.55, 1], [0, full ? 0.62 : 0.45]);
     const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);

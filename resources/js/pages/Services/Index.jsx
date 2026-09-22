@@ -5,7 +5,7 @@ export default function ServicesIndex({ subservices }) {
     return (
         <>
             <Head title="Services — Marketorr" />
-            <Services heroHeading subservices={subservices} />
+            <Services heroHeading subservices={subservices} solidHeadings />
         </>
     );
 }

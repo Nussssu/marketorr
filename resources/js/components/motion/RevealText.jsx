@@ -14,6 +14,7 @@ export default function RevealText({
     stagger = 0.08,
     duration = 0.9,
     as: Tag = 'span',
+    highlightedLines = [],
 }) {
     const reduce = useReducedMotion();
     const MTag = motion[Tag] ?? motion.span;
@@ -28,7 +29,7 @@ export default function RevealText({
             {lines.map((line, i) => (
                 <span key={i} className={`mask-line ${lineClassName}`}>
                     <motion.span
-                        className="mask-inner"
+                        className={`mask-inner ${highlightedLines.includes(i) ? 'text-gradient' : ''}`.trimEnd()}
                         variants={{
                             hidden: { y: reduce ? '0%' : '110%' },
                             show: { y: '0%', transition: { duration, ease: [...EASE] } },

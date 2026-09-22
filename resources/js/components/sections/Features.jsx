@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { EASE } from '../../lib/motion';
 import { BRAND_SEQUENCE } from '../../lib/tokens';
-import { SectionLabel } from '../ui/primitives';
+import { GradientTitle, SectionLabel } from '../ui/primitives';
 
 /**
  * @param {{ content?: { heading?: string, items?: Array<{ title?: string, body?: string, accent?: string }> } }} props
@@ -31,7 +31,7 @@ export default function Features({ content }) {
                                 style={{ background: item.accent || BRAND_SEQUENCE[index % BRAND_SEQUENCE.length] }}
                                 aria-hidden
                             />
-                            <h3 className="mt-5 font-display text-[18px] font-bold text-[var(--ink-strong)]">{item.title}</h3>
+                            <h3 className="mt-5 font-display text-[18px] font-bold text-[var(--ink-strong)]"><GradientTitle text={item.title} /></h3>
                             <p className="mt-2.5 text-[15px] leading-[1.7] text-[var(--mute)]">{item.body}</p>
                         </motion.article>
                     ))}

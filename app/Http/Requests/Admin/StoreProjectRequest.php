@@ -31,6 +31,7 @@ class StoreProjectRequest extends FormRequest
             'accent' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'image' => [$this->imageRequirement(), 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'image_alt' => ['required', 'string', 'max:190'],
+            'external_url' => ['nullable', 'url', 'max:500'],
             'tags' => ['required', 'array', 'min:1'],
             'tags.*' => ['required', 'string', 'max:60'],
             'featured' => ['required', 'boolean'],

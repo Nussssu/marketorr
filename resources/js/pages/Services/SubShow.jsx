@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import SubServiceHero from '../../components/sections/SubServiceHero';
+import SubServiceCaseStudy from '../../components/sections/SubServiceCaseStudy';
 import { transitionTo } from '../../components/motion/PageTransition';
 import { useTapIntent } from '../../lib/tapIntent';
 import MagneticButton from '../../components/motion/MagneticButton';
@@ -58,6 +59,8 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
                             </Link>
                         </div>
                     </div>
+
+                    {item.case_study && <SubServiceCaseStudy study={item.case_study} />}
 
                     {siblings.length > 0 && (
                         <nav className="mt-14 flex flex-wrap gap-3" aria-label="Related sub-services">

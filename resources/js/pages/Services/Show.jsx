@@ -11,9 +11,7 @@ export default function ServicePage({ service: s, services }) {
             <article className="bg-[var(--bg)] pb-24 pt-32">
                 <div className="container-x">
                     <SectionLabel index={s.index} name={s.name.toUpperCase()} />
-                    <h1 className="display-lg mt-8 uppercase text-[var(--ink-strong)]">
-                        {s.name.split(' ')[0]} <span className="text-gradient">{s.name.split(' ').slice(1).join(' ') || ''}</span>
-                    </h1>
+                    <h1 className="display-lg mt-8 uppercase text-[var(--ink-strong)]">{s.name}</h1>
                     <p className="mt-6 max-w-2xl text-lg text-[var(--mute)]">{s.description}</p>
                     <div className="mt-8 flex flex-wrap gap-4">
                         <MagneticButton>

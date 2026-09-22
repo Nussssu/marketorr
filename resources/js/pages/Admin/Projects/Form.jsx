@@ -34,6 +34,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
         accent: project?.accent ?? '#891FFB',
         image: null,
         image_alt: project?.image_alt ?? '',
+        external_url: project?.external_url ?? '',
         tags: project?.tags?.length ? project.tags : [''],
         featured: project?.featured ?? false,
         status: project?.status ?? 'published',
@@ -127,6 +128,17 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 <Input value={data.metric_label ?? ''} onChange={(e) => setData('metric_label', e.target.value)} placeholder="Organic Traffic Increase" />
                             </Field>
                         </div>
+                    </Panel>
+
+                    <Panel title="External case study" description="Optional — when the full write-up lives elsewhere (Behance, Dribbble, the client's own site), the project page links out to it instead of repeating it.">
+                        <Field label="Case study URL" error={errors.external_url}>
+                            <Input
+                                type="url"
+                                value={data.external_url ?? ''}
+                                onChange={(e) => setData('external_url', e.target.value)}
+                                placeholder="https://www.behance.net/gallery/..."
+                            />
+                        </Field>
                     </Panel>
 
                     <Panel title="Cover image">

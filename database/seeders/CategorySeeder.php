@@ -62,7 +62,11 @@ class CategorySeeder extends Seeder
                 'Agro',
                 'Packaging',
                 'Product',
+                'Rebranding',
             ], '#891FFB'],
+            ['Illustration', [
+                'Digital Art',
+            ], '#1BE2EB'],
             ['Web UI/UX', [
                 'Development',
             ], '#507AF4'],

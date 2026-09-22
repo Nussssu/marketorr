@@ -1,0 +1,7 @@
+- Uses Laravel framework for backend (PHP). Confidence: 0.9
+- Uses Vite as the frontend build tool. Runs Vite with `npm run dev` alongside the Laravel dev server. Confidence: 0.9
+- Uses Inertia.js with React for the frontend stack. Confidence: 0.8
+- Uses SQLite for local development databases. Confidence: 0.8
+- Runs Laravel dev server on `127.0.0.1:8000` via `php artisan serve --host=127.0.0.1 --port=8000`. Confidence: 0.85
+- Prefers fixing root causes over workarounds — explicitly instructs not to change ports randomly or mask issues; diagnose and resolve the actual problem. Confidence: 0.85
+- Develops on Windows with XAMPP for local server environment. Confidence: 0.8

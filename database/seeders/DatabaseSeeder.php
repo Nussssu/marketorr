@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ServiceSeeder::class,
             ProjectSeeder::class,
+            MediaSeeder::class,
         ]);
     }
 

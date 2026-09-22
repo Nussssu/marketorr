@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
 import { EASE } from '../../lib/motion';
 import { useTapIntent } from '../../lib/tapIntent';
-import { SectionLabel, Tag } from '../ui/primitives';
+import { GradientTitle, SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ProgressionBands from './ProgressionBands';
 
@@ -210,9 +210,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
                     <div>
                         <motion.p variants={metaItem} className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">{p.client} · {p.year}</motion.p>
                         <motion.h3 variants={metaItem} className="mt-1 font-display text-2xl font-extrabold uppercase text-[var(--ink-strong)] md:text-3xl">
-                            <span className="bg-[linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)] bg-[length:0%_100%] bg-no-repeat bg-clip-text transition-[background-size,color] duration-200 group-hover:bg-[length:100%_100%] group-hover:text-transparent">
-                                {p.title}
-                            </span>
+                            <GradientTitle text={p.title} />
                         </motion.h3>
                         <motion.p variants={metaItem} className="mt-2 max-w-md text-[14px] leading-relaxed text-[var(--mute)]">{p.description}</motion.p>
                         <motion.div variants={metaItem} className="mt-3 flex flex-wrap gap-2">
@@ -282,9 +280,7 @@ function MobileCard({ p, focus }) {
                         {p.client} · {p.year}
                     </p>
                     <h3 className="mt-1 min-h-[2.25rem] overflow-hidden font-display text-[13px] font-extrabold uppercase leading-[1.05] text-[var(--ink-strong)]">
-                        <span className="bg-[linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)] bg-[length:0%_100%] bg-no-repeat bg-clip-text transition-[background-size,color] duration-200 group-hover:bg-[length:100%_100%] group-hover:text-transparent">
-                            {p.title}
-                        </span>
+                        <GradientTitle text={p.title} />
                     </h3>
                     <p className="mt-1.5 overflow-hidden text-[9px] leading-[1.35] text-[var(--mute)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                         {p.description}
@@ -725,7 +721,7 @@ export default function OurWork({ glow, projects = [] }) {
                 <SectionLabel index="03" name="OUR WORK" />
                 {/* intro */}
                 <div className="lg:py-6">
-                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Work that', 'creates impact.']} />
+                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Work that', 'creates impact.']} highlightedLines={[1]} />
                     <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
                         Selected work across branding, digital products, UI/UX, campaigns, and growth-focused experiences.
                     </p>

@@ -1,4 +1,4 @@
-import { SectionLabel } from '../ui/primitives';
+import { GradientTitle, SectionLabel } from '../ui/primitives';
 
 /**
  * Heading plus editor-authored rich text. The body is written in the admin
@@ -14,7 +14,7 @@ export default function RichText({ content }) {
             <div className="container-x max-w-3xl">
                 {eyebrow && <SectionLabel index="§" name={eyebrow} />}
                 {heading && (
-                    <h1 className="display-md mt-8 uppercase text-[var(--ink-strong)]">{heading}</h1>
+                    <h1 className="display-md mt-8 uppercase text-[var(--ink-strong)]"><GradientTitle text={heading} /></h1>
                 )}
                 {body && (
                     <div

@@ -1,12 +1,12 @@
 import { Link } from '@inertiajs/react';
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { SectionLabel } from '../ui/primitives';
+import { GradientTitle, SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ScrollHeading from '../motion/ScrollHeading';
 import ServiceShowcaseRail from './ServiceShowcaseRail';
 import ServicesTransition from './ServicesTransition';
-import SubServiceTicker from './SubServiceTicker';
+import SubServiceTicker, { SubServiceCopy } from './SubServiceTicker';
 import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
 
@@ -84,7 +84,7 @@ function useCompactViewport() {
     return compact;
 }
 
-function CategoryGateway({ category, index, variants }) {
+function CategoryGateway({ category, index, variants, solidHeadings = false }) {
     const arrowTapIntent = useTapIntent();
     const ctaTapIntent = useTapIntent();
     // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
@@ -132,11 +132,11 @@ function CategoryGateway({ category, index, variants }) {
                     </div>
                     <div>
                         <h2 className="font-display text-[clamp(2.1rem,8.6vw,3.9rem)] font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2">
-                            {category.name}
+                            {solidHeadings ? category.name : <GradientTitle text={category.name} />}
                         </h2>
                         <SubServiceTicker category={category} position={reel} />
                         <div className="mt-5 flex items-end justify-between gap-6">
-                            <p className="max-w-sm text-[14px] leading-relaxed text-[var(--mute)] sm:text-[15px]">{category.tagline}</p>
+                            <SubServiceCopy category={category} position={reel} />
                             <Link
                                 href={exploreHref}
                                 prefetch
@@ -148,7 +148,7 @@ function CategoryGateway({ category, index, variants }) {
                         </div>
                     </div>
                 </div>
-                <ServiceShowcaseRail category={category} progress={reel} />
+                <ServiceShowcaseRail category={category} progress={reel} solidTitle={solidHeadings} />
             </div>
         </motion.article>
     );
@@ -160,6 +160,7 @@ function CategoryGateway({ category, index, variants }) {
  *   subservices?: Array<object>,
  *   showTransition?: boolean,
  *   scrollAnimation?: boolean,
+ *   solidHeadings?: boolean,
  * }} props
  *   `showTransition` false keeps the section to the two category gateways only
  *   — the Home page wants a simple entry point and has its own onward flow,
@@ -169,12 +170,15 @@ function CategoryGateway({ category, index, variants }) {
  *   card hover treatment; every other mount renders exactly as before. The two
  *   gateway cards themselves — layout, type scale and the moving showcase rail
  *   in the composition area — are identical wherever the section mounts.
+ *   `solidHeadings` keeps every title in this section a single solid colour
+ *   (Services pages); elsewhere the key words carry the brand gradient.
  */
 export default function Services({
     heroHeading = false,
     subservices = [],
     showTransition = true,
     scrollAnimation = false,
+    solidHeadings = false,
 }) {
     const reduce = useReducedMotion();
     const compact = useCompactViewport();
@@ -195,6 +199,7 @@ export default function Services({
                             as={heroHeading ? 'h1' : 'h2'}
                             className="display-lg uppercase text-[var(--ink-strong)]"
                             lines={['Two disciplines.', 'One clear outcome.']}
+                            highlightedLines={solidHeadings ? undefined : [1]}
                             duration={animate ? 0.58 : undefined}
                             stagger={animate ? 0.13 : undefined}
                         />
@@ -228,6 +233,7 @@ export default function Services({
                             category={category}
                             index={index}
                             variants={animate ? (index % 2 === 1 ? mirroredVariants : itemVariants) : undefined}
+                            solidHeadings={solidHeadings}
                         />
                     ))}
                 </motion.div>

@@ -13,6 +13,27 @@ export function SectionLabel({ index, name }) {
     );
 }
 
+/**
+ * Keeps a dynamic heading's leading words in the theme ink colour and gives
+ * its closing phrase the shared Marketorr purple-to-cyan treatment.
+ */
+export function GradientTitle({ text, highlightWords = 1 }) {
+    const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+
+    if (words.length === 0) return null;
+
+    const splitAt = Math.max(0, words.length - Math.max(1, highlightWords));
+    const primary = words.slice(0, splitAt).join(' ');
+    const highlight = words.slice(splitAt).join(' ');
+
+    return (
+        <>
+            {primary && <>{primary}{' '}</>}
+            <span className="text-gradient">{highlight}</span>
+        </>
+    );
+}
+
 export function Tag({ children, accent = '#891FFB' }) {
     return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--chip)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)]">

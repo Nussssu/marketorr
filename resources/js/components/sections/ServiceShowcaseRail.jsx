@@ -1,6 +1,6 @@
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { showcaseFor } from './ServiceShowcaseMockups';
+import { GradientTitle } from '../ui/primitives';
 
 /** Tight gap between screens — the strip stays continuous with no air in it. */
 const GAP = 8;
@@ -10,24 +10,50 @@ const SECONDS_PER_SCREEN = 4.5;
 const FRAME_INTERVAL = 1000 / 30;
 
 /**
- * One screen in the rail: a premium mockup of the actual deliverable, in a
- * frame that is a white card in the light theme and dark glass in the dark one.
+ * One compact version of the real dedicated-page sub-service card. Its image,
+ * name and short copy come from the same catalogue item rendered by the
+ * category page, so this rail cannot carry placeholder or stale content.
  *
  * `--svc-accent` carries the sub-service's brand colour into the frame's
- * highlight hairline and its caption dot — the only places the brand trio
- * appears at this level.
+ * highlight hairline and caption dot. The image crop and content stack echo
+ * the dedicated cards at a scale that stays readable inside the narrow rail.
  */
-function ShowcaseScreen({ item, Mockup }) {
+function ShowcaseScreen({ item, solidTitle = false }) {
     return (
         <figure className="m-0" data-screen>
-            <div className="svc-screen relative aspect-[4/5] w-full overflow-hidden rounded-2xl" style={{ '--svc-accent': item.accent }}>
-                <Mockup />
-                <figcaption className="svc-screen__caption absolute inset-x-0 bottom-0 flex items-center gap-1.5 px-2.5 pb-2.5 pt-5 sm:px-3 sm:pb-3">
-                    <span className="h-1 w-1 shrink-0 rounded-full" style={{ background: item.accent }} aria-hidden />
-                    <span className="truncate font-display text-[7.5px] font-bold uppercase leading-tight tracking-[0.12em] text-[var(--ink)] sm:text-[8.5px]">
-                        {item.name}
+            <div
+                className="svc-screen relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-2)]"
+                style={{ '--svc-accent': item.accent }}
+            >
+                <div className="absolute inset-x-0 top-0 h-[48%] overflow-hidden bg-[#08080B]">
+                    <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="h-full w-full object-cover"
+                    />
+                    <span
+                        className="absolute inset-0"
+                        style={{ background: 'linear-gradient(180deg, transparent 32%, rgba(6,6,10,0.72) 100%)' }}
+                        aria-hidden
+                    />
+                </div>
+
+                <figcaption className="absolute inset-x-0 bottom-0 top-[48%] flex flex-col px-2 py-2 sm:px-2.5 sm:py-2.5">
+                    <span className="mb-1.5 flex items-center gap-1.5" aria-hidden>
+                        <span className="h-1 w-1 shrink-0 rounded-full" style={{ background: item.accent }} />
+                        <span className="text-[6px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] sm:text-[7px]">Service</span>
                     </span>
+                    <h3 className="overflow-hidden font-display text-[clamp(7px,0.7vw,10px)] font-extrabold uppercase leading-[1.05] tracking-[-0.01em] text-[var(--ink-strong)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                        {solidTitle ? item.name : <GradientTitle text={item.name} />}
+                    </h3>
+                    <p className="mt-1.5 overflow-hidden text-[clamp(6px,0.56vw,8px)] leading-[1.3] text-[var(--mute)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                        {item.short}
+                    </p>
                 </figcaption>
+                <span className="absolute inset-x-0 bottom-0 h-0.5" style={{ background: item.accent }} aria-hidden />
             </div>
         </figure>
     );
@@ -56,16 +82,17 @@ function ShowcaseScreen({ item, Mockup }) {
  * "Explore …" CTA remain the only navigation.
  *
  * @param {{
- *   category: { slug: string, name: string, items: Array<{ slug: string, name: string, accent: string }> },
+ *   category: { slug: string, name: string, items: Array<{ slug: string, name: string, short: string, image: string, accent: string }> },
  *   onActive?: (index: number) => void,
  *   progress?: import('framer-motion').MotionValue<number> | null,
+ *   solidTitle?: boolean,
  * }} props
  *   `progress` receives the reel's continuous position in screens — a float
  *   wrapped into [0, count) — every frame. The sub-service ticker beneath the
  *   title rides that same value, so the name rises in lockstep with the image
  *   instead of stepping between them, and neither can drift from the other.
  */
-export default function ServiceShowcaseRail({ category, onActive = () => {}, progress = null }) {
+export default function ServiceShowcaseRail({ category, onActive = () => {}, progress = null, solidTitle = false }) {
     const reduce = useReducedMotion();
     const frameRef = useRef(null);
     const [step, setStep] = useState(0);
@@ -159,12 +186,10 @@ export default function ServiceShowcaseRail({ category, onActive = () => {}, pro
     }
 
     if (reduce) {
-        const Mockup = showcaseFor(category.slug, items[0].slug, 0);
-
         return (
             <div className="pointer-events-none relative w-[96px] shrink-0 self-stretch overflow-hidden sm:w-[124px] lg:w-[136px] xl:w-[172px]" aria-hidden>
                 <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
-                    <ShowcaseScreen item={items[0]} Mockup={Mockup} />
+                    <ShowcaseScreen item={items[0]} solidTitle={solidTitle} />
                 </div>
             </div>
         );
@@ -186,7 +211,7 @@ export default function ServiceShowcaseRail({ category, onActive = () => {}, pro
                     <ShowcaseScreen
                         key={`${Math.floor(i / count)}-${item.slug}`}
                         item={item}
-                        Mockup={showcaseFor(category.slug, item.slug, i % count)}
+                        solidTitle={solidTitle}
                     />
                 ))}
             </motion.div>
