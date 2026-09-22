@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
@@ -69,6 +70,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
     Route::middleware(['auth', 'admin'])->group(function (): void {
         Route::get('/', DashboardController::class)->name('dashboard');
+        Route::get('dashboard', DashboardController::class)->name('dashboard.alias');
 
         Route::patch('projects/reorder', [AdminProjectController::class, 'reorder'])->name('projects.reorder');
         Route::patch('projects/{project}/featured', [AdminProjectController::class, 'toggleFeatured'])->name('projects.featured');
@@ -95,21 +97,30 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::get('blocks', [GlobalBlockController::class, 'index'])->name('blocks.index');
         Route::put('blocks/{block}', [GlobalBlockController::class, 'update'])->name('blocks.update');
+        Route::redirect('global-blocks', '/admin/blocks');
 
         Route::get('inquiries/export', [InquiryController::class, 'export'])->name('inquiries.export');
         Route::get('inquiries', [InquiryController::class, 'index'])->name('inquiries.index');
+        Route::redirect('inbox', '/admin/inquiries');
+        Route::redirect('leads', '/admin/inquiries');
         Route::get('inquiries/{inquiry}', [InquiryController::class, 'show'])->name('inquiries.show');
         Route::patch('inquiries/{inquiry}/status', [InquiryController::class, 'updateStatus'])->name('inquiries.status');
         Route::patch('inquiries/{inquiry}/notes', [InquiryController::class, 'updateNotes'])->name('inquiries.notes');
         Route::delete('inquiries/{inquiry}', [InquiryController::class, 'destroy'])->name('inquiries.destroy');
 
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
         Route::middleware('super-admin')->group(function (): void {
             Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
             Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
+            Route::get('email-smtp', [MailSettingController::class, 'edit'])->name('mail.smtp');
+            Route::put('email-smtp', [MailSettingController::class, 'update']);
             Route::get('mail', [MailSettingController::class, 'edit'])->name('mail.edit');
             Route::put('mail', [MailSettingController::class, 'update'])->name('mail.update');
             Route::post('mail/test', [MailSettingController::class, 'test'])->name('mail.test');
+            Route::redirect('settings/email', '/admin/email-smtp');
+            Route::redirect('mail/templates', '/admin/email-templates');
 
             Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
             Route::put('email-templates/{template}', [EmailTemplateController::class, 'update'])->name('email-templates.update');

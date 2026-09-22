@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\MailEncryption;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Single-row SMTP configuration (always id 1), applied over the mail config
@@ -115,12 +116,51 @@ class MailSetting extends Model
     }
 
     /**
+     * Apply stored SMTP settings over Laravel's mail configuration at runtime
+     * and purge any cached mailer instance so the changes take effect immediately.
+     */
+    public function applyConfig(): void
+    {
+        $overrides = $this->configOverrides();
+
+        if ($overrides !== []) {
+            config($overrides);
+
+            if (app()->resolved('mail.manager')) {
+                Mail::purge('smtp');
+            }
+        }
+    }
+
+    /**
      * Where admin lead notifications go — the dedicated inbox if one is set,
      * otherwise the site's public contact address.
      */
     public function notificationRecipient(): string
     {
-        return $this->admin_notification_email ?: Setting::current()->contact_email;
+        return trim((string) ($this->admin_notification_email ?: Setting::current()->contact_email));
+    }
+
+    /**
+     * Where admin lead notifications go as a list of validated email addresses.
+     * Supports single addresses as well as comma-separated recipient lists.
+     *
+     * @return list<string>
+     */
+    public function notificationRecipients(): array
+    {
+        $raw = $this->notificationRecipient();
+
+        if (blank($raw)) {
+            return [];
+        }
+
+        $emails = array_values(array_filter(
+            array_map('trim', explode(',', $raw)),
+            fn (string $email) => filter_var($email, FILTER_VALIDATE_EMAIL) !== false,
+        ));
+
+        return $emails !== [] ? $emails : [$raw];
     }
 
     /**

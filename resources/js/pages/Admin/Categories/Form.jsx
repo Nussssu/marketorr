@@ -6,6 +6,7 @@ import {
     ColorInput,
     Field,
     Input,
+    MediaPickerField,
     PageHeader,
     Panel,
     Select,
@@ -40,9 +41,15 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
         }));
     };
 
-    const onThumbnailChange = (file) => {
-        setData('thumbnail', file);
-        setPreview(file ? URL.createObjectURL(file) : category?.thumbnail_url ?? null);
+    const onThumbnailChange = (fileOrUrl) => {
+        setData('thumbnail', fileOrUrl);
+        if (typeof fileOrUrl === 'string') {
+            setPreview(fileOrUrl || (category?.thumbnail_url ?? null));
+        } else if (fileOrUrl instanceof File) {
+            setPreview(URL.createObjectURL(fileOrUrl));
+        } else {
+            setPreview(category?.thumbnail_url ?? null);
+        }
     };
 
     const submit = (e) => {
@@ -106,17 +113,14 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
 
                 <div className="space-y-6">
                     <Panel title="Thumbnail">
-                        <Field label="Image" error={errors.thumbnail} hint="JPG, PNG, WebP or SVG. Max 2 MB.">
-                            <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                                onChange={(e) => onThumbnailChange(e.target.files?.[0] ?? null)}
-                                className="w-full text-[12px] text-[var(--mute)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--chip)] file:px-3 file:py-2 file:text-[11px] file:font-bold file:uppercase file:tracking-[0.14em] file:text-[var(--ink)]"
-                            />
-                        </Field>
-                        {preview && (
-                            <img src={preview} alt="" className="mt-4 w-full rounded-lg border border-[var(--line)] object-cover" />
-                        )}
+                        <MediaPickerField
+                            label="Image"
+                            error={errors.thumbnail}
+                            hint="JPG, PNG, WebP or SVG. Max 2 MB."
+                            preview={preview}
+                            value={typeof data.thumbnail === 'string' ? data.thumbnail : ''}
+                            onChange={(url) => onThumbnailChange(url)}
+                        />
                     </Panel>
 
                     <Panel title="Publishing">
