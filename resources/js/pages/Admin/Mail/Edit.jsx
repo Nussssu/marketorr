@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../components/admin/AdminLayout';
+import MailNav from '../../../components/admin/MailNav';
 import { Button, Field, Input, PageHeader, Panel, Select, Toggle } from '../../../components/admin/ui';
 
 /** Sends a probe message through the saved settings. */
@@ -56,6 +57,8 @@ export default function MailEdit({ mail, encryptions, envMailer }) {
                     ? 'Stored SMTP settings are in use.'
                     : `Disabled — mail is going through the .env mailer (${envMailer}).`}
             />
+
+            <MailNav activeTab="smtp" />
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <form onSubmit={submit} className="space-y-6 lg:col-span-2">
@@ -144,6 +147,18 @@ export default function MailEdit({ mail, encryptions, envMailer }) {
                         ) : (
                             <p className="text-[13px] text-[var(--mute)]">Never tested.</p>
                         )}
+                    </Panel>
+
+                    <Panel title="Email templates" description="Automated notifications sent on new inquiries.">
+                        <p className="text-[12px] leading-relaxed text-[var(--mute)]">
+                            Review, customize, and live-preview the transactional messages sent to both your team and
+                            inquiring leads.
+                        </p>
+                        <div className="mt-4">
+                            <Button as="link" href="/admin/email-templates" variant="secondary" className="w-full">
+                                Manage & preview templates →
+                            </Button>
+                        </div>
                     </Panel>
 
                     <Panel title="Security">

@@ -6,6 +6,7 @@ use App\Enums\EmailTemplateKey;
 use App\Enums\InquiryStatus;
 use App\Mail\TemplatedMail;
 use App\Models\ContactSubmission;
+use App\Models\MailSetting;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -136,5 +137,40 @@ class ContactFormTest extends TestCase
         }
 
         $this->post('/contact', $this->validPayload())->assertStatus(429);
+    }
+
+    public function test_successful_submission_notifies_configured_admin_email(): void
+    {
+        Mail::fake();
+
+        $mailSetting = MailSetting::loadFromDatabase();
+        $mailSetting->update(['admin_notification_email' => 'custom-admin@example.com']);
+        MailSetting::forgetCurrent();
+
+        $this->post('/contact', $this->validPayload());
+
+        Mail::assertSent(
+            TemplatedMail::class,
+            fn (TemplatedMail $mail) => $mail->hasTo('custom-admin@example.com')
+                && $mail->template->key === EmailTemplateKey::AdminLeadNotification,
+        );
+    }
+
+    public function test_successful_submission_notifies_multiple_admin_recipients(): void
+    {
+        Mail::fake();
+
+        $mailSetting = MailSetting::loadFromDatabase();
+        $mailSetting->update(['admin_notification_email' => 'admin1@example.com, admin2@example.com']);
+        MailSetting::forgetCurrent();
+
+        $this->post('/contact', $this->validPayload());
+
+        Mail::assertSent(
+            TemplatedMail::class,
+            fn (TemplatedMail $mail) => $mail->hasTo('admin1@example.com')
+                && $mail->hasTo('admin2@example.com')
+                && $mail->template->key === EmailTemplateKey::AdminLeadNotification,
+        );
     }
 }

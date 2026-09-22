@@ -427,6 +427,10 @@ export default function Header() {
         href: item.url,
     }));
     const LINKS = menuLinks.length > 0 ? menuLinks : FALLBACK_LINKS;
+    const settings = props.settings;
+    const isSticky = settings?.headerSticky !== false;
+    const ctaLink = settings?.headerCtaLink || '/contact';
+    const ctaText = settings?.headerCtaText || 'Start a Project';
 
     /** Hover intent: open instantly, close after a short grace period. */
     const openMega = () => {
@@ -509,7 +513,7 @@ export default function Header() {
     const floating = scrolled && !open;
 
     return (
-        <header className="fixed inset-x-0 top-0 z-[9999]">
+        <header className={`${isSticky ? 'fixed' : 'relative'} inset-x-0 top-0 z-[9999]`}>
             {/* full-width at the top of the page, compact floating pill once scrolled */}
             <div className={`header-shell mobile-header-shell relative z-10 ${floating ? 'header-shell--float' : ''}`}>
                 <div
@@ -575,15 +579,15 @@ export default function Header() {
                         <ThemeToggle />
                         <MagneticButton>
                             <Link
-                                href="/contact"
-                                onClick={(event) => navigateWithCurtain(event, '/contact')}
+                                href={ctaLink}
+                                onClick={(event) => navigateWithCurtain(event, ctaLink)}
                                 data-cursor="cta"
                                 className="btn-press inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] font-bold uppercase tracking-[0.16em] text-white"
                                 style={{
                                     background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
                                 }}
                             >
-                                Start a Project <span aria-hidden>↗</span>
+                                {ctaText} <span aria-hidden>↗</span>
                             </Link>
                         </MagneticButton>
                     </nav>

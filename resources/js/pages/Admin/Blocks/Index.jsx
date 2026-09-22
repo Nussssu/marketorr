@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, ColorInput, Field, Input, PageHeader, Panel, Toggle } from '../../../components/admin/ui';
+import { Button, ColorInput, Field, Input, MediaPickerField, PageHeader, Panel, Toggle } from '../../../components/admin/ui';
 
 /** Human labels for the content keys a block stores. */
 const LABELS = {
@@ -8,6 +8,8 @@ const LABELS = {
     linkLabel: 'Link label',
     linkUrl: 'Link URL',
     accent: 'Background colour',
+    image: 'Media asset',
+    media: 'Media asset',
 };
 
 function BlockEditor({ block }) {
@@ -28,14 +30,37 @@ function BlockEditor({ block }) {
         <Panel title={block.name} description={block.enabled ? 'Currently showing on the site.' : 'Currently hidden.'}>
             <form onSubmit={submit} className="grid gap-5">
                 {Object.entries(data.content).map(([key, value]) => (
-                    <Field key={key} label={LABELS[key] ?? key} error={errors[`content.${key}`]}>
+                    <div key={key}>
                         {key === 'accent' ? (
-                            <ColorInput value={value ?? ''} onChange={(next) => setContent(key, next)} />
+                            <Field label={LABELS[key] ?? key} error={errors[`content.${key}`]}>
+                                <ColorInput value={value ?? ''} onChange={(next) => setContent(key, next)} />
+                            </Field>
+                        ) : key === 'image' || key === 'media' ? (
+                            <MediaPickerField
+                                label={LABELS[key] ?? key}
+                                value={value ?? ''}
+                                onChange={(next) => setContent(key, next)}
+                                error={errors[`content.${key}`]}
+                            />
                         ) : (
-                            <Input value={value ?? ''} onChange={(e) => setContent(key, e.target.value)} />
+                            <Field label={LABELS[key] ?? key} error={errors[`content.${key}`]}>
+                                <Input value={value ?? ''} onChange={(e) => setContent(key, e.target.value)} />
+                            </Field>
                         )}
-                    </Field>
+                    </div>
                 ))}
+
+                {data.content.image === undefined && data.content.media === undefined && (
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setContent('image', '')}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                            + Choose Media from Library
+                        </button>
+                    </div>
+                )}
 
                 <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
                     <Toggle
