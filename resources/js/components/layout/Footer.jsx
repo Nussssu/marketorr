@@ -109,11 +109,11 @@ export default function Footer() {
                                     {s.label}
                                 </a>
                             ))}
-                            <Link href="/work" data-cursor="cta" className="footer-explore btn-press font-display">
-                                Explore
-                                <span aria-hidden className="footer-explore__arrow text-[12px] leading-none">↗</span>
-                            </Link>
                         </div>
+                        <Link href="/work" data-cursor="cta" className="footer-explore btn-press mt-7 font-display">
+                            Explore
+                            <span aria-hidden className="footer-explore__arrow text-[12px] leading-none">↗</span>
+                        </Link>
                     </div>
                 </motion.div>
 

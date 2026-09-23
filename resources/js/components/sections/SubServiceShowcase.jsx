@@ -8,6 +8,7 @@ import {
 import { useCallback, useRef } from 'react';
 import { useTapIntent } from '../../lib/tapIntent';
 import MediaPlaceholder from '../media/MediaPlaceholder';
+import { transitionTo } from '../motion/PageTransition';
 import { expandTo } from '../motion/ShowcaseTransition';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
@@ -39,6 +40,13 @@ function useOpenSubService(category, item) {
         if (!node) return;
 
         event.preventDefault();
+
+        if (!item.image) {
+            transitionTo(href);
+
+            return;
+        }
+
         const rect = node.getBoundingClientRect();
         const radius = parseFloat(getComputedStyle(node).borderTopLeftRadius) || 0;
         expandTo(href, {
@@ -189,16 +197,6 @@ function DesktopScene({ category, item, index, count, reduce }) {
                     ) : (
                         <MediaPlaceholder label={`${item.name} - image placeholder`} />
                     )}
-                    <span
-                        aria-hidden
-                        className="absolute inset-0"
-                        style={{ background: 'linear-gradient(180deg, transparent 0%, transparent 48%, rgba(6,6,10,0.28) 74%, rgba(6,6,10,0.62) 100%)' }}
-                    />
-                    <span
-                        aria-hidden
-                        className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                        style={{ background: `radial-gradient(120% 90% at 50% 100%, ${item.accent}38, transparent 62%)` }}
-                    />
                     <span className="absolute inset-x-0 top-0 flex items-center justify-between p-5 text-[10px] font-bold uppercase tracking-[0.24em] text-white/70" aria-hidden>
                         <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 backdrop-blur-sm">
                             <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: item.accent }} />
@@ -347,11 +345,6 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
                     ) : (
                         <MediaPlaceholder label={`${item.name} - image placeholder`} />
                     )}
-                    <span
-                        aria-hidden
-                        className="absolute inset-0"
-                        style={{ background: 'linear-gradient(180deg, transparent 0%, transparent 42%, rgba(6,6,10,0.40) 70%, rgba(6,6,10,0.78) 100%)' }}
-                    />
                     <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: BRAND_GRADIENT }} />
                     <h3 className="absolute inset-x-5 bottom-5 font-display text-[clamp(1.6rem,7.4vw,2.6rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white">
                         {item.name}

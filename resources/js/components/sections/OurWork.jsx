@@ -1,9 +1,11 @@
 import { Link } from '@inertiajs/react';
 import ProjectMotion from '../media/ProjectMotion';
+import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
 import { EASE } from '../../lib/motion';
+import { projectCardMedia } from '../../lib/projectHeroMedia';
 import { useTapIntent } from '../../lib/tapIntent';
 import { GradientTitle, SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
@@ -51,12 +53,26 @@ function useDesktopScrollStage() {
  */
 function ProjectCover({ p, glow, rich, progress }) {
     const reduce = useReducedMotion();
+    const cardMedia = projectCardMedia(p);
     const parallax = rich && !reduce;
     // Small, GPU-only drift: transform + opacity only, no blur, no layout work.
     const y = useTransform(progress, [0, 1], parallax ? ['-3%', '3%'] : ['0%', '0%']);
+    const branded = isCharukothon(p.slug);
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-[#111116]" style={{ containerType: 'inline-size' }}>
+            {branded ? (
+                <motion.div
+                    className="absolute inset-x-0 -top-[3%] h-[106%]"
+                    style={{ y, willChange: parallax ? 'transform' : undefined }}
+                    initial={{ scale: reduce ? 1 : 1.06 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true, margin: '-10% 0px' }}
+                    transition={{ duration: 0.9, ease: [...EASE] }}
+                >
+                    <CharukothonCover image={p.image} />
+                </motion.div>
+            ) : (
             <motion.div
                 className="absolute inset-x-0 -top-[3%] h-[106%]"
                 style={{ y, willChange: parallax ? 'transform' : undefined }}
@@ -66,20 +82,24 @@ function ProjectCover({ p, glow, rich, progress }) {
                 transition={{ duration: 0.9, ease: [...EASE] }}
             >
                 <img
-                    src={p.image}
-                    alt={p.imageAlt}
+                    src={cardMedia.src}
+                    alt={cardMedia.alt}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.035]"
+                    className={`h-full w-full transition-transform duration-200 ease-out group-hover:scale-[1.035] ${cardMedia.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                 />
             </motion.div>
+            )}
 
-            {/* accent wash — keeps covers cinematic in both themes, lifts on hover */}
+            {/* accent wash — keeps covers cinematic in both themes, lifts on hover.
+                Skipped for the branded Charukothon art, which carries its own grade. */}
+            {!branded && (
             <div
                 className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-200 group-hover:opacity-70"
                 style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}1f, transparent 58%), linear-gradient(180deg, transparent 0%, transparent 50%, rgba(8,8,10,0.34) 76%, rgba(8,8,10,0.72) 100%)` }}
                 aria-hidden
             />
+            )}
             <ProjectMotion slug={p.slug} />
 
             {/* curtain wipe on first entry only — transform-only, never re-runs on scroll */}
@@ -92,25 +112,6 @@ function ProjectCover({ p, glow, rich, progress }) {
                     transition={{ duration: 0.6, ease: [...EASE] }}
                     aria-hidden
                 />
-            )}
-
-            {p.metric && (
-                <motion.div
-                    className="absolute right-4 top-4 text-right md:right-8 md:top-8"
-                    initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-10% 0px' }}
-                    transition={{ duration: 0.5, delay: 0.5, ease: [...EASE] }}
-                    aria-hidden
-                >
-                    <p
-                        className="font-display font-extrabold leading-none text-white"
-                        style={{ fontSize: 'clamp(1.35rem, 9cqw, 3.5rem)' }}
-                    >
-                        {p.metric}
-                    </p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60 md:text-[11px] md:tracking-[0.2em]">{p.metricLabel}</p>
-                </motion.div>
             )}
 
             <div
@@ -210,23 +211,15 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
                     className="mt-5 flex flex-wrap items-start justify-between gap-4"
                 >
                     <div>
-                        <motion.p variants={metaItem} className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">{p.client} · {p.year}</motion.p>
-                        <motion.h3 variants={metaItem} className="mt-1 font-display text-2xl font-extrabold uppercase text-[var(--ink-strong)] md:text-3xl">
+                        <motion.h3 variants={metaItem} className="font-display text-2xl font-extrabold uppercase text-[var(--ink-strong)] md:text-3xl">
                             <GradientTitle text={p.title} />
                         </motion.h3>
-                        <motion.p variants={metaItem} className="mt-2 max-w-md text-[14px] leading-relaxed text-[var(--mute)]">{p.description}</motion.p>
                         <motion.div variants={metaItem} className="mt-3 flex flex-wrap gap-2">
                             {p.tags.map((t) => (
                                 <Tag key={t} accent={p.accent}>{t}</Tag>
                             ))}
                         </motion.div>
                     </div>
-                    {p.metric && (
-                        <motion.div variants={metaItem} className="text-right">
-                            <p className="font-display text-2xl font-extrabold" style={{ color: p.accent }}>{p.metric}</p>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{p.metricLabel}</p>
-                        </motion.div>
-                    )}
                 </motion.div>
                 </motion.div>
             </Link>
@@ -238,6 +231,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
 function MobileCard({ p, focus }) {
     const reduce = useReducedMotion();
     const tapIntent = useTapIntent();
+    const cardMedia = projectCardMedia(p);
 
     return (
         <motion.article
@@ -255,39 +249,32 @@ function MobileCard({ p, focus }) {
                 className="group block h-full min-w-0 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2"
                 aria-label={`View ${p.title} case study`}
             >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#111116]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#111116]" style={{ containerType: 'inline-size' }}>
+                    {isCharukothon(p.slug) ? (
+                        <CharukothonCover image={p.image} />
+                    ) : (
                     <img
-                        src={p.image}
-                        alt={p.imageAlt}
+                        src={cardMedia.src}
+                        alt={cardMedia.alt}
                         loading="lazy"
                         decoding="async"
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.035]"
+                        className={`absolute inset-0 h-full w-full transition-transform duration-200 ease-out group-hover:scale-[1.035] ${cardMedia.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                     />
+                    )}
                     <div
                         className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.30)_0%,transparent_24%,transparent_54%,rgba(8,8,10,0.28)_78%,rgba(8,8,10,0.58)_100%)] transition-opacity duration-200 group-hover:opacity-75"
                         aria-hidden
                     />
                     <ProjectMotion slug={p.slug} />
-                    {p.metric && (
-                        <p className="absolute right-2 top-2 font-display text-[13px] font-extrabold leading-none text-white/95" aria-hidden>
-                            {p.metric}
-                        </p>
-                    )}
                     <div className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-black transition-transform duration-200 group-hover:scale-105" aria-hidden>
                         <span data-arrow>↗</span>
                     </div>
                 </div>
 
                 <motion.div className="min-w-0 px-0.5 pb-0.5 pt-2" style={focus ? { opacity: focus } : undefined}>
-                    <p className="truncate text-[8px] font-bold uppercase tracking-[0.12em] text-[var(--ink-faint)]">
-                        {p.client} · {p.year}
-                    </p>
-                    <h3 className="mt-1 min-h-[2.25rem] overflow-hidden font-display text-[13px] font-extrabold uppercase leading-[1.05] text-[var(--ink-strong)]">
+                    <h3 className="min-h-[2.25rem] overflow-hidden font-display text-[13px] font-extrabold uppercase leading-[1.05] text-[var(--ink-strong)]">
                         <GradientTitle text={p.title} />
                     </h3>
-                    <p className="mt-1.5 overflow-hidden text-[9px] leading-[1.35] text-[var(--mute)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-                        {p.description}
-                    </p>
                     {p.tags.length > 0 && (
                         <div className="mt-2 flex min-w-0 items-center gap-1">
                             <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--chip)] px-1.5 py-1 text-[7px] font-semibold uppercase tracking-[0.08em] text-[var(--ink)]">

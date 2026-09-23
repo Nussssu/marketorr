@@ -177,6 +177,29 @@ section[id], div[id], footer[id] {
 @media (prefers-reduced-motion: reduce) {
   .progression-highlight { animation: none; }
 }
+
+/* Awards & Recognition marquee plates. The press logos are dark artwork on
+   transparent or white backgrounds, so a dark glass plate would swallow them:
+   both themes therefore use a light translucent plate and tune alpha, border
+   and shadow so the box itself stays legible against its own background.
+   Dark theme leans on a brighter plate and a deep shadow; light theme leans on
+   a defined border and a softer shadow, since white-on-white needs the edge. */
+.award-plate {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 18px 40px -24px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+:root[data-theme="light"] .award-plate {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(18, 18, 22, 0.14);
+  box-shadow:
+    0 14px 32px -24px rgba(18, 18, 22, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
 .bg-brand { background: var(--brand-gradient); }
 
 .container-x {

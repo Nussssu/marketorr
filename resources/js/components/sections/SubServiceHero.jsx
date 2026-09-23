@@ -28,10 +28,10 @@ function useRichScene() {
  * Same architecture as the discipline hero: one large topic visual with an
  * oversized title layered over it, split across depth planes (visual / title /
  * foreground chrome). Each plane travels on scroll at its own speed while the
- * scene compresses (scale + dim veil) and hands off to the deliverables section.
+ * scene compresses (scale) and hands off to the deliverables section.
  *
  * Motion is transform/translate3d/scale/rotate/opacity only — no blur, no
- * layout animation. Brand colors appear only as subtle lighting accents.
+ * layout animation, and no layer of any kind above the visual itself.
  *
  * Nothing in this hero reacts to the pointer. Depth is scroll-driven only.
  *
@@ -58,9 +58,8 @@ export default function SubServiceHero({ item, parentHref }) {
     const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
 
     // Scroll journey: the visual pushes in slowly, the title rushes up faster,
-    // foreground chrome exits first, and the stage compresses under a dim veil.
+    // and foreground chrome exits first as the stage compresses.
     const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.93 : 0.97]);
-    const veilOpacity = useTransform(scrollYProgress, [0.55, 1], [0, full ? 0.6 : 0.45]);
     const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);
     const bgShiftY = useTransform(scrollYProgress, [0, 1], ['0%', '10%']);
     const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-38%' : '-16%']);
@@ -101,23 +100,6 @@ export default function SubServiceHero({ item, parentHref }) {
                         style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}
                         className="absolute inset-0"
                     >
-                        {/* legibility scrims (static) + subtle brand lighting (static) */}
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background:
-                                    'linear-gradient(180deg, rgba(5,5,10,0.68) 0%, rgba(5,5,10,0.38) 32%, rgba(5,5,10,0.42) 62%, rgba(5,5,10,0.84) 100%)',
-                            }}
-                            aria-hidden
-                        />
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background: `radial-gradient(55% 40% at 12% 6%, ${item.accent}45, transparent 70%), radial-gradient(45% 38% at 88% 96%, rgba(27,226,235,0.20), transparent 70%), radial-gradient(40% 32% at 82% 8%, rgba(80,122,244,0.16), transparent 70%)`,
-                            }}
-                            aria-hidden
-                        />
-
                         {/* PLANE 2 — oversized title (single sharp primary layer) */}
                         <motion.div
                             style={reduce ? undefined : { y: titleShiftY, scale: titleScale, opacity: titleFade }}
@@ -180,9 +162,6 @@ export default function SubServiceHero({ item, parentHref }) {
                                 </motion.div>
                             </motion.div>
                         </motion.div>
-
-                        {/* dim veil for the scroll hand-off */}
-                        <motion.div style={reduce ? undefined : { opacity: veilOpacity }} className="pointer-events-none absolute inset-0 bg-black" aria-hidden />
 
                     </motion.div>
                 </motion.div>

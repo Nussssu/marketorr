@@ -13,17 +13,6 @@
  * @type {Record<string, { src: string, alt: string, fit?: 'cover'|'contain', background?: string }>}
  */
 export const PROJECT_MOTION = {
-    'imperial-jute-brand-design': {
-        src: '/images/work/imperial-jute-logo.gif',
-        alt: 'Imperial Jute logo animation',
-        background: '#000000',
-    },
-    'imperial-jute-b2b-seo': {
-        src: '/images/work/imperial-jute-logo.gif',
-        alt: 'Imperial Jute logo animation',
-        background: '#000000',
-    },
-
     // Virgin Trend: the logo animation is not published as a downloadable
     // file anywhere reachable - the Behance gallery exposes four still
     // modules and no animated one. Drop the exported .gif (or .mp4, which

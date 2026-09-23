@@ -28,12 +28,54 @@ class ProjectSeeder extends Seeder
             $project['image_path'] = $this->storeCover($project['image_path']);
             $project['sort_order'] = $order;
             $project['status'] = ContentStatus::Published;
+            $project['case_study'] ??= $this->gallery($project['slug'], $project['title']);
 
             Project::query()->updateOrCreate(
                 ['slug' => $project['slug']],
                 $project,
             );
         }
+    }
+
+    /**
+     * The project's own photographs, read off disk rather than listed here.
+     *
+     * Each file under `public/images/work/gallery/<slug>/` is one frame of the
+     * gallery published with that project on marketorr.com.bd, saved in the
+     * order it appears there. Reading the directory keeps this seeder honest:
+     * a project whose images have not been downloaded yet simply seeds no
+     * gallery instead of pointing at files that are not on disk.
+     *
+     * @return array<int, array{label: string, note: null, images: array<int, array{src: string, alt: string, wide: bool}>}>|null
+     */
+    private function gallery(string $slug, string $title): ?array
+    {
+        $directory = public_path('images/work/gallery/'.$slug);
+
+        if (! File::isDirectory($directory)) {
+            return null;
+        }
+
+        $images = collect(File::files($directory))
+            ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'webp'], true))
+            ->sortBy(fn ($file): string => $file->getFilename())
+            ->values()
+            ->map(fn ($file, int $index): array => [
+                'src' => '/images/work/gallery/'.$slug.'/'.$file->getFilename(),
+                'alt' => $title.' project image '.($index + 1),
+                'wide' => false,
+            ])
+            ->all();
+
+        if ($images === []) {
+            return null;
+        }
+
+        return [[
+            'label' => 'Project gallery',
+            'note' => null,
+            'images' => $images,
+        ]];
     }
 
     /**
@@ -112,24 +154,77 @@ class ProjectSeeder extends Seeder
                 'metric' => '2100%',
                 'metric_label' => 'Organic Traffic Increase',
                 'accent' => '#891FFB',
-                'image_path' => '/images/work/imperial-jute-seo.jpg',
-                'image_alt' => 'Imperial Jute B2B SEO case study cover',
+                'image_path' => '/images/work/imperial-jute-logo.gif',
+                'image_alt' => 'Imperial Jute 3D logo animation',
                 'tags' => ['SEO', 'Content Strategy', 'Web UI/UX'],
+                'brief' => [
+                    'overview' => 'Imperial Jute is a leading jute goods manufacturer, supplier and exporter, exporting jute bags, jute tape, fabrics, yarn and ropes. Quality jute product within the shortest period of delivery is its main motto as a leading jute goods manufacturer and exporter in Bangladesh, and the company is committed to developing the food-grade jute bag and creating an ecologically sustainable future.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Website Development',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Imperial Jute Limited',
+                    'website' => 'https://www.imperialjute.com/',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/imperial-jute/',
+                ],
                 'featured' => true,
             ],
             [
-                'slug' => 'commercial-cleaning-seo',
-                'title' => 'Commercial Cleaning',
-                'client' => 'B2B Commercial Cleaning · US',
-                'category' => 'SEO · Organic Growth',
-                'year' => '2023',
-                'description' => 'Comprehensive keyword research, content mapping, on-page and technical SEO built topical authority for a US commercial cleaning provider — 12,000 organic users and $6,447 average monthly sales across the year.',
-                'metric' => '$431,967',
-                'metric_label' => 'Gross Sales',
-                'accent' => '#507AF4',
-                'image_path' => '/images/work/commercial-cleaning-seo.jpg',
-                'image_alt' => 'Commercial cleaning SEO case study cover',
-                'tags' => ['SEO', 'Technical SEO', 'Growth'],
+                'slug' => 'charukothon-meta-ads',
+                'title' => 'Charukothon',
+                'client' => 'Charukothon · Fashion Brand, Bangladesh',
+                'category' => 'Paid Ads · Creative Strategy',
+                'year' => '2026',
+                'description' => 'A creative-first Meta ads launch for a brand-new Bangladeshi fashion label: a custom photo and video frame system, one exclusive influencer partnership and collage-style single-image testing took the page from zero to 1 million BDT in monthly revenue in 60 days.',
+                'metric' => '11X',
+                'metric_label' => 'Return on Ad Spend',
+                'accent' => '#891FFB',
+                'image_path' => '/images/work/charukothon-meta-ads.webp',
+                'image_alt' => 'Charukothon fashion brand Meta ads case study cover',
+                'tags' => ['Paid Ads', 'Creative Strategy', 'Growth'],
+                'brief' => [
+                    'overview' => 'Charukothon wanted to enter the fashion brand industry in Bangladesh through Facebook but did not know how to approach it, given the saturated market, competitors’ big spending and the ever-changing Facebook algorithm. The brand was confident with their product but needed help placing their brand on Facebook.',
+                    'worked_on' => [
+                        'Creating a strong brand identity',
+                        'Mastering the “Andromeda” algorithm shift',
+                        'Influencer partnership and integration',
+                        'A/B testing across ad formats',
+                        'Scaling production ahead of ad spend',
+                        'Customer experience and follow-up',
+                    ],
+                    'services' => [
+                        'Facebook Ads',
+                        'Creative Strategy',
+                        'Influencer Marketing',
+                    ],
+                    'highlights' => [
+                        [
+                            'label' => 'Revenue',
+                            'value' => '10 Lacs (1 Million BDT) in monthly sales within 2 months',
+                        ],
+                        [
+                            'label' => 'Efficiency',
+                            'value' => '11X ROAS (Return on Ad Spend)',
+                        ],
+                        [
+                            'label' => 'Volume',
+                            'value' => '40+ orders per day at a 180 BDT CPA',
+                        ],
+                        [
+                            'label' => 'Organic lift',
+                            'value' => '5–8 organic orders every day without ad spend',
+                        ],
+                        [
+                            'label' => 'Community',
+                            'value' => 'Page grew from 0 to 27,000 followers in 90 days',
+                        ],
+                    ],
+                    'client' => 'Charukothon',
+                    'website' => null,
+                    'source_url' => 'https://www.marketorr.com.bd/case-study/charukothon/',
+                ],
                 'featured' => true,
             ],
             [
@@ -160,6 +255,19 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/city-online-brand.jpg',
                 'image_alt' => 'City Online brand identity guidelines cover',
                 'tags' => ['Branding', 'Identity Guidelines'],
+                'brief' => [
+                    'overview' => 'City Online Ltd. is a leading Internet Service Provider and IT solution company in Bangladesh. It is the company of information communication technology to provide the services like Broadband Internet through Fiber to The Home (FTTH) passive optical network technology. This is the next generation technology designed to deliver fast, reliable, dedicated, and affordable internet services to customers at all levels.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Web Development',
+                    ],
+                    'highlights' => [],
+                    'client' => 'City Online Limited',
+                    'website' => 'https://www.cityonlinebd.net/',
+                    'behance_url' => 'https://www.behance.net/gallery/189089907/Brand-Identity-Guidelines-City-Online',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/city-online-brand-design',
+                ],
                 'featured' => true,
             ],
             [
@@ -175,6 +283,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/city-online-web.jpg',
                 'image_alt' => 'City Online website UI design case study cover',
                 'tags' => ['Web UI/UX', 'Development'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Web Development',
+                    ],
+                    'highlights' => [],
+                    'client' => 'City Online Limited',
+                    'website' => 'https://www.cityonlinebd.net/',
+                    'behance_url' => 'https://www.behance.net/gallery/187978651/Website-UI-Design-Case-Study-City-Online',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/cityonline-web-development',
+                ],
                 'featured' => false,
             ],
             [
@@ -190,6 +310,19 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/microters-web.png',
                 'image_alt' => 'Microters website UI design case study cover',
                 'tags' => ['Web UI/UX', 'UI Design'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Logo Design',
+                        'Web Development',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Microters',
+                    'website' => 'https://microters.com/',
+                    'behance_url' => 'https://www.behance.net/gallery/188064937/Website-UI-Design-Case-Study-Microters',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/microters/',
+                ],
                 'featured' => true,
             ],
             [
@@ -205,6 +338,19 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/dusty-vision.jpg',
                 'image_alt' => 'Dusty Vision visual identity cover',
                 'tags' => ['Branding', 'Logo Design'],
+                'brief' => [
+                    'overview' => 'Dusty Vision is an efficient toilet paper holder that offers a distinctive storage solution in the form of a drawer-style design, setting it apart from the prevailing lid-style approach commonly seen in its competitors. The brand aims to establish itself in the home improvement niche, with a storage solution that provides efficient organization, easy accessibility and enhanced hygiene.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Identity',
+                        'Packaging Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Dusty Vision',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/172596821/Dusty-Vision-Visual-Identity',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/dusty-vision/',
+                ],
                 'featured' => false,
             ],
             [
@@ -220,6 +366,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/virgin-trend-cover.jpg',
                 'image_alt' => 'Virgin Trend fashion brand visual identity cover',
                 'tags' => ['Branding', 'Visual Identity'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Visual Identity Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Virgin Trend',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/176690051/Fashion-Brand-Visual-Identity-Design-Virgin-Trend',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/virgin-trend-brand-identity',
+                ],
                 'featured' => false,
             ],
             [
@@ -235,6 +393,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/imperial-jute-brand.jpg',
                 'image_alt' => 'Imperial Jute minimal logo and brand cover',
                 'tags' => ['Branding', 'Logo Design'],
+                'brief' => [
+                    'overview' => 'Imperial Jute is a leading jute goods manufacturer, supplier and exporter, exporting jute bags, jute tape, fabrics, yarn and ropes. Quality jute product within the shortest period of delivery is its main motto as a leading jute goods manufacturer and exporter in Bangladesh, and the company is committed to developing the food-grade jute bag and creating an ecologically sustainable future.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Imperial Jute',
+                    'website' => 'https://www.imperialjute.com/',
+                    'behance_url' => 'https://www.behance.net/gallery/175626169/Jute-Company-Minimal-Logo-Brand-Design-Imperial-Jute',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/imperial-jute-brand-design/',
+                ],
                 'featured' => false,
             ],
             [
@@ -250,6 +420,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/un-point.jpg',
                 'image_alt' => 'Engineering consulting firm visual identity cover',
                 'tags' => ['Branding', 'Visual Identity'],
+                'brief' => [
+                    'overview' => 'Un Point 5 is an engineering consulting firm specializing in energy-transition enabling and climate-change mitigation services. The concentration of its resources and its continuous development allow Un Point 5 to provide expertise and consultancy services on a national and international level in the fields of construction, renewable energy, energy efficiency and carbon audits.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Identity Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Unpoint5',
+                    'website' => 'https://unpoint5.fr/',
+                    'behance_url' => 'https://www.behance.net/gallery/174714955/Engineering-Consulting-Firm-Visual-Identity-Design',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/unpoint5-brand-identity',
+                ],
                 'featured' => false,
             ],
             [
@@ -265,6 +447,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/nature-to-near.jpg',
                 'image_alt' => 'NTNB Agro firm visual identity cover',
                 'tags' => ['Branding', 'Packaging'],
+                'brief' => [
+                    'overview' => 'Near To Nature Bangladesh is an agricultural multidimensional company committed to fostering sustainable and diverse practices. From cultivating an array of crops to delivering high-quality meat products, its services span the cultivation of diverse crops, sustainable farming practices, premium-quality meat production and wholesome dairy offerings.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Near To Nature Bangladesh',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/184593771/NTNB-Agro-Firm-Visual-Identity',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/near-to-nature/',
+                ],
                 'featured' => false,
             ],
             [
@@ -280,6 +474,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/sabdita-fashion.jpg',
                 'image_alt' => 'Sabdita Fashion rebranding cover',
                 'tags' => ['Branding', 'Rebranding'],
+                'brief' => [
+                    'overview' => 'Sabdita Fashion is an online business specializing in custom-made dresses for women, catering to stylish and fashion-forward individuals who enjoy embracing a modern lifestyle. The brand exudes a clean, sophisticated and contemporary vibe, offering trendy yet elegant dresses designed to empower and inspire its young customers.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Rebranding',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Sabdita Fashion',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/184303473/SF-Rebranding',
+                    'source_url' => 'https://www.marketorr.com.bd/portfolio/sabdita-fashion/',
+                ],
                 'featured' => false,
                 'external_url' => 'https://www.behance.net/gallery/184303473/Rebranding-Sabdita-Fashion',
                 // The visual story, in the order the work was built: foundation,
@@ -405,6 +611,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/illustration-custom.jpg',
                 'image_alt' => 'Custom illustration and digital art cover',
                 'tags' => ['Illustration', 'Digital Art'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Illustration',
+                    ],
+                    'highlights' => [],
+                    'client' => null,
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/180148863/Custom-Illustration-Digital-Art-Digital-Content',
+                    'source_url' => null,
+                ],
                 'featured' => false,
             ],
             [
@@ -420,6 +638,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/illustration-carpet.jpg',
                 'image_alt' => 'Carpet cleaning digital art and illustration cover',
                 'tags' => ['Illustration', 'Digital Art'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Illustration',
+                    ],
+                    'highlights' => [],
+                    'client' => null,
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/180124831/Digital-Art-Illustration-Carpet-Cleaning',
+                    'source_url' => null,
+                ],
                 'featured' => false,
             ],
             [
@@ -435,6 +665,18 @@ class ProjectSeeder extends Seeder
                 'image_path' => '/images/work/illustration-line-drawing.jpg',
                 'image_alt' => 'Line drawing illustration art for infographics cover',
                 'tags' => ['Illustration', 'Infographics'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Illustration',
+                    ],
+                    'highlights' => [],
+                    'client' => null,
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/180184189/Line-Drawing-Illustration-Art-for-Content-Infographic',
+                    'source_url' => null,
+                ],
                 'featured' => false,
             ],
         ];
