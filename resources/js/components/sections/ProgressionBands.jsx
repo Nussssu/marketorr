@@ -153,7 +153,7 @@ export default function ProgressionBands() {
                             ref={(node) => {
                                 rowRefs.current[i] = node;
                             }}
-                            className="flex w-max whitespace-nowrap font-display text-[clamp(1.75rem,4.5vw,3.25rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.02em] text-[var(--scroll-ink)] will-change-transform"
+                            className="flex w-max whitespace-nowrap font-display text-[clamp(1.75rem,4.5vw,3.25rem)] font-light uppercase leading-[0.95] tracking-[-0.02em] text-[var(--scroll-ink)] will-change-transform"
                         >
                             <div className="flex shrink-0 items-center">
                                 <RowContent items={items} highlight={HIGHLIGHTS[i]} />

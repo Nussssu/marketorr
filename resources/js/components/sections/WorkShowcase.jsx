@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import ProjectMotion from '../media/ProjectMotion';
+import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import {
     AnimatePresence,
     motion,
@@ -11,6 +12,7 @@ import {
 } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
+import { projectCardMedia } from '../../lib/projectHeroMedia';
 import { GradientTitle, Tag } from '../ui/primitives';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -73,6 +75,7 @@ const FLOW = {
  */
 function FlowItem({ project, index, rich, reduce, onFocus }) {
     const ref = useRef(null);
+    const cardMedia = projectCardMedia(project);
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
     const frames = rich ? FLOW.rich : FLOW.light;
 
@@ -141,20 +144,26 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                 aria-label={`View ${project.title} case study`}
                 className="group block"
             >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[#111116] min-[769px]:aspect-[16/10]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[#111116] min-[769px]:aspect-[16/10]" style={{ containerType: 'inline-size' }}>
+                    {isCharukothon(project.slug) ? (
+                        <CharukothonCover image={project.image} />
+                    ) : (
                     <img
-                        src={project.image}
-                        alt={project.imageAlt}
+                        src={cardMedia.src}
+                        alt={cardMedia.alt}
                         loading="lazy"
                         decoding="async"
                         draggable={false}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                        className={`absolute inset-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.04] ${cardMedia.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                     />
+                    )}
+                    {!isCharukothon(project.slug) && (
                     <div
                         className="pointer-events-none absolute inset-0 transition-opacity duration-500 group-hover:opacity-70"
                         style={{ background: `radial-gradient(120% 100% at 20% 10%, ${project.accent}1a, transparent 58%), linear-gradient(180deg, rgba(8,8,10,0.34) 0%, transparent 26%, transparent 56%, rgba(8,8,10,0.26) 80%, rgba(8,8,10,0.56) 100%)` }}
                         aria-hidden
                     />
+                    )}
                     <ProjectMotion slug={project.slug} />
                     {project.metric && (
                         <p className="absolute right-2 top-2 font-display text-[13px] font-extrabold text-white min-[769px]:right-6 min-[769px]:top-6 min-[769px]:text-4xl">

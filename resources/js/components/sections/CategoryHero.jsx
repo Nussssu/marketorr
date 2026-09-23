@@ -69,11 +69,11 @@ function useRichScene() {
  * than 4.6 MB. Depth comes
  * from three separated planes (visual / title / foreground chrome): each
  * drifts on the pointer at its own rate inside a perspective stage, and each
- * travels on scroll at its own speed while the whole scene compresses (scale
- * + dim veil) and hands off to the next section.
+ * travels on scroll at its own speed while the whole scene compresses (scale)
+ * and hands off to the next section.
  *
- * Motion is transform/opacity/scale only — no blur, no layout animation.
- * Brand colors appear only as subtle lighting accents over the photo.
+ * Motion is transform/opacity/scale only — no blur, no layout animation, and
+ * no layer of any kind above the clip itself.
  *
  * The title remains the single sharp primary layer. Behind it runs
  * a continuously rising column of this discipline's sub-service names, outlined
@@ -97,7 +97,7 @@ export default function CategoryHero({ category }) {
     /**
      * The clip plays on pointer-fine screens that have not asked for reduced
      * motion. A phone gets the poster frame instead: same hero, same crop,
-     * same overlays, none of the download or decode cost, which is what
+     * same bare visual, none of the download or decode cost, which is what
      * "optimised treatment" has to mean on a metered connection.
      */
     const video = rich && !reduce ? HERO_VIDEO[category.slug] : null;
@@ -109,14 +109,12 @@ export default function CategoryHero({ category }) {
     // Scroll journey across the tall wrapper; the stage is sticky.
     const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
 
-    // Scroll journey: the image pushes in slowly, then dissolves away late;
-    // title and chrome exit at staggered speeds for the layered hand-off into
-    // the next section. Transform + opacity only.
+    // Scroll journey: the image pushes in slowly and stays fully visible for
+    // the whole sticky pass; title and chrome exit at staggered speeds for
+    // the layered hand-off into the next section. Transform + opacity only.
     const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
-    const veilOpacity = useTransform(scrollYProgress, [0.55, 1], [0, full ? 0.62 : 0.45]);
     const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);
     const bgShiftY = useTransform(scrollYProgress, [0, 1], ['0%', '10%']);
-    const bgFade = useTransform(scrollYProgress, [0.5, 0.92], [1, 0]);
     const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-56%' : '-24%']);
     const titleScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.88 : 0.95]);
     const titleFade = useTransform(scrollYProgress, [0.3, 0.68], [1, 0]);
@@ -142,7 +140,7 @@ export default function CategoryHero({ category }) {
                         so it has no scrollable or draggable UI of its own.
                         The poster is the frame it starts on, so the hero is
                         never empty while the first frames decode. */}
-                    <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale, opacity: bgFade }} className="absolute inset-0">
+                    <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale }} className="absolute inset-0">
                             {video ? (
                                 <motion.video
                                     key={video}
@@ -178,22 +176,6 @@ export default function CategoryHero({ category }) {
                             ) : (
                                 <MediaPlaceholder kind="video" label={`${category.name} - hero video placeholder`} />
                             )}
-                        {/* legibility scrims + subtle brand lighting dissolve with the photo */}
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background:
-                                    'linear-gradient(180deg, rgba(5,5,10,0.68) 0%, rgba(5,5,10,0.38) 32%, rgba(5,5,10,0.42) 62%, rgba(5,5,10,0.84) 100%)',
-                            }}
-                            aria-hidden
-                        />
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background: `radial-gradient(55% 40% at 12% 6%, ${category.accent}45, transparent 70%), radial-gradient(45% 38% at 88% 96%, rgba(27,226,235,0.20), transparent 70%), radial-gradient(40% 32% at 82% 8%, rgba(80,122,244,0.16), transparent 70%)`,
-                            }}
-                            aria-hidden
-                        />
                     </motion.div>
 
                     {/* Depth stage. It keeps its perspective — the planes' z
@@ -256,9 +238,6 @@ export default function CategoryHero({ category }) {
                                 </motion.div>
                             </motion.div>
                         </motion.div>
-
-                        {/* dim veil for the scroll hand-off */}
-                        <motion.div style={reduce ? undefined : { opacity: veilOpacity }} className="pointer-events-none absolute inset-0 bg-black" aria-hidden />
 
                     </motion.div>
                 </motion.div>

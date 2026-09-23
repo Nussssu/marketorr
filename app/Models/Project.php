@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
     'slug', 'title', 'client', 'category_id', 'year', 'description',
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
-    'external_url', 'case_study',
+    'external_url', 'case_study', 'brief',
 ])]
 class Project extends Model
 {
@@ -32,6 +32,7 @@ class Project extends Model
         return [
             'tags' => 'array',
             'case_study' => 'array',
+            'brief' => 'array',
             'featured' => 'boolean',
             'status' => ContentStatus::class,
             'sort_order' => 'integer',
@@ -139,9 +140,64 @@ class Project extends Model
             'imageAlt' => $this->image_alt,
             'metric' => $this->metric,
             'metricLabel' => $this->metric_label,
+            'brief' => $this->publicBrief(),
             'featured' => $this->featured,
             'externalUrl' => $this->external_url,
             'caseStudy' => $this->publicCaseStudy(),
+        ];
+    }
+
+    /**
+     * The verified written record for the project page.
+     *
+     * Every field is transcribed from the project's published page on
+     * marketorr.com.bd and nothing is synthesised here: a project whose entry
+     * has not been transcribed yet returns null and the page simply renders
+     * its cover, title and tags rather than inventing a story for it.
+     *
+     * @return array{
+     *     overview: string|null,
+     *     workedOn: array<int, string>,
+     *     services: array<int, string>,
+     *     highlights: array<int, array{label: string, value: string}>,
+     *     client: string|null,
+     *     website: string|null,
+     *     behanceUrl: string|null,
+     *     sourceUrl: string|null
+     * }|null
+     */
+    public function publicBrief(): ?array
+    {
+        $brief = $this->brief;
+
+        if (! is_array($brief) || $brief === []) {
+            return null;
+        }
+
+        $strings = static fn (string $key): array => collect($brief[$key] ?? [])
+            ->filter(fn ($value): bool => is_string($value) && trim($value) !== '')
+            ->map(fn (string $value): string => trim($value))
+            ->values()
+            ->all();
+
+        $highlights = collect($brief['highlights'] ?? [])
+            ->filter(fn ($row): bool => is_array($row) && filled($row['label'] ?? null) && filled($row['value'] ?? null))
+            ->map(fn (array $row): array => [
+                'label' => trim((string) $row['label']),
+                'value' => trim((string) $row['value']),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'overview' => filled($brief['overview'] ?? null) ? trim((string) $brief['overview']) : null,
+            'workedOn' => $strings('worked_on'),
+            'services' => $strings('services'),
+            'highlights' => $highlights,
+            'client' => filled($brief['client'] ?? null) ? trim((string) $brief['client']) : null,
+            'website' => filled($brief['website'] ?? null) ? trim((string) $brief['website']) : null,
+            'behanceUrl' => filled($brief['behance_url'] ?? null) ? trim((string) $brief['behance_url']) : null,
+            'sourceUrl' => filled($brief['source_url'] ?? null) ? trim((string) $brief['source_url']) : null,
         ];
     }
 
