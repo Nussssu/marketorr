@@ -41,7 +41,7 @@ export const PROJECTS = [
         metric: '2100%',
         metricLabel: 'Organic Traffic Increase',
         accent: '#891FFB',
-        image: '/images/work/imperial-jute-logo.gif',
+        image: '/images/work/imperial-jute-logo.webp',
         imageAlt: 'Imperial Jute 3D logo animation',
         tags: ['SEO', 'Content Strategy', 'Web UI/UX'],
         featured: true,

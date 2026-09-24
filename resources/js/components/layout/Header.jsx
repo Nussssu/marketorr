@@ -130,7 +130,7 @@ function megaVariants(reduce) {
  */
 function MegaSubLink({ category, item, variants, onNavigate }) {
     const tapIntent = useTapIntent();
-    const href = `/services/${category.slug}/${item.slug}`;
+    const href = item.href ?? `/services/${category.slug}/${item.slug}`;
 
     return (
         <motion.li variants={variants} className="border-b border-[var(--line-soft)] last:border-b-0">
@@ -170,7 +170,7 @@ function MegaSubLink({ category, item, variants, onNavigate }) {
  */
 function MegaSection({ category, index, variants, onNavigate }) {
     const tapIntent = useTapIntent();
-    const href = `/services/${category.slug}`;
+    const href = category.href ?? `/services/${category.slug}`;
     const items = category.items ?? [];
 
     return (
@@ -231,13 +231,130 @@ function MegaSection({ category, index, variants, onNavigate }) {
 }
 
 /**
+ * One Our Work column: the portfolio's name, and its projects as a slow
+ * horizontal strip of covers rather than a list of titles.
+ *
+ * The strip is two identical halves travelling exactly one half-width, so the
+ * wrap is invisible and the gallery reads as continuous. Reduced motion gets
+ * the same covers, still.
+ */
+function WorkMegaSection({ category, index, variants, onNavigate }) {
+    const tapIntent = useTapIntent();
+    const reduce = useReducedMotion();
+    const href = category.href ?? '/work';
+    const items = (category.items ?? []).filter((item) => item.image);
+
+    return (
+        <div className="min-w-0">
+            <motion.div variants={variants.item}>
+                <Link
+                    href={href}
+                    prefetch
+                    data-cursor="explore"
+                    {...tapIntent}
+                    onClick={(event) => {
+                        tapIntent.onClick(event);
+                        navigateWithCurtain(event, href, onNavigate);
+                    }}
+                    className="group/head block focus-visible:outline-none"
+                >
+                    <span className="flex items-center gap-3">
+                        <span className="font-display text-[11px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
+                            0{index + 1}
+                        </span>
+                        <span
+                            className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/head:w-14"
+                            style={{ background: category.accent }}
+                            aria-hidden
+                        />
+                    </span>
+                    <span className="mt-4 flex items-baseline gap-3">
+                        <span className="min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]">
+                            {category.name}
+                        </span>
+                        <span
+                            aria-hidden
+                            className="shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100"
+                        >
+                            &#8599;
+                        </span>
+                    </span>
+                    <span className="mt-2.5 block text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">
+                        {items.length} {items.length === 1 ? 'project' : 'projects'}
+                    </span>
+                </Link>
+            </motion.div>
+
+            <motion.div
+                variants={variants.row}
+                className="mt-7 overflow-hidden"
+            >
+                <motion.div
+                    className="flex w-max"
+                    animate={reduce ? undefined : { x: ['0%', '-50%'] }}
+                    transition={reduce ? undefined : { duration: 42, ease: 'linear', repeat: Infinity }}
+                >
+                    {[false, true].map((duplicate) => (
+                        <ul
+                            key={duplicate ? 'duplicate' : 'primary'}
+                            className="flex shrink-0 list-none gap-3 pr-3"
+                            aria-hidden={duplicate || undefined}
+                        >
+                            {items.map((item) => (
+                                <li key={`${duplicate ? 'duplicate-' : ''}${item.slug}`}>
+                                    <Link
+                                        href={item.href}
+                                        prefetch
+                                        data-cursor="view"
+                                        tabIndex={duplicate ? -1 : undefined}
+                                        {...tapIntent}
+                                        onClick={(event) => {
+                                            tapIntent.onClick(event);
+                                            navigateWithCurtain(event, item.href, onNavigate);
+                                        }}
+                                        aria-label={item.name}
+                                        className="group/tile block overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-soft)] focus-visible:outline-none"
+                                    >
+                                        <img
+                                            src={item.image}
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async"
+                                            draggable={false}
+                                            className="h-20 w-32 object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]"
+                                        />
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    ))}
+                </motion.div>
+            </motion.div>
+        </div>
+    );
+}
+
+/**
  * Full-screen Services menu. A full-bleed surface drops from under the navbar
  * with the two disciplines side by side and every sub-service ruled out
  * beneath them; the rest of the viewport dims behind it. Data-driven, so new
  * sub-services appear automatically. Desktop only - small screens use the
  * Services panel inside the mobile menu.
  */
-function ServicesMegaMenu({ categories, onNavigate, onPointerOpen, onPointerClose }) {
+function ServicesMegaMenu({
+    categories,
+    onNavigate,
+    onPointerOpen,
+    onPointerClose,
+    ariaLabel = 'Services menu',
+    eyebrow = 'What we do',
+    headline = (<>Design that <span className="text-gradient">compounds</span>.</>),
+    blurb = 'Two disciplines, one standard. Pick a practice, or go straight to the specialism you need.',
+    allHref = '/services',
+    allLabel = 'View all services',
+    showAllLink = true,
+    Section = MegaSection,
+}) {
     const reduce = useReducedMotion();
     const variants = megaVariants(reduce);
 
@@ -266,7 +383,7 @@ function ServicesMegaMenu({ categories, onNavigate, onPointerOpen, onPointerClos
                 onMouseLeave={onPointerClose}
                 className="absolute inset-x-0 top-0 overflow-hidden border-b border-[var(--line)] bg-[var(--bg)]"
                 role="group"
-                aria-label="Services menu"
+                aria-label={ariaLabel}
             >
                 {/* Quiet vertical rhythm behind the content, plus one soft brand wash. */}
                 <div
@@ -289,37 +406,38 @@ function ServicesMegaMenu({ categories, onNavigate, onPointerOpen, onPointerClos
                         <motion.div variants={variants.item} className="col-span-4 flex min-w-0 flex-col justify-between">
                             <div>
                                 <span className="block text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--ink-faint)]">
-                                    What we do
+                                    {eyebrow}
                                 </span>
                                 <p className="mt-6 max-w-[16ch] font-display text-[clamp(1.75rem,2.6vw,2.9rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--ink)]">
-                                    Design that <span className="text-gradient">compounds</span>.
+                                    {headline}
                                 </p>
                                 <p className="mt-5 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--mute)]">
-                                    Two disciplines, one standard. Pick a practice, or go straight
-                                    to the specialism you need.
+                                    {blurb}
                                 </p>
                             </div>
+                            {showAllLink && (
                             <Link
-                                href="/services"
+                                href={allHref}
                                 prefetch
                                 data-cursor="explore"
-                                onClick={(event) => navigateWithCurtain(event, '/services', onNavigate)}
+                                onClick={(event) => navigateWithCurtain(event, allHref, onNavigate)}
                                 className="group/all mt-10 inline-flex w-fit items-center gap-3 rounded-full border border-[var(--line)] px-5 py-3 transition-colors duration-300 hover:border-[var(--field-line)] focus-visible:outline-none"
                             >
                                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
-                                    View all services
+                                    {allLabel}
                                 </span>
                                 <span aria-hidden className="text-[13px] leading-none text-[var(--ink-faint)] transition-transform duration-300 group-hover/all:translate-x-1">
                                     &rarr;
                                 </span>
                             </Link>
+                            )}
                         </motion.div>
                         {categories.map((category, index) => (
                             <div
                                 key={category.slug}
                                 className="col-span-4 min-w-0 border-l border-[var(--line-soft)] pl-10 xl:pl-14"
                             >
-                                <MegaSection
+                                <Section
                                     category={category}
                                     index={index}
                                     variants={variants}
@@ -417,10 +535,13 @@ export default function Header() {
     const [scrolled, setScrolled] = useState(false);
     const [open, setOpen] = useState(false);
     const [mega, setMega] = useState(false);
+    const [workMega, setWorkMega] = useState(false);
     const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
     const closeTimer = useRef(null);
+    const workCloseTimer = useRef(null);
     const { url, props } = usePage();
     const serviceCategories = props.serviceCategories ?? [];
+    const workGroups = props.workGroups ?? [];
     // Editor-managed navigation; `/services` still opens the mega menu.
     const menuLinks = (props.menus?.header ?? []).map((item) => ({
         label: item.label,
@@ -435,6 +556,7 @@ export default function Header() {
     /** Hover intent: open instantly, close after a short grace period. */
     const openMega = () => {
         if (closeTimer.current) clearTimeout(closeTimer.current);
+        setWorkMega(false);
         setMega(true);
     };
     const scheduleMegaClose = () => {
@@ -443,6 +565,20 @@ export default function Header() {
     };
     const handleMegaBlur = (e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) scheduleMegaClose();
+    };
+
+    /** Same hover intent for Our Work; opening one menu closes the other. */
+    const openWorkMega = () => {
+        if (workCloseTimer.current) clearTimeout(workCloseTimer.current);
+        setMega(false);
+        setWorkMega(true);
+    };
+    const scheduleWorkMegaClose = () => {
+        if (workCloseTimer.current) clearTimeout(workCloseTimer.current);
+        workCloseTimer.current = setTimeout(() => setWorkMega(false), 140);
+    };
+    const handleWorkMegaBlur = (e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) scheduleWorkMegaClose();
     };
 
     useEffect(() => () => {
@@ -456,7 +592,10 @@ export default function Header() {
         // goes somewhere - scrolling the page behind it is not a decision to
         // close, and treating it as one made the menu vanish under the reader.
         const onKeyDown = (event) => {
-            if (event.key === 'Escape') setMega(false);
+            if (event.key === 'Escape') {
+                setMega(false);
+                setWorkMega(false);
+            }
         };
 
         document.addEventListener('keydown', onKeyDown);
@@ -480,6 +619,7 @@ export default function Header() {
     useEffect(() => {
         setOpen(false);
         setMega(false);
+        setWorkMega(false);
         setMobileServicesOpen(false);
     }, [url]);
 
@@ -533,28 +673,34 @@ export default function Header() {
                             const linkClass = `link-underline btn-press group relative py-2 text-[13px] font-bold uppercase tracking-[0.18em] transition-colors duration-200 ${
                                 active ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)] hover:text-[var(--ink)]'
                             }`;
-                            if (l.href === '/services') {
+                            if (l.href === '/services' || l.href === '/work') {
+                                const isWork = l.href === '/work';
+                                const enterMenu = isWork ? openWorkMega : openMega;
+                                const leaveMenu = isWork ? scheduleWorkMegaClose : scheduleMegaClose;
+                                const blurMenu = isWork ? handleWorkMegaBlur : handleMegaBlur;
+                                const menuOpen = isWork ? workMega : mega;
+
                                 return (
                                     <div
                                         key={l.href}
-                                        onMouseEnter={openMega}
-                                        onMouseLeave={scheduleMegaClose}
-                                        onFocus={openMega}
-                                        onBlur={handleMegaBlur}
+                                        onMouseEnter={enterMenu}
+                                        onMouseLeave={leaveMenu}
+                                        onFocus={enterMenu}
+                                        onBlur={blurMenu}
                                         className="relative"
                                     >
                                         <button
                                             type="button"
-                                            onClick={openMega}
+                                            onClick={enterMenu}
                                             aria-haspopup="true"
-                                            aria-expanded={mega}
+                                            aria-expanded={menuOpen}
                                             className={`${linkClass} cursor-pointer`}
                                         >
                                             <span className="flex items-center gap-1.5">
                                                 <NavLabel label={l.label} />
                                                 <span
                                                     aria-hidden
-                                                    className={`transition-transform duration-200 ease-out ${mega ? 'rotate-180' : 'group-hover:translate-y-[1px]'}`}
+                                                    className={`transition-transform duration-200 ease-out ${menuOpen ? 'rotate-180' : 'group-hover:translate-y-[1px]'}`}
                                                 >
                                                     <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="block">
                                                         <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -619,6 +765,23 @@ export default function Header() {
                         onNavigate={() => setMega(false)}
                         onPointerOpen={openMega}
                         onPointerClose={scheduleMegaClose}
+                    />
+                )}
+            </AnimatePresence>
+            <AnimatePresence initial={false}>
+                {workMega && (
+                    <ServicesMegaMenu
+                        key="work-mega-menu"
+                        categories={workGroups}
+                        onNavigate={() => setWorkMega(false)}
+                        onPointerOpen={openWorkMega}
+                        onPointerClose={scheduleWorkMegaClose}
+                        Section={WorkMegaSection}
+                        ariaLabel="Our Work menu"
+                        eyebrow="Selected work"
+                        headline={<>Work that <span className="text-gradient">creates impact</span>.</>}
+                        blurb="Two practices, one standard. Pick a discipline, or go straight to the project you want to see."
+                        showAllLink={false}
                     />
                 )}
             </AnimatePresence>

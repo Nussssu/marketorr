@@ -33,8 +33,18 @@ function scrollAfterNav() {
     else window.scrollTo(0, 0);
 }
 
-/** Delay before the route change so the 3 panels fully cover the screen first. */
-const COVER_BEFORE_NAV_MS = 500;
+/** Seconds for one panel's rise-hold-fall. */
+const PANEL_SECONDS = 0.7;
+/** Seconds each panel starts after the one before it. */
+const PANEL_STAGGER = 0.04;
+/**
+ * Delay before the route change so the 3 panels fully cover the screen first.
+ * The last panel is fully up at (2 * stagger + 0.4 * duration) seconds, so this
+ * stays just past that and no further.
+ */
+const COVER_BEFORE_NAV_MS = Math.round((2 * PANEL_STAGGER + 0.4 * PANEL_SECONDS) * 1000);
+/** How long the panels keep running after the route has changed. */
+const COVER_AFTER_NAV_MS = Math.round(PANEL_SECONDS * 1000);
 
 /**
  * Set when another layer is already carrying the reader across, so the cover
@@ -77,8 +87,13 @@ export default function PageTransition({ children }) {
      */
     const navigating = useRef(new WeakSet());
 
-    const showCover = () => {
-        if (coverRef.current) return;
+    /**
+     * Raise the cover. `restart` replays it from the top even if one is already
+     * on screen, so a reader clicking through quickly still gets the full
+     * animation rather than a bare route change.
+     */
+    const showCover = (restart = false) => {
+        if (coverRef.current && !restart) return;
 
         coverRef.current = true;
         setCycle((current) => current + 1);
@@ -130,8 +145,8 @@ export default function PageTransition({ children }) {
                 return;
             }
 
-            timers.current.push(setTimeout(scrollAfterNav, 450));
-            timers.current.push(setTimeout(hideCover, 1050));
+            timers.current.push(setTimeout(scrollAfterNav, Math.round(COVER_AFTER_NAV_MS * 0.45)));
+            timers.current.push(setTimeout(hideCover, COVER_AFTER_NAV_MS));
         });
 
         return () => {
@@ -158,13 +173,8 @@ export default function PageTransition({ children }) {
                 return;
             }
 
-            if (coverRef.current) {
-                router.visit(href);
-                return;
-            }
-
             clearNavTimer();
-            showCover();
+            showCover(true);
             timers.current.push(setTimeout(() => {
                 router.visit(href);
             }, COVER_BEFORE_NAV_MS));
@@ -194,7 +204,7 @@ export default function PageTransition({ children }) {
                                 style={{ background: color }}
                                 initial={{ scaleY: 0 }}
                                 animate={{ scaleY: [0, 1, 1, 0] }}
-                                transition={{ duration: 1, times: [0, 0.4, 0.6, 1], delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                                transition={{ duration: PANEL_SECONDS, times: [0, 0.4, 0.6, 1], delay: index * PANEL_STAGGER, ease: [0.22, 1, 0.36, 1] }}
                             />
                         ))}
                     </motion.div>

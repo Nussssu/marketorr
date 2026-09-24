@@ -12,6 +12,8 @@
  * or admin field.
  *
  * `kind: 'image'` is any still or animated file served from `public/`.
+ * `kind: 'video'` plays a file served from `public/` — muted, looped and
+ * posterless-safe, so it can autoplay as a hero backdrop.
  * `kind: 'vimeo'` embeds the official player in Vimeo's chromeless background
  * mode — the film itself stays hosted by Vimeo and is never copied into the
  * repository.
@@ -24,17 +26,52 @@
 export const PROJECT_HERO_MEDIA = {
     'imperial-jute-b2b-seo': {
         kind: 'image',
-        src: '/images/work/imperial-jute-logo.gif',
+        src: '/images/work/imperial-jute-logo.webp',
         alt: 'Imperial Jute 3D logo animation',
         fit: 'contain',
         background: '#000000',
     },
     'imperial-jute-brand-design': {
         kind: 'image',
-        src: '/images/work/imperial-jute-logo.gif',
+        src: '/images/work/imperial-jute-logo.webp',
         alt: 'Imperial Jute 3D logo animation',
         fit: 'contain',
         background: '#000000',
+    },
+    'city-online-brand-design': {
+        kind: 'video',
+        src: '/videos/city-online-hero.mp4',
+        // The brand film's own first frame, so the stage is never empty while
+        // the file buffers and reduced-motion readers still see the piece.
+        poster: '/images/work/city-online-hero-poster.jpg',
+        background: '#191919',
+    },
+    'microters-web': {
+        kind: 'vimeo',
+        id: '900435156',
+        // Unlisted-video token: without it the player refuses the embed.
+        hash: 'a7411ba746',
+        title: 'Microters case study film',
+        ratio: 640 / 360,
+        background: '#10131c',
+    },
+    'un-point-brand-design': {
+        kind: 'image',
+        src: '/images/work/un-point-logo.webp',
+        alt: 'Un Point 5 logo animation',
+        fit: 'cover',
+        background: '#0b0b0e',
+        // Hero only: the card keeps the project's own cover.
+        card: false,
+    },
+    'shuddhomart-branding': {
+        kind: 'image',
+        src: '/images/work/shuddhomart-hero.webp',
+        alt: 'ShuddhoMart brand identity',
+        fit: 'cover',
+        background: '#0b0b0e',
+        // Hero only: the card carries the second frame instead.
+        card: false,
     },
     'virgin-trend': {
         kind: 'vimeo',
@@ -64,7 +101,7 @@ export function projectHeroMedia(slug) {
 export function projectCardMedia(project) {
     const heroMedia = projectHeroMedia(project?.slug);
 
-    if (heroMedia?.kind === 'image') {
+    if (heroMedia?.kind === 'image' && heroMedia.card !== false) {
         return {
             src: heroMedia.src,
             alt: heroMedia.alt,

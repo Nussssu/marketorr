@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 /** Seconds for one full cycle of the column. Phones run slower — less travel per frame. */
 const RICH_SECONDS = 44;
 const LIGHT_SECONDS = 58;
-const RICH_QUERY = '(min-width: 768px)';
+// Phones run the same cycle as desktop; motion preference still lightens it.
+const RICH_QUERY = '(prefers-reduced-motion: no-preference)';
 
 /**
  * Opening guess at how many lines one set needs. The real figure is measured
