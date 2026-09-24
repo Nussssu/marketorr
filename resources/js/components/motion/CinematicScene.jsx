@@ -1,7 +1,8 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-const RICH_QUERY = '(min-width: 1024px) and (pointer: fine)';
+// Every device gets the same stage; only a stated motion preference lightens it.
+const RICH_QUERY = '(prefers-reduced-motion: no-preference)';
 
 /**
  * Travel applied while a scene is arriving (`in`) and while it is falling back

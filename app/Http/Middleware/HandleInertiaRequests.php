@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\GlobalBlock;
 use App\Models\Menu;
+use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -66,6 +67,8 @@ class HandleInertiaRequests extends Middleware
                         ->values(),
                 ])
                 ->values(),
+            // The Our Work menu's two columns and the projects filed under each.
+            'workGroups' => fn () => Project::workGroupSummaries(),
             'auth' => [
                 'user' => fn () => $request->user() ? [
                     'id' => $request->user()->id,

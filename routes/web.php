@@ -37,6 +37,7 @@ Route::get('/services/{service}/{sub}', [ServiceController::class, 'subShow'])->
 Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
 Route::get('/work', [ProjectController::class, 'index'])->name('work.index');
+Route::get('/work/portfolio/{group}', [ProjectController::class, 'portfolio'])->name('work.portfolio');
 Route::get('/work/{slug}', [ProjectController::class, 'show'])->name('work.show');
 
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');

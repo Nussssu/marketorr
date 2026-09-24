@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
-    'slug', 'title', 'client', 'category_id', 'year', 'description',
+    'slug', 'title', 'client', 'category_id', 'work_group', 'year', 'description',
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
     'external_url', 'case_study', 'brief',
@@ -53,7 +53,7 @@ class Project extends Model
     protected function published(Builder $query): void
     {
         $query->where('status', ContentStatus::Published)
-            ->with('category')
+            ->with('category.parent')
             ->orderBy('sort_order')
             ->orderBy('id');
     }
@@ -86,6 +86,13 @@ class Project extends Model
      */
     public function imageUrl(): string
     {
+        // A project whose cover has not been supplied yet resolves to nothing, so
+        // every surface falls back to the standard placeholder plate rather than
+        // requesting a path that cannot exist.
+        if (blank($this->image_path)) {
+            return '';
+        }
+
         if (str_starts_with($this->image_path, '/') || str_starts_with($this->image_path, 'http')) {
             return $this->image_path;
         }
@@ -140,11 +147,103 @@ class Project extends Model
             'imageAlt' => $this->image_alt,
             'metric' => $this->metric,
             'metricLabel' => $this->metric_label,
+            'workGroup' => $this->workGroup(),
+            'workGroupName' => $this->workGroupName(),
+            'workGroupHeading' => $this->workGroupHeading(),
             'brief' => $this->publicBrief(),
             'featured' => $this->featured,
             'externalUrl' => $this->external_url,
             'caseStudy' => $this->publicCaseStudy(),
         ];
+    }
+
+    /**
+     * Top-level category slug that makes a project part of the interface practice.
+     *
+     * Web Development deliberately sits with Branding: the build work is filed
+     * with the brand it was delivered for, and only Web UI/UX design work is
+     * carried in the UI/UX portfolio.
+     */
+    public const UIUX_ROOTS = ['web-uiux'];
+
+    /**
+     * Which Our Work menu column this project belongs to.
+     *
+     * Derived from the category tree rather than stored, so re-filing a project
+     * in the admin panel moves it in the menu too. Web UI/UX and Web Development
+     * are the interface practice; everything else Marketorr publishes — brand
+     * systems, campaigns, SEO and illustration — sits under Branding.
+     */
+    /** Human label for the group, as the menu and the project page show it. */
+    public function workGroupName(): string
+    {
+        return $this->workGroup() === 'uiux' ? 'UI/UX' : 'Branding';
+    }
+
+    /**
+     * The two Our Work portfolios and the published projects filed under each.
+     *
+     * Shared by the header menu, the All Work landing page and the portfolio
+     * pages themselves, so those three can never disagree about what belongs
+     * where. Each item carries its cover, because the menu previews projects
+     * as images rather than listing their names.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function workGroupSummaries(): array
+    {
+        $grouped = static::query()
+            ->published()
+            ->with('category.parent')
+            ->get()
+            ->groupBy(fn (self $project): string => $project->workGroup());
+
+        $columns = [
+            'branding' => ['name' => 'Branding Portfolio', 'accent' => '#891FFB'],
+            'uiux' => ['name' => 'UI/UX Portfolio', 'accent' => '#507AF4'],
+        ];
+
+        return collect($columns)
+            ->map(fn (array $column, string $key): array => [
+                'slug' => $key,
+                'name' => $column['name'],
+                'short' => null,
+                'accent' => $column['accent'],
+                'href' => '/work/portfolio/'.$key,
+                'items' => $grouped->get($key, collect())
+                    ->map(fn (self $project): array => [
+                        'slug' => $project->slug,
+                        'name' => $project->title,
+                        'accent' => $project->accent,
+                        'image' => $project->imageUrl(),
+                        'imageAlt' => $project->image_alt,
+                        'href' => '/work/'.$project->slug,
+                    ])
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** How the group is headed on the menu column and the project page. */
+    public function workGroupHeading(): string
+    {
+        return $this->workGroupName().' Portfolio';
+    }
+
+    public function workGroup(): string
+    {
+        // An explicit filing always wins: some work is technically one
+        // discipline but belongs with the other in the portfolio.
+        if (in_array($this->work_group, ['branding', 'uiux'], true)) {
+            return $this->work_group;
+        }
+
+        $category = $this->category;
+        $root = $category?->parent ?? $category;
+
+        return in_array($root?->slug, self::UIUX_ROOTS, true) ? 'uiux' : 'branding';
     }
 
     /**

@@ -841,6 +841,15 @@ input, textarea, select { color-scheme: inherit; }
   .mk-map__canvas { height: 280px; }
 }
 
+/* Fill variant: the canvas takes whatever height its column leaves instead of
+   a fixed one, so a column ending in the map finishes level with the card
+   beside it. It only applies from lg, where that column is a flex item with a
+   definite height — stacked below that, the column is content-sized and a
+   percentage height would collapse the canvas to nothing. */
+@media (min-width: 64rem) {
+  .mk-map--fill .mk-map__canvas { height: 100%; }
+}
+
 .mk-map__canvas .leaflet-container {
   height: 100%;
   width: 100%;

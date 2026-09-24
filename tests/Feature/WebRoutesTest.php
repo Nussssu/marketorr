@@ -46,8 +46,8 @@ class WebRoutesTest extends TestCase
 
     public function test_the_seeded_catalogue_matches_the_seeder_definitions(): void
     {
-        $this->assertSame(18, Project::query()->count());
-        $this->assertSame(5, Project::query()->featured()->count());
+        $this->assertSame(19, Project::query()->count());
+        $this->assertSame(6, Project::query()->featured()->count());
         $this->assertSame(12, Service::query()->count());
     }
 
@@ -122,17 +122,50 @@ class WebRoutesTest extends TestCase
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->component('Home')
-                ->has('featuredProjects', 5)
+                ->has('featuredProjects', 6)
                 ->has('services', 12)
                 ->has('settings.hero.headingLines', 3)
                 ->where('featuredProjects.0.slug', 'imperial-jute-b2b-seo'));
     }
 
-    public function test_the_work_index_lists_every_published_project(): void
+    public function test_the_work_index_offers_both_portfolios(): void
     {
         $this->get('/work')
             ->assertInertia(fn ($page) => $page
                 ->component('Work/Index')
-                ->has('projects', 18));
+                ->has('groups', 2)
+                ->where('groups.0.slug', 'branding')
+                ->where('groups.1.slug', 'uiux'));
+    }
+
+    /**
+     * Projects are reached through a portfolio rather than a flat index, so the
+     * guarantee is that the two portfolios together still account for every
+     * published project, with none listed twice.
+     */
+    public function test_the_portfolios_between_them_list_every_published_project(): void
+    {
+        $slugs = [];
+
+        foreach (['branding', 'uiux'] as $group) {
+            $this->get("/work/portfolio/{$group}")
+                ->assertInertia(function ($page) use (&$slugs, $group) {
+                    $page->component('Work/Portfolio')->where('group.slug', $group);
+                    $slugs = array_merge($slugs, array_column($page->toArray()['props']['projects'], 'slug'));
+                });
+        }
+
+        $published = Project::query()->published()->pluck('slug')->all();
+
+        sort($slugs);
+        sort($published);
+
+        $this->assertSame($published, $slugs);
+        $this->assertSame(count($slugs), count(array_unique($slugs)));
+    }
+
+    public function test_an_unknown_portfolio_is_not_found(): void
+    {
+        $this->get('/work/portfolio/nope')->assertNotFound();
     }
 }

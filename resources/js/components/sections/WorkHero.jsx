@@ -2,6 +2,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion
 import { useEffect, useRef, useState } from 'react';
 import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import { projectHeroMedia } from '../../lib/projectHeroMedia';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 import { EASE } from '../../lib/motion';
 
 /** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
@@ -57,6 +58,33 @@ function HeroMedia({ project, reduce }) {
     };
 
     if (media && !reduce) {
+        if (media.kind === 'video') {
+            return (
+                <motion.div
+                    {...reveal}
+                    className="absolute inset-0 overflow-hidden"
+                    style={{ background: media.background ?? '#000' }}
+                >
+                    {/* Self-hosted and decorative: muted so it may autoplay, looped
+                        so it never ends on a dead frame, and posted with the still
+                        cover so the stage is never empty while it buffers. */}
+                    <video
+                        src={media.src}
+                        poster={media.poster ?? project.image ?? undefined}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="auto"
+                        tabIndex={-1}
+                        aria-hidden
+                        onLoadedData={() => setReady(true)}
+                        className={`h-full w-full ${media.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
+                    />
+                </motion.div>
+            );
+        }
+
         if (media.kind === 'vimeo') {
             return (
                 <motion.div
@@ -67,7 +95,7 @@ function HeroMedia({ project, reduce }) {
                     {/* Scaled to cover the stage: the player keeps the film's own
                         ratio, so it is sized off whichever viewport edge binds. */}
                     <iframe
-                        src={`https://player.vimeo.com/video/${media.id}?background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1`}
+                        src={`https://player.vimeo.com/video/${media.id}?background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1${media.hash ? `&h=${media.hash}` : ''}`}
                         title={media.title}
                         allow="autoplay; fullscreen"
                         frameBorder="0"
@@ -107,7 +135,7 @@ function HeroMedia({ project, reduce }) {
     }
 
     if (!project.image) {
-        return null;
+        return <MediaPlaceholder label={`${project.title} - hero image placeholder`} />;
     }
 
     if (isCharukothon(project.slug)) {
@@ -201,6 +229,17 @@ export default function WorkHero({ project }) {
                             className="absolute inset-0 flex items-center"
                         >
                             <motion.div style={full ? { z: 90 } : undefined} className="container-x w-full">
+                                {project.workGroupHeading && (
+                                    <motion.span
+                                        initial={reduce ? false : { opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: reduce ? 0 : 0.7, delay: 0.25, ease: [...EASE] }}
+                                        className="mb-5 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.28em] text-white/70"
+                                    >
+                                        <span className="h-px w-8 bg-white/40" aria-hidden />
+                                        {project.workGroupHeading}
+                                    </motion.span>
+                                )}
                                 <h1
                                     className="max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white"
                                     style={{ fontSize: 'clamp(2.6rem, 10vw, 8.5rem)' }}

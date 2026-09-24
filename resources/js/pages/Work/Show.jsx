@@ -6,6 +6,7 @@ import MagneticButton from '../../components/motion/MagneticButton';
 import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
 import { Tag } from '../../components/ui/primitives';
+import MediaPlaceholder from '../../components/media/MediaPlaceholder';
 
 /**
  * Dedicated project page.
@@ -32,6 +33,13 @@ function DetailBlock({ title, children }) {
         </section>
     );
 }
+
+/**
+ * How many empty frames stand in for a project whose published images have not
+ * been sourced yet. Two keeps the column looking deliberate rather than broken,
+ * without pretending there is more work than there is.
+ */
+const PLACEHOLDER_FRAMES = 2;
 
 /** Every gallery frame shares one reveal, so the column reads as a single sequence. */
 function GalleryFigure({ image, index, reduce }) {
@@ -115,7 +123,7 @@ export default function CaseStudy({ project: p }) {
                         ) : null}
                     </DetailBlock>
 
-                    <DetailBlock title="Services delivered">
+                    <DetailBlock title={`${p.workGroupName ?? ''} services delivered`.trim()}>
                         {brief.services.length > 0 ? (
                             <ul className="flex flex-wrap gap-2">
                                 {brief.services.map((service) => (
@@ -225,18 +233,29 @@ export default function CaseStudy({ project: p }) {
                 <WorkHero project={p} />
 
                 <div className="container-x pt-16 md:pt-20">
-                    {gallery.length > 0 ? (
-                        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)] lg:gap-16">
-                            <div className="lg:sticky lg:top-28 lg:self-start">{details}</div>
-                            <div className="space-y-6 md:space-y-8">
-                                {gallery.map((image, index) => (
+                    <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)] lg:gap-16">
+                        <div className="lg:sticky lg:top-28 lg:self-start">{details}</div>
+                        <div className="space-y-6 md:space-y-8">
+                            {gallery.length > 0
+                                ? gallery.map((image, index) => (
                                     <GalleryFigure key={image.src} image={image} index={index} reduce={reduce} />
+                                ))
+                                : /* No published images sourced for this project yet: the standard
+                                     plate makes that unmistakable rather than leaving a bare column. */
+                                Array.from({ length: PLACEHOLDER_FRAMES }, (_, index) => (
+                                    <motion.div
+                                        key={`placeholder-${index}`}
+                                        initial={reduce ? false : { opacity: 0, y: 28 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true, margin: '-12% 0px' }}
+                                        transition={{ duration: reduce ? 0 : 0.8, delay: reduce ? 0 : index * 0.06, ease: [...EASE] }}
+                                        className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--bg-soft)]"
+                                    >
+                                        <MediaPlaceholder label={`${p.title} - project image placeholder`} />
+                                    </motion.div>
                                 ))}
-                            </div>
                         </div>
-                    ) : (
-                        <div className="max-w-2xl">{details}</div>
-                    )}
+                    </div>
                 </div>
             </article>
         </>

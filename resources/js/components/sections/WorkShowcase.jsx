@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBoxPointer } from '../../lib/pointer';
 import { projectCardMedia } from '../../lib/projectHeroMedia';
+import MediaPlaceholder from '../media/MediaPlaceholder';
 import { GradientTitle, Tag } from '../ui/primitives';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -147,6 +148,8 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[#111116] min-[769px]:aspect-[16/10]" style={{ containerType: 'inline-size' }}>
                     {isCharukothon(project.slug) ? (
                         <CharukothonCover image={project.image} />
+                    ) : !cardMedia.src ? (
+                        <MediaPlaceholder label={`${project.title} - cover image placeholder`} />
                     ) : (
                     <img
                         src={cardMedia.src}

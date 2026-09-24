@@ -12,8 +12,8 @@ function useHeadingTier() {
     const [tier, setTier] = useState({ compact: false, rich: false });
 
     useEffect(() => {
-        const compactQuery = window.matchMedia('(max-width: 767px)');
-        const richQuery = window.matchMedia('(min-width: 768px)');
+        const compactQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const richQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
         const update = () => setTier({ compact: compactQuery.matches, rich: richQuery.matches });
         update();
         compactQuery.addEventListener('change', update);
@@ -55,7 +55,8 @@ export default function ScrollHeading({ children, className = '', enabled = true
 
     const active = enabled && !reduce;
 
-    // Skew remains desktop-only; every tier otherwise uses transform + opacity.
+    // Skew rides along wherever motion is welcome; everything stays on
+    // transform + opacity either way.
     const rest = rich ? { skewY: skew } : {};
 
     return (

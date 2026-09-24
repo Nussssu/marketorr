@@ -275,33 +275,35 @@ export default function Contact({ heroHeading = false }) {
 
             <div className="container-x relative">
                 <SectionLabel index="04" name="CONTACT" />
-                <ScrollHeading enabled={heroHeading} className="mt-10">
-                    <RevealText
-                        as="h2"
-                        className="display-lg uppercase text-[var(--ink-strong)]"
-                        lines={['Have a project?', "Let's make", 'it matter.']}
-                        highlightedLines={[2]}
-                        duration={0.72}
-                        stagger={0.13}
-                    />
-                </ScrollHeading>
+                {/* Heading band: the heading keeps its full measure and the action is
+                    parked on its last line rather than taking a grid column, so the
+                    first line never wraps. It ends on the container's right edge,
+                    which is also the form card's right edge, so the two line up
+                    down the page. Both stack below lg. */}
+                <div className="relative mt-10">
+                    <ScrollHeading enabled={heroHeading}>
+                        <RevealText
+                            as="h2"
+                            className="display-lg uppercase text-[var(--ink-strong)]"
+                            lines={['Have a project?', "Let's make", 'it matter.']}
+                            highlightedLines={[2]}
+                            duration={0.72}
+                            stagger={0.13}
+                        />
+                    </ScrollHeading>
 
-                {heroHeading && (
-                    <SpeakWithUs contactEmail={contactEmail} contactPhone={contactPhone} />
-                )}
-
-                <div className="mt-12 grid gap-12 lg:grid-cols-2">
                     <motion.div
                         initial={reduce ? false : { opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true, margin: '-8% 0px' }}
                         transition={{ duration: 0.7, ease: [...EASE] }}
+                        className="mt-10 w-full lg:absolute lg:bottom-0 lg:right-0 lg:mt-0 lg:w-auto"
                     >
                         <MagneticButton strength={12}>
                             <a
                                 href={`mailto:${contactEmail}`}
                                 data-cursor="cta"
-                                className="btn-press group relative flex items-center justify-center gap-4 overflow-hidden rounded-full border border-[var(--field-line)] px-6 py-7 font-display text-xl font-extrabold uppercase tracking-tight text-[var(--ink)] transition-all duration-500 hover:border-transparent hover:text-white sm:px-10 md:text-2xl"
+                                className="btn-press group relative flex items-center justify-center gap-4 overflow-hidden rounded-full border border-[var(--field-line)] px-6 py-5 font-display text-lg font-extrabold uppercase tracking-tight text-[var(--ink)] transition-all duration-500 hover:border-transparent hover:text-white sm:px-8 md:text-xl"
                             >
                                 <span
                                     className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
@@ -311,7 +313,22 @@ export default function Contact({ heroHeading = false }) {
                                 <span className="relative">Start a project →</span>
                             </a>
                         </MagneticButton>
-                        <div className="mt-10 grid grid-cols-1 gap-6 text-sm min-[420px]:grid-cols-2">
+                    </motion.div>
+                </div>
+
+                {/* The details open the left column above the map, so that column
+                    starts level with the form card opposite. Stacking it as a flex
+                    column lets the map absorb the leftover height, so the two
+                    columns also finish level instead of leaving a gap. */}
+                <div className="mt-12 grid gap-12 lg:grid-cols-2">
+                    <motion.div
+                        initial={reduce ? false : { opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true, margin: '-8% 0px' }}
+                        transition={{ duration: 0.7, ease: [...EASE] }}
+                        className="lg:flex lg:flex-col"
+                    >
+                        <div className="grid grid-cols-1 gap-6 text-sm min-[420px]:grid-cols-2">
                             <div>
                                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Email</p>
                                 <a href={`mailto:${contactEmail}`} className="link-underline btn-press mt-1 inline-block font-semibold text-[var(--ink)]">{contactEmail}</a>
@@ -336,7 +353,7 @@ export default function Contact({ heroHeading = false }) {
                             </div>
                         </div>
                         <OfficeMap
-                            className="mt-8"
+                            className="mk-map--fill mt-8 lg:flex-1"
                             address={address}
                             directionsHref={directionsUrl}
                         />
@@ -437,6 +454,10 @@ export default function Contact({ heroHeading = false }) {
                         </p>
                     </motion.form>
                 </div>
+
+                {heroHeading && (
+                    <SpeakWithUs contactEmail={contactEmail} contactPhone={contactPhone} />
+                )}
             </div>
         </section>
     );
