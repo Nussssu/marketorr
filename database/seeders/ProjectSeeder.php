@@ -20,9 +20,57 @@ class ProjectSeeder extends Seeder
 {
     use WithoutModelEvents;
 
+    /**
+     * The Branding portfolio's running order, as the studio presents it.
+     *
+     * This drives `sort_order`, so it sets the sequence on the portfolio page
+     * and anywhere else projects are listed. Any slug not named here keeps its
+     * existing relative order behind this list.
+     *
+     * @var list<string>
+     */
+    private const BRANDING_ORDER = [
+        'bangladesh-television-logo-concept',
+        'amanah-global-network',
+        'imperial-jute-b2b-seo',
+        'nature-to-near',
+        'shuddhomart-branding',
+        'virgin-trend',
+        'animateuix-brand-design',
+        'un-point-brand-design',
+        'editwing-brand-design',
+        'city-online-brand-design',
+        'go-yara-travel-agency',
+        'dusty-vision',
+        'smilez-logo-design',
+        'sabdita-fashion',
+        'alarabi-fashion-brand-design',
+        'tapmad-media-ads',
+        'charukothon-meta-ads',
+        'custom-illustration',
+        'carpet-cleaning-illustration',
+        'infographic-line-illustration',
+    ];
+
+    /** How many of BRANDING_ORDER lead the landing page's work section. */
+    private const LANDING_COUNT = 7;
+
     public function run(): void
     {
-        foreach ($this->projects() as $order => $project) {
+        $rank = array_flip(self::BRANDING_ORDER);
+
+        // The declared order wins; everything else trails it, undisturbed.
+        $ordered = collect($this->projects())
+            ->sortBy(fn (array $project, int $index): array => [
+                $rank[$project['slug']] ?? PHP_INT_MAX,
+                $index,
+            ])
+            ->values()
+            ->all();
+
+        foreach ($ordered as $order => $project) {
+            $project['featured'] = isset($rank[$project['slug']])
+                && $rank[$project['slug']] < self::LANDING_COUNT;
             $project['category_id'] = $this->resolveCategory($project['category']);
             unset($project['category']);
             $project['image_path'] = $this->storeCover($project['image_path']);
@@ -46,7 +94,7 @@ class ProjectSeeder extends Seeder
      * a project whose images have not been downloaded yet simply seeds no
      * gallery instead of pointing at files that are not on disk.
      *
-     * @return array<int, array{label: string, note: null, images: array<int, array{src: string, alt: string, wide: bool}>}>|null
+     * @return array<int, array{label: string, note: null, images: array<int, array{src: string, alt: string, wide: bool, video: bool}>}>|null
      */
     private function gallery(string $slug, string $title): ?array
     {
@@ -57,25 +105,80 @@ class ProjectSeeder extends Seeder
         }
 
         $images = collect(File::files($directory))
-            ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'webp'], true))
+            ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4'], true))
+            ->reject(fn ($file): bool => $slug === 'tapmad-media-ads' && in_array($file->getFilename(), [
+                '07.webp',
+                '10.webp',
+                '11.webp',
+                '14.webp',
+                '15.webp',
+            ], true))
             ->sortBy(fn ($file): string => $file->getFilename())
             ->values()
-            ->map(fn ($file, int $index): array => [
-                'src' => '/images/work/gallery/'.$slug.'/'.$file->getFilename(),
-                'alt' => $title.' project image '.($index + 1),
-                'wide' => false,
-            ])
+            ->map(function ($file, int $index) use ($slug, $title): array {
+                $isVideo = strtolower($file->getExtension()) === 'mp4';
+
+                return [
+                    'src' => '/images/work/gallery/'.$slug.'/'.$file->getFilename(),
+                    'alt' => $title.' project '.($isVideo ? 'film ' : 'image ').($index + 1),
+                    'wide' => false,
+                    'video' => $isVideo,
+                ];
+            })
             ->all();
 
         if ($images === []) {
             return null;
         }
 
-        return [[
+        $sections = [[
             'label' => 'Project gallery',
             'note' => null,
             'images' => $images,
         ]];
+
+        $films = $this->galleryFilms($slug);
+
+        if ($films !== []) {
+            $sections[] = [
+                'label' => 'Project films',
+                'note' => null,
+                'images' => $films,
+            ];
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Embedded films that belong to a gallery but cannot live on disk.
+     *
+     * Vimeo-hosted brand films are referenced by ID and rendered as embeds
+     * on the dedicated page; everything else about the gallery still comes
+     * off disk so a missing embed can never break the image sequence.
+     *
+     * @return array<int, array{src: string, alt: string, wide: bool, video: bool, vimeo: string}>
+     */
+    private function galleryFilms(string $slug): array
+    {
+        $map = [
+            'amanah-global-network' => [
+                ['vimeo' => '1223896504', 'title' => 'Amanah 3D icon'],
+                ['vimeo' => '1223958162', 'title' => 'Amanah colour study'],
+                ['vimeo' => '1223960078', 'title' => 'Amanah brand film'],
+                ['vimeo' => '1223960052', 'title' => 'Amanah type study'],
+            ],
+        ];
+
+        return collect($map[$slug] ?? [])
+            ->map(fn (array $film, int $index): array => [
+                'src' => 'https://vimeo.com/'.$film['vimeo'],
+                'alt' => 'Amanah Global Network project film '.($index + 1).' — '.$film['title'],
+                'wide' => true,
+                'video' => true,
+                'vimeo' => $film['vimeo'],
+            ])
+            ->all();
     }
 
     /**
@@ -524,6 +627,8 @@ class ProjectSeeder extends Seeder
                         'note' => 'The mark, its construction and the backgrounds it has to hold.',
                         'images' => [
                             ['src' => '/images/work/sabdita/logo-explainer.jpg', 'alt' => 'Sabdita Fashion logo concept and construction', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-logo-1.webp', 'alt' => 'Sabdita Fashion monogram on glassmorphic card', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-logo-2.webp', 'alt' => 'Sabdita Fashion logo application', 'wide' => true],
                             ['src' => '/images/work/sabdita/logo-presentation.jpg', 'alt' => 'Sabdita Fashion logo presentation'],
                             ['src' => '/images/work/sabdita/logo-backgrounds.jpg', 'alt' => 'Sabdita Fashion logo across background treatments'],
                         ],
@@ -542,6 +647,8 @@ class ProjectSeeder extends Seeder
                         'note' => 'One palette and type pairing, legible from hangtag to billboard.',
                         'images' => [
                             ['src' => '/images/work/sabdita/typo-color-animation.gif', 'alt' => 'Sabdita Fashion typography and colour direction', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-typo-1.webp', 'alt' => 'Sabdita Fashion Made To Feel Good campaign', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-typo-2.jpg', 'alt' => 'Sabdita Fashion brand campaign visual', 'wide' => true],
                         ],
                     ],
                     [
@@ -566,6 +673,10 @@ class ProjectSeeder extends Seeder
                         'note' => null,
                         'images' => [
                             ['src' => '/images/work/sabdita/billboard.jpg', 'alt' => 'Sabdita Fashion billboard application', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-ooh-1.webp', 'alt' => 'Sabdita Fashion outdoor application', 'wide' => true],
+                            ['src' => '/images/work/sabdita/extra-ooh-2.webp', 'alt' => 'Sabdita Fashion outdoor application', 'wide' => true],
+                            ['src' => '/images/work/sabdita/slogan-animation.gif', 'alt' => 'Sabdita Fashion brand slogan animation', 'wide' => true],
+                            ['src' => '/images/work/sabdita-fashion.jpg', 'alt' => 'Sabdita Fashion rebranding cover'],
                         ],
                     ],
                 ],
@@ -761,6 +872,145 @@ class ProjectSeeder extends Seeder
                     'client' => null,
                     'website' => null,
                     'behance_url' => 'https://www.behance.net/gallery/180184189/Line-Drawing-Illustration-Art-for-Content-Infographic',
+                    'source_url' => null,
+                ],
+                'featured' => false,
+            ],
+            [
+                'slug' => 'amanah-global-network',
+                'title' => 'Amanah Global Network',
+                'client' => 'Amanah Global Network · Travel Agency',
+                'category' => 'Brand Design · Travel',
+                'year' => '2025',
+                'description' => 'Brand identity for Amanah Global Network — logo, 3D icon films and a teal travel system across print, outdoor, app and social.',
+                'metric' => null,
+                'metric_label' => null,
+                'accent' => '#1BE2EB',
+                'image_path' => '/images/work/amanah-global-network.webp',
+                'image_alt' => 'Amanah Global Network green business card with logo',
+                'tags' => ['Branding', 'Visual Identity'],
+                'brief' => [
+                    'overview' => 'Amanah Global Network is a travel agency built on trust — airline ticketing, religious travel and global reach wrapped in a teal identity system spanning stationery, billboards, app icon, social and outdoor.',
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Identity Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Amanah Global Network',
+                    'website' => 'https://www.amanahglobal.it/',
+                    'behance_url' => 'https://www.behance.net/gallery/255240755/Travel-Agency-I-Amanah-Global-Network-Brand-Design',
+                    'source_url' => null,
+                ],
+                'featured' => false,
+            ],
+            [
+                'slug' => 'editwing-brand-design',
+                'title' => 'Editwing',
+                'client' => 'Editwing · Video & Podcast Studio',
+                'category' => 'Brand Design · Logo Design',
+                'year' => '2025',
+                'description' => 'Logo and brand design for Editwing — a play-button mark and wordmark carried across stationery, signage, merch and studio.',
+                'metric' => null,
+                'metric_label' => null,
+                'accent' => '#891FFB',
+                'image_path' => '/images/work/editwing-brand-design.webp',
+                'image_alt' => 'Editwing play-button logo on dark wave',
+                'tags' => ['Branding', 'Logo Design'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Logo Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Editwing',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/254702991/Editwing-Brand-Design',
+                    'source_url' => null,
+                ],
+                'featured' => false,
+            ],
+            [
+                'slug' => 'smilez-logo-design',
+                'title' => 'Smilez',
+                'client' => 'Smilez · Streetwear',
+                'category' => 'Brand Design · Fashion',
+                'year' => '2025',
+                'description' => 'Logo design for Smilez, a streetwear brand — an arrow-Z mark across apparel, caps, packaging and retail.',
+                'metric' => null,
+                'metric_label' => null,
+                'accent' => '#507AF4',
+                'image_path' => '/images/work/smilez-logo-design.webp',
+                'image_alt' => 'Smilez black logo on white with app icon',
+                'tags' => ['Branding', 'Logo Design'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Logo Design',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Smilez',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/239855843/A-Streetwear-Brand-Smilez-Logo-Design',
+                    'source_url' => null,
+                ],
+                'featured' => false,
+            ],
+            [
+                'slug' => 'go-yara-travel-agency',
+                'title' => 'Go Yara',
+                'client' => 'Go Yara · Travel Agency',
+                'category' => 'Brand Design · Travel',
+                'year' => '2025',
+                'description' => 'Campaign and brand pitch for Go Yara travel agency — One Click To Anywhere key visuals across outdoor, social and web.',
+                'metric' => null,
+                'metric_label' => null,
+                'accent' => '#891FFB',
+                'image_path' => '/images/work/go-yara-travel-agency.webp',
+                'image_alt' => 'Go Yara One Click Away From Paris key visual',
+                'tags' => ['Branding', 'Campaign'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Campaign',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Go Yara',
+                    'website' => 'https://goyara.com/',
+                    'behance_url' => 'https://www.behance.net/gallery/237302853/Pitch-For-a-Travel-Agency-_Go-Yara',
+                    'source_url' => null,
+                ],
+                'featured' => false,
+            ],
+            [
+                'slug' => 'tapmad-media-ads',
+                'title' => 'Tapmad',
+                'client' => 'Tapmad · Streaming',
+                'category' => 'Brand Design · Advertising',
+                'year' => '2025',
+                'description' => 'Media ads for Tapmad — All in 1 sports campaign across billboards, press, match-day and tournament creatives.',
+                'metric' => null,
+                'metric_label' => null,
+                'accent' => '#1BE2EB',
+                'image_path' => '/images/work/tapmad-media-ads.webp',
+                'image_alt' => 'Tapmad All in 1 sports billboard',
+                'tags' => ['Branding', 'Advertising'],
+                'brief' => [
+                    'overview' => null,
+                    'worked_on' => [],
+                    'services' => [
+                        'Brand Design',
+                        'Advertising',
+                    ],
+                    'highlights' => [],
+                    'client' => 'Tapmad',
+                    'website' => null,
+                    'behance_url' => 'https://www.behance.net/gallery/235078813/Tapmad-Media-Ads',
                     'source_url' => null,
                 ],
                 'featured' => false,

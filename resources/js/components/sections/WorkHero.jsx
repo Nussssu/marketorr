@@ -218,6 +218,9 @@ export default function WorkHero({ project }) {
                         <HeroMedia key={project.slug} project={project} reduce={reduce} />
                     </motion.div>
 
+                    {/* Theme-aware scrim: sits over the media, under the type. */}
+                    <div className="hero-scrim" aria-hidden />
+
                     {/* Depth stage — keeps its perspective, never tilts. */}
                     <motion.div
                         style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}

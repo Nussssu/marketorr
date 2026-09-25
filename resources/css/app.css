@@ -1418,6 +1418,60 @@ input, textarea, select { color-scheme: inherit; }
   }
 }
 
+
+/* ---------- Hero scrim (Services, sub-services, project pages) ---------- */
+/* One layer sits between the hero media and its type. The media plane keeps
+   its own scale/parallax, so the scrim is a sibling rather than a wrapper and
+   nothing about the existing motion changes.
+
+   Dark theme deepens the media so white type holds its contrast. Light theme
+   lifts it toward the light interface with a soft white veil, then keeps a
+   gentler vertical gradient so the same white type stays readable — a flat
+   white wash would erase it. Phones carry a slightly stronger gradient
+   because the type is far larger relative to the frame. */
+:root {
+  --hero-scrim-top: rgba(6, 6, 10, 0.42);
+  --hero-scrim-mid: rgba(6, 6, 10, 0.12);
+  --hero-scrim-bottom: rgba(6, 6, 10, 0.72);
+  --hero-scrim-veil: rgba(6, 6, 10, 0.16);
+}
+
+:root[data-theme="light"] {
+  --hero-scrim-top: rgba(16, 14, 28, 0.26);
+  --hero-scrim-mid: rgba(16, 14, 28, 0.06);
+  --hero-scrim-bottom: rgba(16, 14, 28, 0.52);
+  --hero-scrim-veil: rgba(255, 255, 255, 0.12);
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      var(--hero-scrim-top) 0%,
+      var(--hero-scrim-mid) 34%,
+      var(--hero-scrim-mid) 52%,
+      var(--hero-scrim-bottom) 100%
+    ),
+    var(--hero-scrim-veil);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --hero-scrim-top: rgba(6, 6, 10, 0.5);
+    --hero-scrim-mid: rgba(6, 6, 10, 0.2);
+    --hero-scrim-bottom: rgba(6, 6, 10, 0.78);
+  }
+
+  :root[data-theme="light"] {
+    --hero-scrim-top: rgba(16, 14, 28, 0.34);
+    --hero-scrim-mid: rgba(16, 14, 28, 0.14);
+    --hero-scrim-bottom: rgba(16, 14, 28, 0.6);
+  }
+}
+
 /* ---------- Rising hero typography (Services + Sub-services) ---------- */
 /* One continuously rising column of oversized words behind a hero title. The
    track holds the word set twice, so travelling exactly -50% lands on a
@@ -1749,3 +1803,23 @@ input, textarea, select { color-scheme: inherit; }
   font-weight: 500;
 }
 
+
+/* ---------- Boxed form field (contact page) ---------- */
+/* The contact form follows a boxed-field rhythm — 44px tall, 12px inset —
+   rather than the underline used elsewhere, so the card reads as one stack of
+   equal blocks. Focus lights the brand gradient on the border. */
+.field-box {
+  background: transparent;
+  border: 1px solid var(--field-line);
+  border-radius: 3px;
+  color: var(--ink);
+  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+.field-box::placeholder { color: var(--placeholder); }
+
+.field-box:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 1px #507af4;
+}

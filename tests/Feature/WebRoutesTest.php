@@ -46,8 +46,8 @@ class WebRoutesTest extends TestCase
 
     public function test_the_seeded_catalogue_matches_the_seeder_definitions(): void
     {
-        $this->assertSame(19, Project::query()->count());
-        $this->assertSame(6, Project::query()->featured()->count());
+        $this->assertSame(24, Project::query()->count());
+        $this->assertSame(7, Project::query()->featured()->count());
         $this->assertSame(12, Service::query()->count());
     }
 
@@ -122,10 +122,47 @@ class WebRoutesTest extends TestCase
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->component('Home')
-                ->has('featuredProjects', 6)
+                ->has('featuredProjects', 7)
                 ->has('services', 12)
                 ->has('settings.hero.headingLines', 3)
-                ->where('featuredProjects.0.slug', 'imperial-jute-b2b-seo'));
+                ->where('featuredProjects', fn ($projects) => $projects->pluck('slug')->all() === [
+                    'bangladesh-television-logo-concept',
+                    'amanah-global-network',
+                    'imperial-jute-b2b-seo',
+                    'nature-to-near',
+                    'shuddhomart-branding',
+                    'virgin-trend',
+                    'animateuix-brand-design',
+                ]));
+    }
+
+    public function test_the_branding_portfolio_uses_the_curated_project_order(): void
+    {
+        $this->get('/work/portfolio/branding')
+            ->assertInertia(fn ($page) => $page
+                ->component('Work/Portfolio')
+                ->where('projects', fn ($projects) => $projects->pluck('slug')->all() === [
+                    'bangladesh-television-logo-concept',
+                    'amanah-global-network',
+                    'imperial-jute-b2b-seo',
+                    'nature-to-near',
+                    'shuddhomart-branding',
+                    'virgin-trend',
+                    'animateuix-brand-design',
+                    'un-point-brand-design',
+                    'editwing-brand-design',
+                    'city-online-brand-design',
+                    'go-yara-travel-agency',
+                    'dusty-vision',
+                    'smilez-logo-design',
+                    'sabdita-fashion',
+                    'alarabi-fashion-brand-design',
+                    'tapmad-media-ads',
+                    'charukothon-meta-ads',
+                    'custom-illustration',
+                    'carpet-cleaning-illustration',
+                    'infographic-line-illustration',
+                ]));
     }
 
     public function test_the_work_index_offers_both_portfolios(): void

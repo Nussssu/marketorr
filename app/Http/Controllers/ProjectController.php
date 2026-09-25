@@ -34,6 +34,8 @@ class ProjectController extends Controller
 
         $projects = Project::query()
             ->published()
+            ->with('category.parent')
+            ->orderBy('sort_order')
             ->get()
             ->filter(fn (Project $project): bool => $project->workGroup() === $group)
             ->map(fn (Project $project): array => $project->toPublicArray())
