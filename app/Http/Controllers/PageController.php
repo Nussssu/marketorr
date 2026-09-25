@@ -23,6 +23,7 @@ class PageController extends Controller
             'featuredProjects' => Project::query()
                 ->published()
                 ->featured()
+                ->orderBy('sort_order')
                 ->get()
                 ->map(fn (Project $project) => $project->toPublicArray())
                 ->values(),

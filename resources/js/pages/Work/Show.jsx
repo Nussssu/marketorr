@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import WorkHero from '../../components/sections/WorkHero';
 import { transitionTo } from '../../components/motion/PageTransition';
 import MagneticButton from '../../components/motion/MagneticButton';
@@ -41,8 +42,57 @@ function DetailBlock({ title, children }) {
  */
 const PLACEHOLDER_FRAMES = 2;
 
+const TAPMAD_BAR_EXPORTS = new Set(['07.webp', '10.webp', '11.webp', '14.webp', '15.webp']);
+
+/**
+ * Gallery films normally play only while visible. A project can opt into
+ * uninterrupted playback for motion-led case studies such as Amanah.
+ *
+ * Chrome will not autostart a muted video that mounts far below the fold, and
+ * decoding one out of sight is wasted work on a long gallery either way, so
+ * the element is driven by its own visibility instead of `autoplay`.
+ */
+function usePlayWhenVisible(reduce, alwaysPlay = false) {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const video = ref.current;
+        if (!video) return undefined;
+        if (alwaysPlay) {
+            video.play().catch(() => {});
+
+            return undefined;
+        }
+        if (reduce) {
+            video.pause();
+
+            return undefined;
+        }
+        if (typeof IntersectionObserver === 'undefined') {
+            video.play().catch(() => {});
+
+            return undefined;
+        }
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) video.play().catch(() => {});
+                else video.pause();
+            },
+            { rootMargin: '150px 0px' },
+        );
+        observer.observe(video);
+
+        return () => observer.disconnect();
+    }, [alwaysPlay, reduce]);
+
+    return ref;
+}
+
 /** Every gallery frame shares one reveal, so the column reads as a single sequence. */
-function GalleryFigure({ image, index, reduce }) {
+function GalleryFigure({ image, index, reduce, alwaysPlay = false }) {
+    const videoRef = usePlayWhenVisible(reduce, alwaysPlay);
+
     return (
         <motion.figure
             initial={reduce ? false : { opacity: 0, y: 28 }}
@@ -51,14 +101,40 @@ function GalleryFigure({ image, index, reduce }) {
             transition={{ duration: reduce ? 0 : 0.8, delay: reduce ? 0 : Math.min(index, 3) * 0.06, ease: [...EASE] }}
             className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--bg-soft)]"
         >
-            <img
-                src={image.src}
-                alt={image.alt}
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                className="block w-full"
-            />
+            {image.vimeo ? (
+                <div className="aspect-video w-full bg-black">
+                    <iframe
+                        src={`https://player.vimeo.com/video/${image.vimeo}?dnt=1${alwaysPlay ? '&background=1&autoplay=1&loop=1&muted=1&autopause=0' : ''}`}
+                        title={image.alt || 'Project film'}
+                        loading="lazy"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        className="h-full w-full"
+                    />
+                </div>
+            ) : image.video ? (
+                <video
+                    ref={videoRef}
+                    src={image.src}
+                    // Silent, looping and inline: the film reads as another
+                    // frame in the sequence rather than something to operate.
+                    muted
+                    loop
+                    autoPlay={alwaysPlay}
+                    playsInline
+                    preload="metadata"
+                    className="block w-full"
+                />
+            ) : (
+                <img
+                    src={image.src}
+                    alt={image.alt}
+                    loading="lazy"
+                    decoding="async"
+                    draggable={false}
+                    className="block w-full"
+                />
+            )}
         </motion.figure>
     );
 }
@@ -68,7 +144,12 @@ export default function CaseStudy({ project: p }) {
     const tapIntent = useTapIntent();
     const brief = p.brief ?? null;
 
-    const gallery = (p.caseStudy ?? []).flatMap((section) => section.images ?? []);
+    const gallery = (p.caseStudy ?? [])
+        .flatMap((section) => section.images ?? [])
+        .filter((image) => (
+            p.slug !== 'tapmad-media-ads'
+            || !TAPMAD_BAR_EXPORTS.has(image.src?.split('/').pop())
+        ));
 
     const goTo = (event, url) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -238,7 +319,13 @@ export default function CaseStudy({ project: p }) {
                         <div className="space-y-6 md:space-y-8">
                             {gallery.length > 0
                                 ? gallery.map((image, index) => (
-                                    <GalleryFigure key={image.src} image={image} index={index} reduce={reduce} />
+                                    <GalleryFigure
+                                        key={image.src}
+                                        image={image}
+                                        index={index}
+                                        reduce={reduce}
+                                        alwaysPlay={p.slug === 'amanah-global-network'}
+                                    />
                                 ))
                                 : /* No published images sourced for this project yet: the standard
                                      plate makes that unmistakable rather than leaving a bare column. */

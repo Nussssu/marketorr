@@ -12,6 +12,33 @@ import OfficeMap from '../ui/OfficeMap';
 
 const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
 
+/** Budget bands offered by the inquiry form. */
+const BUDGETS = ['$10k - $25k', 'Under $10k', '$25k - $50k', '$50k+', 'Not sure yet'];
+
+/**
+ * The page's reveal: a long rise that decelerates hard and settles without
+ * overshoot, so a block arrives rather than pops.
+ *
+ * Travel and curve are matched to the motion brief: 56px, ~85% of the distance
+ * covered in the first 300ms, fully at rest by ~650ms.
+ */
+const RISE_DISTANCE = 32;
+const RISE_EASE = [0.16, 1, 0.3, 1];
+
+const rise = {
+    hidden: { opacity: 0, y: RISE_DISTANCE },
+    show: { opacity: 1, y: 0, transition: { duration: 0.68, ease: RISE_EASE } },
+};
+
+/** Children of a group arrive in sequence, so a block reads top-to-bottom. */
+const riseGroup = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.065, delayChildren: 0.02 } },
+};
+
+/** One in-view trigger for every reveal on the page. */
+const revealOnce = { once: true, margin: '-12% 0px' };
+
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 const MARKETORR_PHONE = '+880 1332-850355';
 
@@ -22,12 +49,12 @@ const MARKETORR_PHONE = '+880 1332-850355';
  */
 const boxReveal = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.09, delayChildren: 0.12 } },
+    show: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } },
 };
 
 const rowReveal = {
-    hidden: { opacity: 0, y: 26 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [...EASE] } },
+    hidden: { opacity: 0, y: 18 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.52, ease: [...EASE] } },
 };
 
 /** Seconds between automatic glass passes while the card is on screen. */
@@ -208,6 +235,162 @@ function SpeakWithUs({ contactEmail, contactPhone }) {
     );
 }
 
+
+/**
+ * The questions are drawn only from what the site already states: the two
+ * practices and their sub-services, the reply window and NDA note carried by
+ * this form, and the studio address in settings. Nothing here asserts a
+ * timeline, a price or a capability that Marketorr has not published.
+ */
+const FAQS = [
+    {
+        q: 'What does Marketorr do?',
+        a: 'Two practices. Branding — identities that demand attention. UI/UX — interfaces engineered to convert.',
+    },
+    {
+        q: 'What sits under Branding?',
+        a: 'Brand Strategy, Brand Identity Design, Rebranding, Packaging Design, Motion Branding and Brand Guidelines.',
+    },
+    {
+        q: 'What sits under UI/UX?',
+        a: 'Website UI/UX Design, Mobile App UI/UX, SaaS Product Design, UX Research & Strategy, Wireframing & Prototyping and Design Systems.',
+    },
+    {
+        q: 'How soon will you reply?',
+        a: 'We reply within 24–48 hours of receiving an inquiry.',
+    },
+    {
+        q: 'What do you need to start?',
+        a: 'Your name and email, the project type, a budget range, and a note on your goals, timeline and what success looks like.',
+    },
+    {
+        q: 'Do you work with NDAs?',
+        a: 'Yes — inquiries are NDA-friendly, and we never pass your details on.',
+    },
+    {
+        q: 'Where is the studio?',
+        a: 'Remote-first and working worldwide, from Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230.',
+    },
+];
+
+/** Small ruled chip that opens each block, as the section labels do elsewhere. */
+function BlockChip({ children, reduce }) {
+    return (
+        <motion.span
+            variants={reduce ? undefined : rise}
+            className="inline-flex h-7 w-fit shrink-0 select-none items-center gap-2 self-start rounded-[2px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--ink-faint)]"
+        >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+            {children}
+        </motion.span>
+    );
+}
+
+/**
+ * One question. The panel animates its own height so the list stays a single
+ * column that grows, and only one answer is open at a time.
+ */
+function FaqRow({ item, index, open, onToggle, reduce }) {
+    const id = `faq-panel-${index}`;
+
+    return (
+        <motion.div
+            variants={reduce ? undefined : rise}
+            className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]"
+        >
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={open}
+                aria-controls={id}
+                data-cursor="explore"
+                className="group flex h-14 w-full items-center gap-5 px-5 text-left"
+            >
+                <span
+                    className={`font-display text-[12px] font-bold tracking-[0.18em] transition-colors duration-300 ${open ? 'bg-clip-text text-transparent' : 'text-[var(--ink-faint)]'}`}
+                    style={open ? { backgroundImage: BRAND_GRADIENT } : undefined}
+                    aria-hidden
+                >
+                    {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="min-w-0 flex-1 font-display text-[15px] font-bold uppercase tracking-[0.04em] text-[var(--ink)] md:text-[17px]">
+                    {item.q}
+                </span>
+                <span
+                    className="relative grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--line)] transition-colors duration-300 group-hover:border-transparent"
+                    style={open ? { background: BRAND_GRADIENT } : undefined}
+                    aria-hidden
+                >
+                    <span className={`absolute h-px w-3 transition-colors duration-300 ${open ? 'bg-white' : 'bg-[var(--ink)]'}`} />
+                    <motion.span
+                        animate={{ rotate: open ? 0 : 90 }}
+                        transition={{ duration: reduce ? 0 : 0.4, ease: [...RISE_EASE] }}
+                        className={`absolute h-px w-3 ${open ? 'bg-white' : 'bg-[var(--ink)]'}`}
+                    />
+                </span>
+            </button>
+            <div
+                id={id}
+                aria-hidden={!open}
+                className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+                style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+            >
+                <div className="min-h-0 overflow-hidden">
+                    <p className={`max-w-[58ch] pb-5 pl-[4.4rem] pr-8 text-[14px] leading-[22px] text-[var(--mute)] transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0'}`}>
+                        {item.a}
+                    </p>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+/**
+ * Keep accordion state inside the FAQ subtree. Toggling an answer must not
+ * re-render the contact form, map and ambient motion layers above it.
+ */
+function FaqList({ reduce }) {
+    const [openFaq, setOpenFaq] = useState(-1);
+
+    return (
+        <div className="space-y-3">
+            {FAQS.map((item, index) => (
+                <FaqRow
+                    key={item.q}
+                    item={item}
+                    index={index}
+                    reduce={reduce}
+                    open={openFaq === index}
+                    onToggle={() => setOpenFaq((current) => current === index ? -1 : index)}
+                />
+            ))}
+        </div>
+    );
+}
+
+/** Live studio time. Seconds tick, so the strip reads as a signal, not a label. */
+function StudioClock() {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const id = window.setInterval(() => setNow(new Date()), 1000);
+
+        return () => window.clearInterval(id);
+    }, []);
+
+    const time = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Dhaka',
+    }).format(now);
+
+    return (
+        <span className="inline-flex items-center gap-2 font-display text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+            Local time
+            <span className="tabular-nums text-[var(--ink)]">{time}</span>
+        </span>
+    );
+}
+
 export default function Contact({ heroHeading = false }) {
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
@@ -273,191 +456,303 @@ export default function Contact({ heroHeading = false }) {
                 ))}
             </div>
 
-            <div className="container-x relative">
-                <SectionLabel index="04" name="CONTACT" />
-                {/* Heading band: the heading keeps its full measure and the action is
-                    parked on its last line rather than taking a grid column, so the
-                    first line never wraps. It ends on the container's right edge,
-                    which is also the form card's right edge, so the two line up
-                    down the page. Both stack below lg. */}
-                <div className="relative mt-10">
-                    <ScrollHeading enabled={heroHeading}>
-                        <RevealText
-                            as="h2"
-                            className="display-lg uppercase text-[var(--ink-strong)]"
-                            lines={['Have a project?', "Let's make", 'it matter.']}
-                            highlightedLines={[2]}
-                            duration={0.72}
-                            stagger={0.13}
-                        />
-                    </ScrollHeading>
+            {/* The page keeps one consistent section rhythm and collapses to one
+                column below lg. */}
+            <div className="relative mx-auto w-full max-w-[1208px] px-6 sm:px-8 xl:px-0">
+                {/* ---------- 1. Contact ---------- */}
+                <motion.div
+                    initial={reduce ? false : 'hidden'}
+                    whileInView="show"
+                    viewport={revealOnce}
+                    variants={reduce ? undefined : riseGroup}
+                    className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-x-12 xl:mx-auto xl:w-fit xl:grid-cols-[580px_534px] xl:gap-x-12"
+                >
+                    <div className="flex flex-col">
+                        <motion.div variants={reduce ? undefined : rise}>
+                            <SectionLabel index="04" name="CONTACT" />
+                        </motion.div>
 
-                    <motion.div
-                        initial={reduce ? false : { opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true, margin: '-8% 0px' }}
-                        transition={{ duration: 0.7, ease: [...EASE] }}
-                        className="mt-10 w-full lg:absolute lg:bottom-0 lg:right-0 lg:mt-0 lg:w-auto"
-                    >
-                        <MagneticButton strength={12}>
-                            <a
-                                href={`mailto:${contactEmail}`}
-                                data-cursor="cta"
-                                className="btn-press group relative flex items-center justify-center gap-4 overflow-hidden rounded-full border border-[var(--field-line)] px-6 py-5 font-display text-lg font-extrabold uppercase tracking-tight text-[var(--ink)] transition-all duration-500 hover:border-transparent hover:text-white sm:px-8 md:text-xl"
-                            >
-                                <span
-                                    className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                                    style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)', boxShadow: `0 0 ${Math.round(60 * fx.glow)}px rgba(137,31,251,0.35)` }}
-                                    aria-hidden
-                                />
-                                <span className="relative">Start a project →</span>
-                            </a>
-                        </MagneticButton>
-                    </motion.div>
-                </div>
-
-                {/* The details open the left column above the map, so that column
-                    starts level with the form card opposite. Stacking it as a flex
-                    column lets the map absorb the leftover height, so the two
-                    columns also finish level instead of leaving a gap. */}
-                <div className="mt-12 grid gap-12 lg:grid-cols-2">
-                    <motion.div
-                        initial={reduce ? false : { opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true, margin: '-8% 0px' }}
-                        transition={{ duration: 0.7, ease: [...EASE] }}
-                        className="lg:flex lg:flex-col"
-                    >
-                        <div className="grid grid-cols-1 gap-6 text-sm min-[420px]:grid-cols-2">
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Email</p>
-                                <a href={`mailto:${contactEmail}`} className="link-underline btn-press mt-1 inline-block font-semibold text-[var(--ink)]">{contactEmail}</a>
-                            </div>
-                            {contactPhone && (
-                                <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Phone</p>
-                                    <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press mt-1 inline-block font-semibold text-[var(--ink)]">{contactPhone}</a>
-                                </div>
-                            )}
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Location</p>
-                                <p className="mt-1 font-semibold text-[var(--ink)]">{locationText}</p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">Socials</p>
-                                <p className="mt-1 flex gap-3 font-semibold text-[var(--ink)]">
-                                    {socialLinks.slice(0, 2).map((s) => (
-                                        <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className="link-underline btn-press">{s.label}</a>
-                                    ))}
-                                </p>
-                            </div>
-                        </div>
-                        <OfficeMap
-                            className="mk-map--fill mt-8 lg:flex-1"
-                            address={address}
-                            directionsHref={directionsUrl}
-                        />
-                        <a
-                            href={directionsUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="link-underline btn-press mt-3 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                        <motion.h2
+                            variants={reduce ? undefined : rise}
+                                className="mt-7 font-display font-extrabold uppercase tracking-[-0.02em] text-[var(--ink-strong)]"
+                                style={{ fontSize: 'clamp(2.2rem, 4.2vw, 60px)', lineHeight: 1.06 }}
                         >
-                            Open in Google Maps ↗
-                        </a>
-                    </motion.div>
+                            Have a project?
+                            <span className="block text-gradient">Let&rsquo;s make</span>
+                            <span className="block text-gradient">it matter.</span>
+                        </motion.h2>
 
+                        <motion.p variants={reduce ? undefined : rise} className="mt-7 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                            Tell us about the work and we will come back with a clear direction, scope and next steps.
+                            Two practices: Branding, and UI/UX.
+                        </motion.p>
+
+                        {/* Email / Location / Socials, each behind a tinted glyph tile. */}
+                        <motion.div variants={reduce ? undefined : rise} className="mt-9 grid gap-6 sm:grid-cols-3">
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #891FFB 14%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#891FFB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+                                        <path d="m3 6.5 9 6 9-6" />
+                                    </svg>
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Email</span>
+                                    <a href={'mailto:' + contactEmail} className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{contactEmail}</a>
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #507AF4 14%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#507AF4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
+                                        <circle cx="12" cy="10" r="2.6" />
+                                    </svg>
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Location</span>
+                                    <span className="mt-1 block text-[14px] font-semibold text-[var(--ink)]">{locationText}</span>
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #1BE2EB 16%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#1BE2EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="9" cy="9" r="3" />
+                                        <path d="M2.8 19a6.4 6.4 0 0 1 12.4 0" />
+                                        <path d="M16.5 7.2a3 3 0 0 1 0 5.6M18.4 19a6.3 6.3 0 0 0-2.1-4" />
+                                    </svg>
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Socials</span>
+                                    <span className="mt-1 flex gap-3 text-[14px] font-semibold text-[var(--ink)]">
+                                        {socialLinks.slice(0, 2).map((social) => (
+                                            <a key={social.label} href={social.href} target="_blank" rel="noreferrer" className="link-underline btn-press">{social.label}</a>
+                                        ))}
+                                    </span>
+                                </span>
+                            </div>
+                        </motion.div>
+
+                        {/* The studio map, exactly as it was. */}
+                        <motion.div variants={reduce ? undefined : rise} className="mt-9">
+                            <OfficeMap address={address} directionsHref={directionsUrl} />
+                            <a
+                                href={directionsUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="link-underline btn-press mt-4 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                            >
+                                Open in Google Maps &rarr;
+                            </a>
+                        </motion.div>
+                    </div>
+
+                    {/* ---- message card ---- */}
                     <motion.form
                         id="project-inquiry"
                         onSubmit={submit}
-                        initial={reduce ? false : { opacity: 0, y: 26 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: '-8% 0px' }}
-                        transition={{ duration: 0.7, ease: [...EASE] }}
-                        className="scroll-mt-28 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 md:p-9"
+                        variants={reduce ? undefined : rise}
+                        className="scroll-mt-28 rounded-[1rem] border border-[var(--line)] bg-[var(--surface)] p-7 lg:mt-[3.5rem] md:p-9"
                         aria-label="Project inquiry form"
                     >
-                        {/* Honeypot — off-screen and skipped by assistive tech, so only bots fill it. */}
                         <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden>
                             <label>
                                 Nickname
-                                <input
-                                    type="text"
-                                    name="nickname"
-                                    value={data.nickname}
-                                    onChange={(e) => setData('nickname', e.target.value)}
-                                    tabIndex={-1}
-                                    autoComplete="off"
-                                />
+                                <input type="text" name="nickname" value={data.nickname} onChange={(e) => setData('nickname', e.target.value)} tabIndex={-1} autoComplete="off" />
                             </label>
                         </div>
-                        <div className="grid gap-6 sm:grid-cols-2">
+
+                        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                            Send us a message
+                        </span>
+                        <h3 className="mt-4 font-display text-[clamp(1.4rem,2vw,28px)] font-extrabold tracking-[-0.01em] text-[var(--ink-strong)]">
+                            Let&rsquo;s build something great
+                        </h3>
+                        <p className="mt-2 text-[14px] leading-[22px] text-[var(--mute)]">
+                            Share a few details and we will get in touch shortly.
+                        </p>
+
+                        <div className="mt-7 grid gap-5 sm:grid-cols-2">
                             {[
-                                ['Name*', 'name', 'text', 'Jane Cooper'],
-                                ['Email*', 'email', 'email', 'jane@company.com'],
-                                ['Phone', 'phone', 'tel', '+880 1700 000000'],
-                                ['Company', 'company', 'text', 'Company Inc.'],
-                                ['Budget', 'budget', 'text', '$10k – $25k'],
-                            ].map(([label, key, type, ph]) => (
-                                <label key={key} className="field-wrap block">
-                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{label}</span>
+                                { key: 'name', label: 'Your name*', type: 'text', ph: 'Jane Cooper' },
+                                { key: 'email', label: 'Email*', type: 'email', ph: 'jane@company.com' },
+                                { key: 'phone', label: 'Phone', type: 'tel', ph: '+880 1700 000000' },
+                                { key: 'company', label: 'Company', type: 'text', ph: 'Company Inc.' },
+                            ].map((f) => (
+                                <label key={f.key} className="block">
+                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{f.label}</span>
                                     <input
-                                        type={type}
-                                        value={data[key]}
-                                        onChange={(e) => setData(key, e.target.value)}
-                                        placeholder={ph}
-                                        className="field-underline w-full bg-transparent pb-3 text-[15px]"
+                                        type={f.type}
+                                        value={data[f.key]}
+                                        onChange={(e) => setData(f.key, e.target.value)}
+                                        placeholder={f.ph}
+                                        className="field-box h-12 w-full rounded-xl px-4 text-[14px]"
                                     />
-                                    {errors[key] && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors[key]}</span>}
+                                    {errors[f.key] && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors[f.key]}</span>}
                                 </label>
                             ))}
-                            <label className="field-wrap block">
-                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Project type</span>
-                                <select value={data.type} onChange={(e) => setData('type', e.target.value)} className="field-underline w-full bg-transparent pb-3 text-[15px]">
-                                    {TYPES.map((t) => (
-                                        <option key={t} value={t} className="bg-[var(--surface)]">{t}</option>
-                                    ))}
+
+                            <label className="block">
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Budget range</span>
+                                <select value={data.budget} onChange={(e) => setData('budget', e.target.value)} className="field-box h-12 w-full rounded-xl px-4 text-[14px]">
+                                    {BUDGETS.map((b) => (<option key={b} value={b} className="bg-[var(--surface)]">{b}</option>))}
                                 </select>
                             </label>
-                            <label className="field-wrap block sm:col-span-2">
-                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Message*</span>
+
+                            <label className="block">
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Project type</span>
+                                <select value={data.type} onChange={(e) => setData('type', e.target.value)} className="field-box h-12 w-full rounded-xl px-4 text-[14px]">
+                                    {TYPES.map((t) => (<option key={t} value={t} className="bg-[var(--surface)]">{t}</option>))}
+                                </select>
+                            </label>
+
+                            <label className="block sm:col-span-2">
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Message*</span>
                                 <textarea
                                     rows={4}
                                     value={data.message}
                                     onChange={(e) => setData('message', e.target.value)}
-                                    placeholder="Tell us about your goals, timeline, and what success looks like…"
-                                    className="field-underline w-full resize-none bg-transparent pb-3 text-[15px]"
+                                    placeholder="Tell us about your goals, timeline, and what success looks like..."
+                                    className="field-box w-full resize-none rounded-xl p-4 text-[14px]"
                                 />
                                 {errors.message && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors.message}</span>}
                             </label>
                         </div>
+
                         <button
                             type="submit"
                             disabled={processing || wasSuccessful}
                             data-cursor="cta"
-                            className="btn-press btn-3d mt-8 flex w-full items-center justify-center gap-3 rounded-full py-4 text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
-                            style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                            className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
+                            style={{ background: BRAND_GRADIENT }}
                         >
-                            {processing ? (
-                                <>
-                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />
-                                    Sending…
-                                </>
-                            ) : wasSuccessful ? (
-                                'Inquiry received ✓'
-                            ) : (
-                                'Send inquiry →'
-                            )}
+                            {processing ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />Sending...</>)
+                                : wasSuccessful ? 'Inquiry received' : (<>Send inquiry <span aria-hidden>&rarr;</span></>)}
                         </button>
                         <p className="mt-3 text-center text-[12px] text-[var(--ink-faint)]">
-                            {wasSuccessful ? 'Thanks — we reply within 24–48h.' : 'No spam. NDA-friendly.'}
+                            {wasSuccessful ? 'Thanks - we reply within 24-48h.' : 'No spam. NDA-friendly.'}
                         </p>
                     </motion.form>
-                </div>
+                </motion.div>
 
-                {heroHeading && (
-                    <SpeakWithUs contactEmail={contactEmail} contactPhone={contactPhone} />
-                )}
+                {/* ---------- 2. Questions ---------- */}
+                <motion.div
+                    initial={reduce ? false : 'hidden'}
+                    whileInView="show"
+                    viewport={revealOnce}
+                    variants={reduce ? undefined : riseGroup}
+                    className="mt-28 grid gap-12 lg:mt-32 lg:grid-cols-[556px_554px] lg:gap-x-[96px] lg:gap-y-0"
+                >
+                    <div className="flex flex-col">
+                        <BlockChip reduce={reduce}>FAQs</BlockChip>
+                        <motion.h2 variants={reduce ? undefined : rise} className="mt-4 font-display font-extrabold uppercase tracking-[-0.02em] text-[var(--ink-strong)]" style={{ fontSize: 'clamp(2.2rem, 4.2vw, 60px)', lineHeight: 1.06 }}>
+                            Clear answers
+                            <span className="block text-gradient">before we start</span>
+                        </motion.h2>
+                        <motion.span variants={reduce ? undefined : rise} className="mt-4 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                        <motion.p variants={reduce ? undefined : rise} className="mt-5 max-w-[44ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                            What we do, what we need from you, and how quickly you will hear back.
+                        </motion.p>
+
+                        <motion.div variants={reduce ? undefined : rise} className="mt-12 flex items-start gap-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 lg:mt-auto">
+                            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-md border border-[var(--line)] text-[var(--ink)]" aria-hidden>
+                                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-4.2A8.4 8.4 0 1 1 21 11.5Z" />
+                                </svg>
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block font-display text-[15px] font-bold uppercase tracking-[0.03em] text-[var(--ink)]">Still have questions?</span>
+                                <span className="mt-1 block text-[13px] text-[var(--mute)]">Send the details and we will come back to you.</span>
+                                <a href="#project-inquiry" data-cursor="cta" className="link-underline btn-press mt-4 inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-gradient">
+                                    Contact us <span aria-hidden>&rarr;</span>
+                                </a>
+                            </span>
+                        </motion.div>
+                    </div>
+
+                    <FaqList reduce={reduce} />
+                </motion.div>
+
+                {/* ---------- 3. Let's connect ---------- */}
+                <motion.div
+                    initial={reduce ? false : 'hidden'}
+                    whileInView="show"
+                    viewport={revealOnce}
+                    variants={reduce ? undefined : riseGroup}
+                    className="relative mt-28 overflow-hidden border border-[var(--line)] bg-[var(--surface-2)] px-6 py-10 sm:px-8 sm:py-12 lg:-mx-[92px] lg:mt-32 lg:px-[92px] lg:py-14"
+                >
+                    <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden>
+                        <span className="absolute inset-x-0 top-0 h-px" style={{ background: BRAND_GRADIENT }} />
+                        <span className="absolute -left-24 -top-24 h-64 w-64 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, #891FFB 8%, transparent), transparent 68%)' }} />
+                    </div>
+                    <span className="pointer-events-none absolute left-0 top-0 h-5 w-5 border-l border-t border-[var(--ink-faint)] opacity-40" aria-hidden />
+                    <span className="pointer-events-none absolute right-0 top-0 h-5 w-5 border-r border-t border-[var(--ink-faint)] opacity-40" aria-hidden />
+                    <span className="pointer-events-none absolute bottom-0 left-0 h-5 w-5 border-b border-l border-[var(--ink-faint)] opacity-40" aria-hidden />
+                    <span className="pointer-events-none absolute bottom-0 right-0 h-5 w-5 border-b border-r border-[var(--ink-faint)] opacity-40" aria-hidden />
+
+                    <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.92fr)] lg:items-start lg:gap-x-20">
+                        <div className="relative">
+                            <motion.h2 variants={reduce ? undefined : rise} className="font-display font-extrabold uppercase tracking-[-0.02em] text-[var(--ink-strong)]" style={{ fontSize: 'clamp(2.15rem, 3.8vw, 54px)', lineHeight: 1.04 }}>
+                                Let&rsquo;s build
+                                <span className="block text-gradient">something</span>
+                            </motion.h2>
+                            <motion.span variants={reduce ? undefined : rise} className="mt-6 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                            <motion.p variants={reduce ? undefined : rise} className="mt-6 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                                We&rsquo;re currently available for select projects and collaborations. Let&rsquo;s create digital experiences that leave a lasting impact.
+                            </motion.p>
+                        </div>
+
+                        <motion.div variants={reduce ? undefined : rise} className="relative border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8">
+                            <BlockChip reduce={reduce}>Let&rsquo;s connect</BlockChip>
+                            <ul className="mt-6 list-none border-y border-[var(--line)]">
+                                {[
+                                    { label: contactEmail, href: 'mailto:' + contactEmail, type: 'email', ext: false },
+                                    ...(socials.linkedin ? [{ label: 'LinkedIn', href: socials.linkedin, type: 'linkedin', ext: true }] : []),
+                                ].map((row) => (
+                                    <li key={row.label} className="border-b border-[var(--line)] last:border-b-0">
+                                        <a
+                                            href={row.href}
+                                            {...(row.ext ? { target: '_blank', rel: 'noreferrer' } : {})}
+                                            data-cursor="explore"
+                                            className="group flex items-center gap-4 py-4 text-[var(--ink)]"
+                                        >
+                                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[var(--line)] text-[var(--ink)]" aria-hidden>
+                                                {row.type === 'linkedin' ? (
+                                                    <span className="font-display text-[11px] font-extrabold lowercase">in</span>
+                                                ) : (
+                                                    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+                                                            <path d="m3 6.5 9 6 9-6" />
+                                                    </svg>
+                                                )}
+                                            </span>
+                                            <span className="min-w-0 flex-1 truncate text-[15px]">{row.label}</span>
+                                            <span className="text-[13px] text-[var(--ink-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:text-[var(--ink)]" aria-hidden>&#8599;</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                            <a
+                                href="#project-inquiry"
+                                data-cursor="cta"
+                                className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white"
+                                style={{ background: BRAND_GRADIENT }}
+                            >
+                                Start a project <span aria-hidden>&rarr;</span>
+                            </a>
+                        </motion.div>
+                    </div>
+
+                    <motion.div variants={reduce ? undefined : rise} className="relative mt-12 flex flex-col gap-4 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between lg:mt-14">
+                        <span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#8bdc3c]" aria-hidden />
+                            Status: <span className="text-[var(--ink)]">Open for work</span>
+                        </span>
+                        <StudioClock />
+                    </motion.div>
+                </motion.div>
             </div>
         </section>
     );

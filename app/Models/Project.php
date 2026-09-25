@@ -195,6 +195,7 @@ class Project extends Model
         $grouped = static::query()
             ->published()
             ->with('category.parent')
+            ->orderBy('sort_order')
             ->get()
             ->groupBy(fn (self $project): string => $project->workGroup());
 
@@ -315,11 +316,13 @@ class Project extends Model
         return collect($this->case_study ?? [])
             ->map(function (array $section): array {
                 $images = collect($section['images'] ?? [])
-                    ->filter(fn ($image) => filled($image['src'] ?? null))
+                    ->filter(fn ($image) => filled($image['src'] ?? null) || filled($image['vimeo'] ?? null))
                     ->map(fn (array $image): array => [
                         'src' => self::mediaUrl($image['src']),
                         'alt' => $image['alt'] ?? '',
                         'wide' => (bool) ($image['wide'] ?? false),
+                        'video' => (bool) ($image['video'] ?? false),
+                        'vimeo' => $image['vimeo'] ?? null,
                     ])
                     ->values()
                     ->all();

@@ -81,6 +81,31 @@ export const PROJECT_HERO_MEDIA = {
         ratio: 426 / 240,
         background: '#050507',
     },
+    'amanah-global-network': {
+        kind: 'vimeo',
+        id: '1223960078',
+        title: 'Amanah brand film',
+        ratio: 16 / 9,
+        background: '#0a2426',
+    },
+    'smilez-logo-design': {
+        kind: 'image',
+        src: '/images/work/gallery/smilez-logo-design/03.webp',
+        alt: 'Smilez silver foil emboss on dark paper',
+        fit: 'cover',
+        background: '#0b0b0e',
+        // Hero only: the card carries the logo-on-white frame instead.
+        card: false,
+    },
+    'tapmad-media-ads': {
+        kind: 'image',
+        src: '/images/work/gallery/tapmad-media-ads/02.webp',
+        alt: 'Tapmad All in 1 press ad on newspaper',
+        fit: 'cover',
+        background: '#0b0b0e',
+        // Hero only: the card carries the billboard frame instead.
+        card: false,
+    },
 };
 
 /**

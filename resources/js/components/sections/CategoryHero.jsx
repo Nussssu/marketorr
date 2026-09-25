@@ -178,6 +178,9 @@ export default function CategoryHero({ category }) {
                             )}
                     </motion.div>
 
+                    {/* Theme-aware scrim: sits over the media, under the type. */}
+                    <div className="hero-scrim" aria-hidden />
+
                     {/* Depth stage. It keeps its perspective — the planes' z
                         values are what set their scale — but no longer tilts,
                         because a tilt rotates every plane, type included. */}

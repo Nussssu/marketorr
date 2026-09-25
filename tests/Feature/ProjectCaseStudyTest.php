@@ -55,6 +55,23 @@ class ProjectCaseStudyTest extends TestCase
         }
     }
 
+    public function test_tapmad_gallery_does_not_publish_the_black_bar_duplicate_exports(): void
+    {
+        $this->seed(ProjectSeeder::class);
+
+        $project = Project::query()->where('slug', 'tapmad-media-ads')->sole();
+        $filenames = collect($project->publicCaseStudy())
+            ->flatMap(fn (array $section) => $section['images'])
+            ->pluck('src')
+            ->map(fn (string $src): string => basename($src))
+            ->all();
+
+        $this->assertSame(
+            ['01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '08.webp', '09.jpg', '12.jpg', '13.jpg', '16.jpg'],
+            $filenames,
+        );
+    }
+
     public function test_a_project_without_a_case_study_still_renders_with_an_empty_sequence(): void
     {
         $project = Project::factory()->create(['case_study' => null, 'external_url' => null]);
