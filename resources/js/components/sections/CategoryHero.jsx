@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { EASE } from '../../lib/motion';
+import { EASE, heroMediaEntrance } from '../../lib/motion';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 
 
@@ -156,9 +156,7 @@ export default function CategoryHero({ category }) {
                                     disablePictureInPicture
                                     controlsList="nodownload noplaybackrate"
                                     draggable={false}
-                                    initial={reduce ? false : { scale: 1.3, opacity: 0 }}
-                                    animate={{ scale: 1.12, opacity: 1 }}
-                                    transition={{ duration: reduce ? 0 : 1.8, ease: [...EASE] }}
+                                    {...heroMediaEntrance(reduce)}
                                     className="pointer-events-none h-full w-full select-none object-cover"
                                 />
                             ) : image ? (
@@ -168,9 +166,7 @@ export default function CategoryHero({ category }) {
                                     fetchPriority="high"
                                     decoding="async"
                                     draggable={false}
-                                    initial={reduce ? false : { scale: 1.3, opacity: 0 }}
-                                    animate={{ scale: 1.12, opacity: 1 }}
-                                    transition={{ duration: reduce ? 0 : 1.8, ease: [...EASE] }}
+                                    {...heroMediaEntrance(reduce)}
                                     className="h-full w-full object-cover"
                                 />
                             ) : (

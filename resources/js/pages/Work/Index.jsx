@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useRef } from 'react';
 import { SectionLabel } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 import { transitionTo } from '../../components/motion/PageTransition';
@@ -20,8 +21,20 @@ const STRIP_SECONDS = 42;
 
 function PortfolioDoor({ group, index, reduce }) {
     const tapIntent = useTapIntent();
+    const destinationPreloaded = useRef(false);
     const previews = (group.items ?? []).filter((item) => item.image);
     const count = (group.items ?? []).length;
+
+    const preloadDestination = () => {
+        if (destinationPreloaded.current) return;
+
+        destinationPreloaded.current = true;
+        router.prefetch(group.href, {}, { cacheFor: '1m' });
+        import('./Portfolio.jsx').catch((error) => {
+            destinationPreloaded.current = false;
+            console.error('Unable to preload the work portfolio page.', error);
+        });
+    };
 
     const go = (event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -41,9 +54,13 @@ function PortfolioDoor({ group, index, reduce }) {
         >
             <Link
                 href={group.href}
-                prefetch
                 data-cursor="explore"
-                onPointerDown={tapIntent.onPointerDown}
+                onPointerEnter={preloadDestination}
+                onFocus={preloadDestination}
+                onPointerDown={(event) => {
+                    preloadDestination();
+                    tapIntent.onPointerDown(event);
+                }}
                 onPointerCancel={tapIntent.onPointerCancel}
                 onClick={go}
                 aria-label={`${group.name}, ${count} projects`}

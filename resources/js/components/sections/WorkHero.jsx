@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import { projectHeroMedia } from '../../lib/projectHeroMedia';
 import MediaPlaceholder from '../media/MediaPlaceholder';
-import { EASE } from '../../lib/motion';
+import { EASE, heroMediaEntrance } from '../../lib/motion';
 
 /** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
 function useRichScene() {
@@ -37,25 +37,7 @@ function useRichScene() {
 function HeroMedia({ project, reduce }) {
     const media = projectHeroMedia(project.slug);
     const [ready, setReady] = useState(false);
-    const reveal = {
-        initial: false,
-        animate: ready
-            ? { scale: reduce ? 1 : 1.12, opacity: 1 }
-            : { scale: reduce ? 1 : 1.3, opacity: 0 },
-        transition: { duration: reduce ? 0 : 1.8, ease: [...EASE] },
-    };
-
-    const revealDecodedImage = (event) => {
-        const image = event.currentTarget;
-
-        if (typeof image.decode !== 'function') {
-            setReady(true);
-
-            return;
-        }
-
-        image.decode().catch(() => undefined).then(() => setReady(true));
-    };
+    const reveal = heroMediaEntrance(reduce);
 
     if (media && !reduce) {
         if (media.kind === 'video') {
@@ -78,7 +60,6 @@ function HeroMedia({ project, reduce }) {
                         preload="auto"
                         tabIndex={-1}
                         aria-hidden
-                        onLoadedData={() => setReady(true)}
                         className={`h-full w-full ${media.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                     />
                 </motion.div>
@@ -92,9 +73,21 @@ function HeroMedia({ project, reduce }) {
                     className="absolute inset-0 overflow-hidden"
                     style={{ background: media.background ?? '#000' }}
                 >
+                    {project.image && (
+                        <img
+                            src={project.image}
+                            alt=""
+                            fetchPriority="high"
+                            loading="eager"
+                            decoding="async"
+                            draggable={false}
+                            aria-hidden
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                    )}
                     {/* Scaled to cover the stage: the player keeps the film's own
                         ratio, so it is sized off whichever viewport edge binds. */}
-                    <iframe
+                    <motion.iframe
                         src={`https://player.vimeo.com/video/${media.id}?background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1${media.hash ? `&h=${media.hash}` : ''}`}
                         title={media.title}
                         allow="autoplay; fullscreen"
@@ -102,6 +95,9 @@ function HeroMedia({ project, reduce }) {
                         tabIndex={-1}
                         aria-hidden
                         onLoad={() => setReady(true)}
+                        initial={false}
+                        animate={{ opacity: ready ? 1 : 0 }}
+                        transition={{ duration: reduce ? 0 : 0.2, ease: [...EASE] }}
                         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                         style={{
                             width: '100vw',
@@ -127,7 +123,6 @@ function HeroMedia({ project, reduce }) {
                     loading="eager"
                     decoding="async"
                     draggable={false}
-                    onLoad={revealDecodedImage}
                     className={`h-full w-full ${media.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                 />
             </motion.div>
@@ -147,7 +142,6 @@ function HeroMedia({ project, reduce }) {
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
-                    onLoad={revealDecodedImage}
                     className="pointer-events-none absolute h-px w-px opacity-0"
                     aria-hidden
                 />
@@ -164,7 +158,6 @@ function HeroMedia({ project, reduce }) {
             loading="eager"
             decoding="async"
             draggable={false}
-            onLoad={revealDecodedImage}
             {...reveal}
             className="h-full w-full object-cover"
         />

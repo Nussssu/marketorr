@@ -21,16 +21,16 @@ export default function RevealText({
     return (
         <MTag
             className={className}
-            initial="hidden"
+            initial={reduce ? false : 'hidden'}
             whileInView="show"
-            viewport={{ once: false, margin: '-10% 0px' }}
-            variants={{ hidden: {}, show: { transition: { staggerChildren: stagger, delayChildren: delay } } }}
+            viewport={{ once: true, margin: '-10% 0px' }}
+            variants={reduce ? undefined : { hidden: {}, show: { transition: { staggerChildren: stagger, delayChildren: delay } } }}
         >
             {lines.map((line, i) => (
                 <span key={i} className={`mask-line ${lineClassName}`}>
                     <motion.span
                         className={`mask-inner ${highlightedLines.includes(i) ? 'text-gradient' : ''}`.trimEnd()}
-                        variants={{
+                        variants={reduce ? undefined : {
                             hidden: { y: reduce ? '0%' : '110%' },
                             show: { y: '0%', transition: { duration, ease: [...EASE] } },
                         }}

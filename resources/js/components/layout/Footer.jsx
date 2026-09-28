@@ -57,9 +57,9 @@ export default function Footer() {
             {/* Brand divider — draws in on enter, then a single sheen passes across it */}
             <div className="relative h-[3px] w-full overflow-hidden" aria-hidden>
                 <motion.div
-                    initial={{ scaleX: 0 }}
+                    initial={reduce ? false : { scaleX: 0 }}
                     whileInView={{ scaleX: 1 }}
-                    viewport={{ once: false, margin: '-5% 0px' }}
+                    viewport={{ once: true, margin: '-5% 0px' }}
                     transition={{ duration: 0.9, ease: EASE }}
                     className="h-full w-full origin-left"
                     style={{ background: BRAND_GRADIENT }}
@@ -68,7 +68,7 @@ export default function Footer() {
                     <motion.div
                         initial={{ x: '-130%' }}
                         whileInView={{ x: '130%' }}
-                        viewport={{ once: false, margin: '-5% 0px' }}
+                        viewport={{ once: true, margin: '-5% 0px' }}
                         transition={{ duration: 1.1, delay: 0.35, ease: EASE }}
                         className="absolute inset-y-0 w-1/3"
                         style={{ background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.75),transparent)' }}
@@ -77,10 +77,10 @@ export default function Footer() {
             </div>
 
             <motion.div
-                variants={container}
-                initial="hidden"
+                variants={reduce ? undefined : container}
+                initial={reduce ? false : 'hidden'}
                 whileInView="show"
-                viewport={{ once: false, margin: '-8% 0px' }}
+                viewport={{ once: true, margin: '-8% 0px' }}
                 className="container-x grid grid-cols-1 gap-x-10 gap-y-12 pt-14 pb-12 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-14 lg:pt-20 lg:pb-16"
             >
                 {/* Brand + intro */}
@@ -144,10 +144,10 @@ export default function Footer() {
 
             <div className="border-t border-[var(--line)]">
                 <motion.div
-                    variants={item}
-                    initial="hidden"
+                    variants={reduce ? undefined : item}
+                    initial={reduce ? false : 'hidden'}
                     whileInView="show"
-                    viewport={{ once: false, margin: '-4% 0px' }}
+                    viewport={{ once: true, margin: '-4% 0px' }}
                     className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:flex-row md:items-center md:justify-between md:gap-8"
                 >
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

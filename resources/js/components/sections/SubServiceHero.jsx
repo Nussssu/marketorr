@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { consumeShowcaseArrival } from '../motion/ShowcaseTransition';
-import { EASE } from '../../lib/motion';
+import { EASE, heroMediaEntrance } from '../../lib/motion';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 
 
@@ -82,9 +82,7 @@ export default function SubServiceHero({ item, parentHref }) {
                                     fetchPriority="high"
                                     decoding="async"
                                     draggable={false}
-                                    initial={reduce || arrived ? false : { scale: 1.3, opacity: 0 }}
-                                    animate={{ scale: 1.12, opacity: 1 }}
-                                    transition={{ duration: reduce || arrived ? 0 : 1.8, ease: [...EASE] }}
+                                    {...heroMediaEntrance(reduce || arrived)}
                                     className="h-full w-full object-cover"
                                 />
                             ) : (

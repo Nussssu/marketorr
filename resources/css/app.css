@@ -229,6 +229,7 @@ section[id], div[id], footer[id] {
   pointer-events: none;
   opacity: var(--noise-op);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
 }
 
 .btn-press { transition: transform var(--dur-fast) var(--ease), background-color 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease); }
@@ -1822,4 +1823,28 @@ input, textarea, select { color-scheme: inherit; }
   outline: none;
   border-color: transparent;
   box-shadow: 0 0 0 1px #507af4;
+}
+
+/* Preserve the same surfaces on constrained viewports without continuously
+   filtering large translucent regions during scroll. Kept at the end so it
+   wins over the component-level glass treatments above. */
+@media (max-width: 767px), (update: slow) {
+  .award-plate,
+  .header-shell--float,
+  .mk-map__recenter,
+  .mk-map .leaflet-control-attribution,
+  .mk-map .leaflet-popup-content-wrapper,
+  .mk-map__gesture-hint {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .progression-highlight {
+    animation: none;
+  }
+
+  .services-transition__glow {
+    filter: none;
+    will-change: opacity;
+  }
 }

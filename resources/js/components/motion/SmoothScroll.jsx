@@ -16,12 +16,28 @@ export default function SmoothScroll() {
         });
 
         let raf = 0;
+        let running = false;
         let deepLinkRaf = 0;
         const loop = (time) => {
             lenis.raf(time);
+
+            if (lenis.isScrolling === 'smooth' || Math.abs(lenis.velocity) > 0.01) {
+                raf = requestAnimationFrame(loop);
+            } else {
+                raf = 0;
+                running = false;
+            }
+        };
+        const startLoop = () => {
+            if (running || document.hidden) return;
+
+            running = true;
             raf = requestAnimationFrame(loop);
         };
-        raf = requestAnimationFrame(loop);
+
+        // Run frames only while Lenis is actively easing a scroll. An idle
+        // 60fps loop competes with viewport reveals for no visible benefit.
+        window.addEventListener('wheel', startLoop, { passive: true });
 
         // anchor smooth scroll (same-page only; cross-page /# links reload + deep-link below)
         const onClick = (e) => {
@@ -44,6 +60,7 @@ export default function SmoothScroll() {
             if (!el) return;
             e.preventDefault();
             lenis.scrollTo(el, { offset: -72, duration: 0.65 });
+            startLoop();
         };
         document.addEventListener('click', onClick);
 
@@ -65,8 +82,10 @@ export default function SmoothScroll() {
         }
 
         return () => {
+            running = false;
             cancelAnimationFrame(raf);
             cancelAnimationFrame(deepLinkRaf);
+            window.removeEventListener('wheel', startLoop);
             document.removeEventListener('click', onClick);
             lenis.destroy();
             if (window.__lenis === lenis) window.__lenis = undefined;

@@ -389,7 +389,7 @@ function Awards() {
                                     <img
                                         src={item.image}
                                         alt={duplicate ? '' : item.name}
-                                        loading="eager"
+                                        loading="lazy"
                                         decoding="async"
                                         className="max-h-9 w-full max-w-[124px] object-contain sm:max-h-11 sm:max-w-[140px] md:max-w-[150px]"
                                     />

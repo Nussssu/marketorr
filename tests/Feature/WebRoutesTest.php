@@ -46,7 +46,7 @@ class WebRoutesTest extends TestCase
 
     public function test_the_seeded_catalogue_matches_the_seeder_definitions(): void
     {
-        $this->assertSame(24, Project::query()->count());
+        $this->assertSame(25, Project::query()->count());
         $this->assertSame(7, Project::query()->featured()->count());
         $this->assertSame(12, Service::query()->count());
     }
@@ -149,6 +149,7 @@ class WebRoutesTest extends TestCase
                     'shuddhomart-branding',
                     'virgin-trend',
                     'animateuix-brand-design',
+                    'medica-lifecare-brand-identity',
                     'un-point-brand-design',
                     'editwing-brand-design',
                     'city-online-brand-design',

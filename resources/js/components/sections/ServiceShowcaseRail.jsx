@@ -83,8 +83,7 @@ function ShowcaseScreen({ item, solidTitle = false }) {
  * frame full at every offset.
  *
  * The whole rail is decorative: `pointer-events-none` and `aria-hidden`, so
- * it can never intercept a tap or start a visit — the card's arrow and its
- * "Explore …" CTA remain the only navigation.
+ * taps pass through to the card-level navigation target.
  *
  * @param {{
  *   category: { slug: string, name: string, items: Array<{ slug: string, name: string, short: string, image: string, accent: string }> },

@@ -1,8 +1,10 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-// Every device gets the same stage; only a stated motion preference lightens it.
-const RICH_QUERY = '(prefers-reduced-motion: no-preference)';
+// Phones use the flat stage. Perspective, rotation and translateZ promote
+// whole sections to large GPU layers and are disproportionately expensive on
+// a narrow viewport.
+const RICH_QUERY = '(min-width: 768px) and (prefers-reduced-motion: no-preference)';
 
 /**
  * Travel applied while a scene is arriving (`in`) and while it is falling back

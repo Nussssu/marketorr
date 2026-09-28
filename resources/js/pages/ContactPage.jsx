@@ -1,11 +1,11 @@
-import SectionRenderer from '../components/sections/SectionRenderer';
+import Contact from '../components/sections/Contact';
 import PageMeta from '../components/PageMeta';
 
 export default function ContactPage({ page }) {
     return (
         <>
             <PageMeta page={page} fallbackTitle="Contact — Marketorr" />
-            <SectionRenderer sections={page?.sections ?? []} />
+            <Contact heroHeading />
         </>
     );
 }

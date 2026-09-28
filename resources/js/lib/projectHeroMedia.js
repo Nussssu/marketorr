@@ -88,6 +88,13 @@ export const PROJECT_HERO_MEDIA = {
         ratio: 16 / 9,
         background: '#0a2426',
     },
+    'medica-lifecare-brand-identity': {
+        kind: 'vimeo',
+        id: '1230249552',
+        title: 'Medica Lifecare PLC brand identity film',
+        ratio: 16 / 9,
+        background: '#062d43',
+    },
     'smilez-logo-design': {
         kind: 'image',
         src: '/images/work/gallery/smilez-logo-design/03.webp',

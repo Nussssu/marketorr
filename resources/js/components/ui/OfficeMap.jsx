@@ -110,15 +110,29 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
             return undefined;
         }
 
+        let idleId = 0;
+        let timerId = 0;
+        const loadMap = () => setShouldLoad(true);
+        const scheduleLoad = () => {
+            if ('requestIdleCallback' in window) {
+                idleId = window.requestIdleCallback(loadMap, { timeout: 300 });
+            } else {
+                timerId = window.setTimeout(loadMap, 0);
+            }
+        };
         const observer = new IntersectionObserver(([entry]) => {
             if (!entry.isIntersecting) return;
 
-            setShouldLoad(true);
             observer.disconnect();
-        }, { rootMargin: '400px 0px' });
+            scheduleLoad();
+        }, { rootMargin: '160px 0px' });
         observer.observe(host);
 
-        return () => observer.disconnect();
+        return () => {
+            observer.disconnect();
+            if (idleId) window.cancelIdleCallback(idleId);
+            window.clearTimeout(timerId);
+        };
     }, [shouldLoad]);
 
     useEffect(() => {

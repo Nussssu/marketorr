@@ -16,7 +16,7 @@ const SAFETY_MS = 3200;
  * The flying copy finishes on this exact value, so handing over is a fade
  * between two identical frames rather than a jump in crop.
  */
-const HERO_RESTING_SCALE = 1.12;
+const HERO_RESTING_SCALE = 1;
 
 /**
  * True when the visit now in flight was started by a showcase click, so the

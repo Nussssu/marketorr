@@ -265,18 +265,6 @@ export default function CaseStudy({ project: p }) {
                         </DetailBlock>
                     )}
 
-                    {brief.sourceUrl && (
-                        <DetailBlock title="Source">
-                            <a
-                                href={brief.sourceUrl}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                className="text-[13px] leading-relaxed text-[var(--mute)] underline decoration-[var(--line)] underline-offset-4 transition-colors hover:text-[var(--ink-strong)]"
-                            >
-                                Published project entry on marketorr.com.bd ↗
-                            </a>
-                        </DetailBlock>
-                    )}
                 </>
             ) : (
                 p.description && <p className="text-[16px] leading-[1.8] text-[var(--mute)]">{p.description}</p>

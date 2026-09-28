@@ -9,13 +9,26 @@ import ServicesTransition from './ServicesTransition';
 import SubServiceTicker, { SubServiceCopy } from './SubServiceTicker';
 import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
+import { transitionTo } from '../motion/PageTransition';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
 
+function navigateWithCurtain(event, href, tapIntent) {
+    if (event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== undefined && event.button !== 0) return;
+
+    tapIntent.onClick(event);
+    if (event.defaultPrevented) return;
+
+    event.preventDefault();
+    transitionTo(href);
+}
+
 /**
- * Home-page entrance choreography. Replays on every viewport re-entry
- * (`once: false`); `compact` shortens the travel and the timings on phones,
- * and the whole thing is skipped when the user prefers reduced motion.
+ * Home-page entrance choreography. It plays once, `compact` shortens the
+ * travel and timings on phones, and the whole thing is skipped when the user
+ * prefers reduced motion.
  */
 const VIEWPORT = { once: true, margin: '-12% 0px -12% 0px' };
 
@@ -85,6 +98,7 @@ function useCompactViewport() {
 }
 
 function CategoryGateway({ category, index, variants, solidHeadings = false }) {
+    const cardTapIntent = useTapIntent();
     const arrowTapIntent = useTapIntent();
     const ctaTapIntent = useTapIntent();
     // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
@@ -101,12 +115,8 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
     // hover only drives the card's visual effects (border, arrow, CTA) via CSS.
     const reel = useMotionValue(0);
 
-    // The card body itself is NOT a navigation target: hovering it, moving the
-    // pointer across it, entering/leaving it or touching the decorative showcase
-    // rail can never start a visit. Only the arrow and the "Explore …" CTA below
-    // navigate. The links perform one native Inertia visit after the tap-intent
-    // guard accepts the gesture; the global PageTransition still supplies the
-    // existing route animation without a second delayed navigation path.
+    // The full card is a navigation target; its decorative content lets clicks
+    // pass through while the arrow and CTA remain independently interactive.
 
     return (
         <motion.article
@@ -116,7 +126,15 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
             className={`group relative min-h-[340px] overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-10 lg:p-12 ${variants ? 'services-card' : ''}`.trimEnd()}
         >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-x-100" style={{ background: BRAND_GRADIENT }} aria-hidden />
-            <div className="relative flex h-full gap-4 sm:gap-7">
+            <Link
+                href={exploreHref}
+                prefetch
+                aria-label={`Explore ${category.name} services`}
+                {...cardTapIntent}
+                onClick={(event) => navigateWithCurtain(event, exploreHref, cardTapIntent)}
+                className="absolute inset-0 z-0 rounded-3xl focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#507AF4]"
+            />
+            <div className="pointer-events-none relative z-0 flex h-full gap-4 sm:gap-7">
                 <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-16">
                     <div className="flex items-center justify-between">
                         <span className="font-display text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]">0{index + 1} / Category</span>
@@ -125,7 +143,8 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
                             prefetch
                             aria-label={`Explore ${category.name}`}
                             {...arrowTapIntent}
-                            className="services-card__arrow flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
+                            onClick={(event) => navigateWithCurtain(event, exploreHref, arrowTapIntent)}
+                            className="services-card__arrow pointer-events-auto relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
                         >
                             ↗
                         </Link>
@@ -141,7 +160,8 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
                                 href={exploreHref}
                                 prefetch
                                 {...ctaTapIntent}
-                                className="hidden text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] transition-colors duration-300 hover:text-[var(--ink)] sm:block"
+                                onClick={(event) => navigateWithCurtain(event, exploreHref, ctaTapIntent)}
+                                className="hidden pointer-events-auto relative z-10 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] transition-colors duration-300 hover:text-[var(--ink)] sm:block"
                             >
                                 Explore {category.items.length} services
                             </Link>

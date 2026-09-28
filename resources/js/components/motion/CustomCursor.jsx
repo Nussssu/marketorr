@@ -309,10 +309,12 @@ function CursorTrail() {
                 raf = requestAnimationFrame(frame);
             } else {
                 running = false;
+                canvas.style.visibility = 'hidden';
             }
         };
         startTrail = () => {
             idleFrames = 0;
+            canvas.style.visibility = '';
             if (running || document.hidden) return;
 
             running = true;

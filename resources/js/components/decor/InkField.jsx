@@ -203,6 +203,9 @@ export default function InkField({ theme = 'dark' }) {
         const io = new IntersectionObserver(
             ([entry]) => {
                 visible = entry.isIntersecting;
+                // Off screen the canvas is not just left unpainted, it is taken
+                // out of the compositor too, so scrolling past costs nothing.
+                canvas.style.visibility = visible ? '' : 'hidden';
             },
             { rootMargin: '10% 0px' },
         );

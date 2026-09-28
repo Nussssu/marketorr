@@ -94,7 +94,7 @@ export default function About({ heroHeading = false, content }) {
                         <motion.div
                             initial={{ scaleX: 0 }}
                             whileInView={{ scaleX: 1 }}
-                            viewport={{ once: false }}
+                            viewport={{ once: true }}
                             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-8 h-[3px] w-48 origin-left"
                             style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
@@ -105,7 +105,7 @@ export default function About({ heroHeading = false, content }) {
                         <motion.p
                             initial={{ opacity: 0, y: 24 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: false }}
+                            viewport={{ once: true }}
                             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
                             className="text-[16px] leading-relaxed text-[var(--mute)]"
                         >

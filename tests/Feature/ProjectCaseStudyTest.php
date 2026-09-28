@@ -72,6 +72,24 @@ class ProjectCaseStudyTest extends TestCase
         );
     }
 
+    public function test_medica_receives_its_logo_cover_and_complete_behance_image_sequence(): void
+    {
+        $this->seed(ProjectSeeder::class);
+
+        $this->get('/work/medica-lifecare-brand-identity')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Work/Show')
+                ->where('project.title', 'Medica Lifecare PLC')
+                ->where('project.imageAlt', 'Medica Lifecare PLC chrome logo mark on a navy background')
+                ->where('project.externalUrl', 'https://www.behance.net/gallery/256192295/Medica-Lifecare-PLC-Brand-Identity-Design')
+                ->has('project.caseStudy', 1)
+                ->has('project.caseStudy.0.images', 18)
+                ->where('project.caseStudy.0.images.0.src', '/images/work/gallery/medica-lifecare-brand-identity/01.webp')
+                ->where('project.caseStudy.0.images.17.src', '/images/work/gallery/medica-lifecare-brand-identity/18.webp')
+            );
+    }
+
     public function test_a_project_without_a_case_study_still_renders_with_an_empty_sequence(): void
     {
         $project = Project::factory()->create(['case_study' => null, 'external_url' => null]);
