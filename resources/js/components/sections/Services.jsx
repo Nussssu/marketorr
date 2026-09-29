@@ -137,7 +137,7 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
             <div className="pointer-events-none relative z-0 flex h-full gap-4 sm:gap-7">
                 <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-16">
                     <div className="flex items-center justify-between">
-                        <span className="font-display text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]">0{index + 1} / Category</span>
+                        <span className="whitespace-nowrap font-display text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] md:whitespace-normal md:text-[11px] md:tracking-[0.24em]">0{index + 1} / Category</span>
                         <Link
                             href={exploreHref}
                             prefetch

@@ -154,7 +154,7 @@ export default function Hero({ content }) {
         : undefined;
 
     return (
-        <section ref={ref} id="home" className="noise relative flex min-h-svh flex-col overflow-hidden bg-[var(--bg)]">
+        <section ref={ref} id="home" className="noise relative flex min-h-0 flex-col overflow-hidden bg-[var(--bg)] sm:min-h-svh">
             <motion.div
                 initial={{ opacity: 0, scale: 1.015 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -167,7 +167,7 @@ export default function Hero({ content }) {
                 <PrismObject progress={scrollYProgress} />
             </motion.div>
 
-            <motion.div style={exitMotion} className="container-x relative z-10 flex flex-1 flex-col justify-center pb-4 pt-28 sm:pt-32">
+            <motion.div style={exitMotion} className="container-x relative z-10 flex flex-none flex-col justify-start pb-4 pt-24 sm:flex-1 sm:justify-center sm:pt-32">
                 <motion.p
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -237,7 +237,7 @@ export default function Hero({ content }) {
             {/* Bars sit behind the headline block so the opening state reads as backdrop. */}
             <motion.div
                 style={reduce ? undefined : { opacity: barsDim }}
-                className="container-x relative z-0 mt-8 flex items-end justify-center pb-8 sm:mt-10 sm:pb-10 md:justify-between"
+                className="container-x relative z-0 mt-24 flex items-end justify-center pb-8 sm:mt-10 sm:pb-10 md:justify-between"
             >
                 <div className="hidden items-center gap-6 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] md:flex" aria-hidden>
                     <span>Idea <span className="text-[#891FFB]">●</span></span>

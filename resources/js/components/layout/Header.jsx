@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import { GradientTitle } from '../ui/primitives';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import BrandLogo from './BrandLogo';
@@ -270,7 +271,7 @@ function WorkMegaSection({ category, index, variants, onNavigate }) {
                     </span>
                     <span className="mt-4 flex items-baseline gap-3">
                         <span className="min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]">
-                            {category.name}
+                            <GradientTitle text={category.name} />
                         </span>
                         <span
                             aria-hidden

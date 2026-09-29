@@ -710,7 +710,7 @@ export default function OurWork({ glow, projects = [] }) {
             <div className="container-x relative">
                 <SectionLabel index="03" name="OUR WORK" />
                 {/* intro */}
-                <div className="lg:py-6">
+                <div className="mt-10 md:mt-0 lg:py-6">
                     <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Work that', 'creates impact.']} highlightedLines={[1]} />
                     <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
                         Selected work across branding, digital products, UI/UX, campaigns, and growth-focused experiences.

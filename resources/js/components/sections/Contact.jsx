@@ -1,19 +1,40 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useForm, usePage } from '@inertiajs/react';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import FastCollapse from '../ui/FastCollapse';
 import { SectionLabel } from '../ui/primitives';
 import OfficeMap from '../ui/OfficeMap';
 import { useThemeMotion } from '../../lib/theme';
 import InkField from '../decor/InkField';
+import BrandBars from '../decor/BrandBars';
 
-const TYPES = ['Branding', 'Web UI/UX', 'Software UI/UX', 'Mobile App UI/UX', 'Other'];
+/** Project types offered by the inquiry form. */
+const TYPES = ['Branding', 'UI/UX'];
 
 /** Budget bands offered by the inquiry form. */
 const BUDGETS = ['$10k - $25k', 'Under $10k', '$25k - $50k', '$50k+', 'Not sure yet'];
 
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+
+/**
+ * A blank inquiry: the form's starting state, and what "Send another message"
+ * returns it to.
+ *
+ * The form is reset to this explicitly rather than with `reset()`: after a
+ * successful submit Inertia keeps the submitted values as the form's new
+ * defaults, so `reset()` would bring the previous inquiry straight back.
+ */
+const BLANK_INQUIRY = {
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    type: '',
+    budget: '',
+    message: '',
+    // Honeypot — hidden from real visitors, rejected server-side when filled.
+    nickname: '',
+};
 
 /**
  * Omnira-style reveal choreography, retuned for Marketorr's tokens.
@@ -229,57 +250,6 @@ function StudioClock() {
     );
 }
 
-/**
- * Submission acknowledgement rendered outside the form so it never changes
- * the card's height or shifts nearby content.
- */
-function InquirySuccessToast({ open, onClose, reduce }) {
-    if (typeof document === 'undefined') return null;
-
-    return createPortal(
-        <AnimatePresence>
-            {open && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[10030] flex justify-center px-4 sm:bottom-7" aria-live="polite">
-                    <motion.div
-                        role="status"
-                        initial={reduce ? false : { opacity: 0, y: 14, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.99 }}
-                        transition={{ duration: reduce ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-                        className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.72)]"
-                    >
-                        <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: BRAND_GRADIENT }} aria-hidden />
-                        <div className="flex items-start gap-4">
-                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white" style={{ background: BRAND_GRADIENT }} aria-hidden>
-                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="m5 12 4 4L19 6" />
-                                </svg>
-                            </span>
-                            <div className="min-w-0 flex-1">
-                                <p className="font-display text-[15px] font-bold uppercase tracking-[0.04em] text-[var(--ink-strong)]">
-                                    Inquiry received
-                                </p>
-                                <p className="mt-1 text-[13px] leading-5 text-[var(--mute)]">
-                                    Thanks. We&rsquo;ll review the details and reply within 24&ndash;48 hours.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--line)] text-[18px] leading-none text-[var(--ink-faint)] transition-colors duration-150 hover:text-[var(--ink)]"
-                                aria-label="Dismiss confirmation"
-                            >
-                                &times;
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>,
-        document.body,
-    );
-}
-
 export default function Contact({ heroHeading = false }) {
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
@@ -297,24 +267,13 @@ export default function Contact({ heroHeading = false }) {
         { label: 'Instagram', href: socials.instagram },
         { label: 'Facebook', href: socials.facebook },
     ].filter((s) => s.href);
-    const { data, setData, post, processing, wasSuccessful, errors, reset } = useForm({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        type: 'Branding',
-        budget: '',
-        message: '',
-        // Honeypot — hidden from real visitors, rejected server-side when filled.
-        nickname: '',
-    });
+    const { data, setData, post, processing, errors, clearErrors } = useForm({ ...BLANK_INQUIRY });
 
     const submit = (e) => {
         e.preventDefault();
         post('/contact', {
             preserveScroll: true,
             onSuccess: () => {
-                reset('message');
                 setShowSuccess(true);
             },
         });
@@ -340,17 +299,7 @@ export default function Contact({ heroHeading = false }) {
                     style={{ background: 'radial-gradient(circle, rgba(27,226,235,0.10), transparent 65%)' }}
                 />
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center gap-6 opacity-30" aria-hidden>
-                {[['#891FFB', 140], ['#507AF4', 210], ['#1BE2EB', 300]].map(([color, height], index) => (
-                    <motion.span
-                        key={index}
-                        animate={reduce ? undefined : { y: [20 * fx.float, -10 * fx.float, 20 * fx.float] }}
-                        transition={{ duration: 7 + index * 2, repeat: Infinity, ease: 'easeInOut' }}
-                        className="w-24 rounded-t-xl border md:w-36"
-                        style={{ height, background: `linear-gradient(180deg, ${color}44, transparent)`, borderColor: `${color}33` }}
-                    />
-                ))}
-            </div>
+            <BrandBars />
 
             {/* The page keeps one consistent section rhythm and collapses to one
                 column below lg. */}
@@ -437,13 +386,29 @@ export default function Contact({ heroHeading = false }) {
                             </div>
                         </motion.div>
 
-                        {/* The studio map, exactly as it was. */}
-                    <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-9 w-full">
+                        {/* The studio map and its phone-sized actions stay in one
+                            flow so the link sits directly below the map. */}
+                        <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-9 w-full">
                             <OfficeMap address={address} directionsHref={directionsUrl} />
                         </motion.div>
+                        <a
+                            href={directionsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="link-underline btn-press mt-3 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)] lg:hidden"
+                        >
+                            Open in Google Maps &rarr;
+                        </a>
+                        {contactPhone && (
+                            <motion.p {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-3 text-[14px] font-semibold text-[var(--ink)] lg:hidden">
+                                <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press">
+                                    {contactPhone}
+                                </a>
+                            </motion.p>
+                        )}
                     </div>
 
-                    <div className="lg:col-start-1 lg:row-start-3">
+                    <div className="hidden lg:col-start-1 lg:row-start-3 lg:block">
                         <a
                             href={directionsUrl}
                             target="_blank"
@@ -493,7 +458,11 @@ export default function Contact({ heroHeading = false }) {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => { setShowSuccess(false); reset(); }}
+                                    onClick={() => {
+                                        setData({ ...BLANK_INQUIRY });
+                                        clearErrors();
+                                        setShowSuccess(false);
+                                    }}
                                     data-cursor="cta"
                                     className="btn-press mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--field-line)] px-7 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink)] transition-colors duration-300 hover:border-transparent hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]"
                                 >
@@ -535,16 +504,27 @@ export default function Contact({ heroHeading = false }) {
 
                                 <label className="block">
                                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Budget range</span>
-                                    <select value={data.budget} onChange={(e) => setData('budget', e.target.value)} className="field-box h-12 w-full rounded-xl px-4 text-[14px]">
+                                    <select
+                                        value={data.budget}
+                                        onChange={(e) => setData('budget', e.target.value)}
+                                        className={`field-box h-12 w-full rounded-xl px-4 text-[14px] ${data.budget ? '' : 'is-empty'}`}
+                                    >
+                                        <option value="" disabled hidden>Select a budget</option>
                                         {BUDGETS.map((b) => (<option key={b} value={b} className="bg-[var(--surface)]">{b}</option>))}
                                     </select>
                                 </label>
 
                                 <label className="block">
                                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Project type</span>
-                                    <select value={data.type} onChange={(e) => setData('type', e.target.value)} className="field-box h-12 w-full rounded-xl px-4 text-[14px]">
+                                    <select
+                                        value={data.type}
+                                        onChange={(e) => setData('type', e.target.value)}
+                                        className={`field-box h-12 w-full rounded-xl px-4 text-[14px] ${data.type ? '' : 'is-empty'}`}
+                                    >
+                                        <option value="" disabled hidden>Select a project type</option>
                                         {TYPES.map((t) => (<option key={t} value={t} className="bg-[var(--surface)]">{t}</option>))}
                                     </select>
+                                    {errors.type && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors.type}</span>}
                                 </label>
 
                                 <label className="flex flex-col sm:col-span-2 lg:min-h-0 lg:h-full">
@@ -562,16 +542,16 @@ export default function Contact({ heroHeading = false }) {
 
                             <button
                                 type="submit"
-                                disabled={processing || wasSuccessful}
+                                disabled={processing}
                                 data-cursor="cta"
                                 className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
                                 style={{ background: BRAND_GRADIENT }}
                             >
                                 {processing ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />Sending...</>)
-                                    : wasSuccessful ? 'Inquiry received' : (<>Send inquiry <span aria-hidden>&rarr;</span></>)}
+                                    : (<>Send inquiry <span aria-hidden>&rarr;</span></>)}
                             </button>
                             <p className="mt-3 text-center text-[12px] text-[var(--ink-faint)]">
-                                {wasSuccessful ? 'Thanks - we reply within 24-48h.' : 'No spam. NDA-friendly.'}
+                                No spam. NDA-friendly.
                             </p>
                         </>
                         )}

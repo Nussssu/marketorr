@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Services\UiuxShowcase;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -211,17 +212,43 @@ class Project extends Model
                 'short' => null,
                 'accent' => $column['accent'],
                 'href' => '/work/portfolio/'.$key,
-                'items' => $grouped->get($key, collect())
-                    ->map(fn (self $project): array => [
-                        'slug' => $project->slug,
-                        'name' => $project->title,
-                        'accent' => $project->accent,
-                        'image' => $project->imageUrl(),
-                        'imageAlt' => $project->image_alt,
-                        'href' => '/work/'.$project->slug,
-                    ])
-                    ->values()
-                    ->all(),
+                'items' => $key === 'uiux'
+                    ? self::uiuxShowcaseItems()
+                    : $grouped->get($key, collect())
+                        ->map(fn (self $project): array => [
+                            'slug' => $project->slug,
+                            'name' => $project->title,
+                            'accent' => $project->accent,
+                            'image' => $project->imageUrl(),
+                            'imageAlt' => $project->image_alt,
+                            'href' => '/work/'.$project->slug,
+                        ])
+                        ->values()
+                        ->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The UI/UX column's items: the six showcase projects and their Figma covers.
+     *
+     * The UI/UX portfolio presents these rather than its database projects, so
+     * the menu previews exactly what the reader lands on. Each opens the
+     * portfolio with that project's detail already open.
+     *
+     * @return array<int, array{slug: string, name: string, accent: string, image: string|null, imageAlt: string, href: string}>
+     */
+    private static function uiuxShowcaseItems(): array
+    {
+        return collect(app(UiuxShowcase::class)->projects())
+            ->map(fn (array $project): array => [
+                'slug' => $project['slug'],
+                'name' => $project['name'],
+                'accent' => '#507AF4',
+                'image' => $project['cover']['thumb'] ?? null,
+                'imageAlt' => $project['cover']['alt'] ?? $project['name'],
+                'href' => '/work/portfolio/uiux?project='.rawurlencode($project['slug']),
             ])
             ->values()
             ->all();

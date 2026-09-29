@@ -542,6 +542,31 @@ input, textarea, select { color-scheme: inherit; }
   backface-visibility: hidden;
 }
 
+/* The UI/UX archive needs full-width cards and readable captions on narrow
+   phones. Other work archives keep their existing compact two-column grid. */
+@media (max-width: 768px) {
+  .work-flow--uiux .work-flow__track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .work-flow--uiux .work-flow__item {
+    will-change: auto;
+  }
+
+  .work-flow--uiux .work-flow__item > a {
+    touch-action: manipulation;
+  }
+}
+
+@media (min-width: 560px) and (max-width: 768px) {
+  .work-flow--uiux .work-flow__track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    row-gap: 36px;
+  }
+}
+
 @media (min-width: 769px) {
   .work-flow__track {
     display: flex;
@@ -1812,17 +1837,520 @@ input, textarea, select { color-scheme: inherit; }
 .field-box {
   background: transparent;
   border: 1px solid var(--field-line);
-  border-radius: 3px;
+  border-radius: 14px;
   color: var(--ink);
   transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
 }
 
 .field-box::placeholder { color: var(--placeholder); }
 
+/* A dropdown still on its prompt reads like an empty field; its options stay full ink. */
+.field-box.is-empty { color: var(--placeholder); }
+.field-box.is-empty option { color: var(--ink); }
+
 .field-box:focus {
   outline: none;
   border-color: transparent;
   box-shadow: 0 0 0 1px #507af4;
+}
+
+/* ---------- UI/UX per-project printer ---------- */
+:root,
+:root[data-theme="dark"] {
+  --printer-hi: #2a2a33;
+  --printer-lo: #141419;
+  --printer-edge: rgba(255, 255, 255, 0.1);
+  --printer-slot: #030304;
+  --printer-ink: rgba(255, 255, 255, 0.5);
+  --sheet-bg: #17171e;
+  --sheet-line: rgba(255, 255, 255, 0.1);
+  --sheet-shadow: 0 34px 60px -30px rgba(0, 0, 0, 0.9), 0 14px 28px -18px rgba(137, 31, 251, 0.35);
+  --lightbox-bg: rgba(8, 8, 10, 0.94);
+}
+
+:root[data-theme="light"] {
+  --printer-hi: #ffffff;
+  --printer-lo: #dcdcd7;
+  --printer-edge: rgba(18, 18, 22, 0.12);
+  --printer-slot: #1b1b20;
+  --printer-ink: rgba(18, 18, 22, 0.5);
+  --sheet-bg: #ffffff;
+  --sheet-line: rgba(18, 18, 22, 0.1);
+  --sheet-shadow: 0 30px 54px -32px rgba(18, 18, 22, 0.45), 0 12px 26px -18px rgba(137, 31, 251, 0.28);
+  --lightbox-bg: rgba(247, 247, 245, 0.95);
+}
+
+/* The runway: one step of scroll per screen after the first, plus the
+   viewport the sticky stage occupies. */
+.uiux-printer {
+  --uiux-unit: 36svh;
+  position: relative;
+  height: calc(var(--uiux-steps) * var(--uiux-unit) + 100svh);
+}
+
+.uiux-printer__hint-mobile { display: none; }
+
+@media (min-width: 1024px) {
+  .uiux-printer { --uiux-unit: 40svh; }
+}
+
+@media (max-width: 639px) {
+  .uiux-printer {
+    --uiux-unit: 29svh;
+  }
+}
+
+.uiux-printer__stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 480px;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 72px 72px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 72px 72px,
+    var(--bg);
+}
+
+.uiux-printer__glow {
+  position: absolute;
+  bottom: -18%;
+  width: min(900px, 120vw);
+  aspect-ratio: 1;
+  background: radial-gradient(closest-side, var(--glow-blue), var(--glow-purple) 45%, transparent 72%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.uiux-printer__label {
+  position: absolute;
+  top: clamp(84px, 10svh, 96px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.uiux-printer__rear {
+  position: absolute;
+  z-index: 1;
+  background: linear-gradient(180deg, var(--printer-hi), var(--printer-lo));
+  box-shadow: inset 0 1px var(--printer-edge);
+  clip-path: inset(0 6% 0 6% round 18px 18px 0 0);
+}
+
+.uiux-printer__rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  overflow: hidden;
+  perspective: 1400px;
+  perspective-origin: 50% 100%;
+}
+
+.uiux-sheet {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sheet-line);
+  border-radius: 14px 14px 6px 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 38%),
+    var(--sheet-bg);
+  box-shadow: var(--sheet-shadow);
+  text-align: left;
+  cursor: zoom-in;
+  transform-origin: 50% 100%;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .uiux-sheet:hover {
+    border-color: rgba(137, 31, 251, 0.55);
+    box-shadow: var(--sheet-shadow), 0 0 0 3px rgba(137, 31, 251, 0.12);
+  }
+}
+.uiux-sheet:focus-visible { outline: 2px solid #507af4; outline-offset: 3px; }
+
+/* The design window: framed like a screen, with a soft fade where the
+   page runs on past the card — the full length opens on click. */
+.uiux-sheet__screen {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9px 9px 3px 3px;
+  background: var(--chip);
+  box-shadow: inset 0 0 0 1px var(--sheet-line);
+}
+
+.uiux-sheet__screen::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 22%;
+  background: linear-gradient(180deg, transparent, rgba(8, 8, 10, 0.28));
+  pointer-events: none;
+}
+
+.uiux-sheet__screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Always fill the window: a tall design is cropped from its top, never
+     leaving a gap below it. */
+  object-fit: cover;
+  object-position: top center;
+}
+
+.uiux-sheet__caption {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.uiux-sheet__caption::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+}
+
+.uiux-sheet__caption > :last-child {
+  margin-left: auto;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.uiux-printer__front {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid var(--printer-edge);
+  border-radius: 10px 10px 22px 22px;
+  background:
+    radial-gradient(120% 90% at 50% 0, rgba(255, 255, 255, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--printer-hi), var(--printer-lo));
+  box-shadow: inset 0 1px var(--printer-edge), 0 30px 50px -28px rgba(0, 0, 0, 0.6);
+}
+
+.uiux-printer__slot {
+  position: absolute;
+  top: -3px;
+  left: 7%;
+  right: 7%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--printer-slot);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* The real Marketorr logo, in the variant that matches the printer body for
+   the theme — counter-sized and level with the counter opposite. */
+.uiux-printer__brand {
+  position: absolute;
+  left: 8%;
+  bottom: calc(18% + 6px);
+  pointer-events: none;
+}
+
+.uiux-printer__display {
+  position: absolute;
+  right: 8%;
+  bottom: 18%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--printer-slot);
+  color: #9fb4ff;
+  font: 700 11px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+.uiux-printer__led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1be2eb;
+  box-shadow: 0 0 8px rgba(27, 226, 235, 0.7);
+  opacity: 0.4;
+}
+
+.uiux-printer__front.is-printing .uiux-printer__led {
+  opacity: 1;
+  animation: uiux-blink 0.5s steps(2) infinite;
+}
+
+@keyframes uiux-blink {
+  50% { opacity: 0.3; }
+}
+
+/* Below the printed cards: the one instruction the page needs. */
+.uiux-printer__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mute);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.uiux-printer__hint-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+}
+
+@media (max-width: 639px) {
+  .uiux-printer__stage { min-height: 0; }
+
+  .uiux-printer__label {
+    top: max(72px, calc(env(safe-area-inset-top) + 58px));
+  }
+
+  .uiux-printer__hint {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .uiux-printer__hint-desktop { display: none; }
+  .uiux-printer__hint-mobile { display: inline; }
+}
+
+/* The larger view a printed page opens into. */
+.uiux-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 20px;
+}
+
+.uiux-lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: var(--lightbox-bg);
+  cursor: zoom-out;
+}
+
+.uiux-lightbox__bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(1100px, 100%);
+  padding-bottom: 12px;
+  font-size: 14px;
+}
+
+.uiux-lightbox__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  width: min(1100px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.7);
+}
+
+.uiux-lightbox__scroller {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  -webkit-overflow-scrolling: touch;
+  /* Pinch is handled in script, so the browser only scrolls. */
+  touch-action: pan-x pan-y;
+}
+
+.uiux-lightbox__scroller.is-zoomed { cursor: grab; }
+.uiux-lightbox__scroller.is-panning { cursor: grabbing; user-select: none; }
+
+/* Width is the zoom: 100% fits the panel, larger widths scroll both ways. */
+.uiux-lightbox__image {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.18s ease-out;
+}
+
+.uiux-lightbox__scroller.is-loaded {
+  background-image: none !important;
+}
+
+.uiux-lightbox__scroller.is-loaded .uiux-lightbox__image { opacity: 1; }
+
+.uiux-lightbox__zoom {
+  display: grid;
+  place-items: center;
+  min-width: 62px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--field-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.uiux-lightbox__zoom:focus-visible { outline: 2px solid #507af4; outline-offset: 2px; }
+
+.uiux-lightbox__btn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--field-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.uiux-lightbox__btn:focus-visible { outline: 2px solid #507af4; outline-offset: 2px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .uiux-lightbox__zoom:hover,
+  .uiux-lightbox__btn:hover {
+    background: var(--invert-btn-hover);
+    color: var(--bg);
+  }
+}
+
+.uiux-lightbox__zoom:active,
+.uiux-lightbox__btn:not(.uiux-lightbox__nav):active {
+  transform: scale(0.94);
+  transition-duration: 0.1s;
+}
+
+.uiux-lightbox__btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.uiux-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.uiux-lightbox__nav--prev { left: max(12px, calc(50% - 550px - 68px)); }
+.uiux-lightbox__nav--next { right: max(12px, calc(50% - 550px - 68px)); }
+
+@media (max-width: 767px) {
+  .uiux-lightbox {
+    height: 100dvh;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+  }
+
+  .uiux-lightbox__bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding-bottom: 8px;
+    font-size: 12px;
+  }
+
+  .uiux-lightbox__title { text-align: center; }
+  .uiux-lightbox__controls { justify-content: center; }
+
+  .uiux-lightbox__panel {
+    flex: 1 1 auto;
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  .uiux-lightbox__scroller { flex: 1 1 auto; }
+
+  .uiux-lightbox__btn {
+    width: 46px;
+    height: 46px;
+  }
+
+  .uiux-lightbox__zoom {
+    min-width: 64px;
+    height: 46px;
+  }
+
+  .uiux-lightbox__nav {
+    top: auto;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px));
+    transform: none;
+  }
+
+  .uiux-lightbox__nav--prev { left: max(16px, env(safe-area-inset-left)); }
+  .uiux-lightbox__nav--next { right: max(16px, env(safe-area-inset-right)); }
+}
+
+@media (max-width: 359px) {
+  .uiux-lightbox__bar { gap: 6px; }
+  .uiux-lightbox__controls { gap: 4px; }
+  .uiux-lightbox__btn { width: 42px; height: 42px; }
+  .uiux-lightbox__zoom { min-width: 58px; height: 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uiux-printer__front.is-printing .uiux-printer__led { animation: none; }
 }
 
 /* Preserve the same surfaces on constrained viewports without continuously

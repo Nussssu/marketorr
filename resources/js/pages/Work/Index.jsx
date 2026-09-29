@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useRef } from 'react';
-import { SectionLabel } from '../../components/ui/primitives';
+import { GradientTitle, SectionLabel } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 import { transitionTo } from '../../components/motion/PageTransition';
 import { useTapIntent } from '../../lib/tapIntent';
@@ -79,7 +79,7 @@ function PortfolioDoor({ group, index, reduce }) {
 
                 <span className="mt-6 flex items-baseline gap-4">
                     <span className="font-display text-[clamp(1.9rem,4vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.02em] text-[var(--ink-strong)]">
-                        {group.name}
+                        <GradientTitle text={group.name} />
                     </span>
                     <span
                         aria-hidden

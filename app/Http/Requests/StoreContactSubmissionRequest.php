@@ -38,6 +38,7 @@ class StoreContactSubmissionRequest extends FormRequest
     {
         return [
             'nickname.prohibited' => 'Your submission could not be processed.',
+            'type.required' => 'Please choose a project type.',
         ];
     }
 

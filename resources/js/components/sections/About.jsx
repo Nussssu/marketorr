@@ -58,10 +58,10 @@ function Counter({ to, suffix = '', decimals = 0 }) {
 const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
 
 /**
- * @param {{ heroHeading?: boolean, content?: { text?: string, metrics?: Array<object> } }} props
+ * @param {{ heroHeading?: boolean, compactTop?: boolean, content?: { text?: string, metrics?: Array<object> } }} props
  *   Content from the page's About section, falling back to Settings.
  */
-export default function About({ heroHeading = false, content }) {
+export default function About({ heroHeading = false, compactTop = false, content }) {
     const { settings } = usePage().props;
     const text = content?.text || settings.about.text;
     const metrics = content?.metrics?.length ? content.metrics : settings.about.metrics;
@@ -69,7 +69,7 @@ export default function About({ heroHeading = false, content }) {
     return (
         <section
             id="about"
-            className="noise relative overflow-hidden bg-[var(--bg-soft)] section-pad"
+            className={`noise relative overflow-hidden bg-[var(--bg-soft)] ${compactTop ? 'pb-[clamp(5rem,9vw,9rem)] pt-16 sm:pt-[clamp(5rem,9vw,9rem)]' : 'section-pad'}`}
         >
             {/* cursor-reactive stage — clean single orb + motif, stays dark */}
             <div

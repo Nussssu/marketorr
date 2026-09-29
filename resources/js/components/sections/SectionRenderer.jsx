@@ -37,7 +37,9 @@ const WIDGETS = {
     marquee: { scene: SCENE.Depth, render: (section) => <Marquee content={section.content} /> },
     about: {
         scene: SCENE.Depth,
-        render: (section, { standalone }) => <About content={section.content} heroHeading={standalone} />,
+        render: (section, { standalone, compactTop }) => (
+            <About content={section.content} heroHeading={standalone} compactTop={compactTop} />
+        ),
     },
     services: {
         scene: SCENE.Depth,
@@ -89,12 +91,13 @@ export default function SectionRenderer({ sections = [], appearance = 'depth' })
     // it gets the larger hero treatment where the component supports one.
     const standalone = sections.length === 1;
 
-    return sections.map((section) => {
+    return sections.map((section, index) => {
         const widget = WIDGETS[section.type];
 
         if (!widget) return null;
 
-        const element = widget.render(section, { props, fx, standalone });
+        const compactTop = appearance === 'reveal' && sections[index - 1]?.type === 'marquee';
+        const element = widget.render(section, { props, fx, standalone, compactTop });
 
         if (widget.scene === SCENE.None) {
             return <Fragment key={section.id}>{element}</Fragment>;

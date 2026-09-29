@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Services\UiuxShowcase;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,8 +25,11 @@ class ProjectController extends Controller
 
     /**
      * One portfolio: every published project filed under that practice.
+     *
+     * The UI/UX portfolio also carries its six showcase projects, which it
+     * presents as a Flip layout morph in place of the flat listing.
      */
-    public function portfolio(string $group): Response
+    public function portfolio(string $group, UiuxShowcase $showcase): Response
     {
         $summary = collect(Project::workGroupSummaries())
             ->firstWhere('slug', $group);
@@ -48,6 +52,22 @@ class ProjectController extends Controller
                 'accent' => $summary['accent'],
             ],
             'projects' => $projects,
+            'showcase' => $group === 'uiux' ? $showcase->projects() : null,
+        ]);
+    }
+
+    /**
+     * One UI/UX project's own printer page: every exported page of that
+     * project, printed one after another as the reader scrolls.
+     */
+    public function uiuxProject(string $project, UiuxShowcase $showcase): Response
+    {
+        $found = $showcase->find($project);
+
+        abort_if($found === null, 404);
+
+        return Inertia::render('Work/UiuxProject', [
+            'project' => $found,
         ]);
     }
 

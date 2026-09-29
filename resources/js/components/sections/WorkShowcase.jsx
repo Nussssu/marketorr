@@ -21,6 +21,9 @@ const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 const RICH_QUERY = '(min-width: 1024px)';
 const COMPACT_QUERY = '(max-width: 768px)';
 
+/** Where a project leads: its own `href` when it has one, otherwise its case study. */
+const projectLink = (project) => project.href ?? `/work/${project.slug}`;
+
 /**
  * The band, as a fraction of the viewport, that decides which project the
  * fixed panel is describing: an item counts as the one being read while its
@@ -72,9 +75,10 @@ const FLOW = {
  *   rich: boolean,
  *   reduce: boolean,
  *   onFocus: (index: number) => void,
+ *   mobileOptimized?: boolean,
  * }} props
  */
-function FlowItem({ project, index, rich, reduce, onFocus }) {
+function FlowItem({ project, index, rich, reduce, onFocus, mobileOptimized = false }) {
     const ref = useRef(null);
     const cardMedia = projectCardMedia(project);
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
@@ -133,6 +137,7 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
     return (
         <motion.article
             ref={ref}
+            id={`work-${project.slug}`}
             style={motionStyle}
             className="work-flow__item"
             onPointerEnter={pointer.onPointerEnter}
@@ -140,9 +145,9 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
             onPointerLeave={onPointerLeave}
         >
             <Link
-                href={`/work/${project.slug}`}
+                href={projectLink(project)}
                 data-cursor="view"
-                aria-label={`View ${project.title} case study`}
+                aria-label={`${project.ctaLabel ?? 'View case study'}: ${project.title}`}
                 className="group block"
             >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[#111116] min-[769px]:aspect-[16/10]" style={{ containerType: 'inline-size' }}>
@@ -157,6 +162,7 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                         loading="lazy"
                         decoding="async"
                         draggable={false}
+                        style={project.imagePosition ? { objectPosition: project.imagePosition } : undefined}
                         className={`absolute inset-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.04] ${cardMedia.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                     />
                     )}
@@ -183,20 +189,20 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                 {/* Below the large screens the fixed panel is not on screen, so each
                     visual carries its own caption exactly as it did before. */}
                 <div className="min-w-0 pt-3 lg:hidden">
-                    <p className="truncate text-[8px] font-bold uppercase tracking-[0.1em] text-[var(--ink-faint)] min-[769px]:text-[11px] min-[769px]:tracking-[0.2em]">
+                    <p className={`${mobileOptimized ? 'text-[11px] tracking-[0.16em]' : 'text-[8px] tracking-[0.1em]'} truncate font-bold uppercase text-[var(--ink-faint)] min-[769px]:text-[11px] min-[769px]:tracking-[0.2em]`}>
                         {project.client} · {project.year}
                     </p>
-                    <h2 className="mt-1 overflow-hidden font-display text-[13px] font-extrabold uppercase leading-[1.05] text-[var(--ink-strong)] min-[769px]:text-2xl min-[769px]:leading-normal">
+                    <h2 className={`${mobileOptimized ? 'mt-1.5 text-[clamp(1.15rem,5vw,1.5rem)] leading-[1.08]' : 'mt-1 text-[13px] leading-[1.05]'} overflow-hidden font-display font-extrabold uppercase text-[var(--ink-strong)] min-[769px]:mt-1 min-[769px]:text-2xl min-[769px]:leading-normal`}>
                         <GradientTitle text={project.title} />
                     </h2>
                     {project.tags.length > 0 && (
-                        <div className="mt-2 flex min-w-0 items-center gap-1 min-[769px]:hidden">
-                            <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--chip)] px-1.5 py-1 text-[7px] font-semibold uppercase tracking-[0.08em] text-[var(--ink)]">
+                        <div className={`${mobileOptimized ? 'mt-2.5 gap-1.5' : 'mt-2 gap-1'} flex min-w-0 items-center min-[769px]:hidden`}>
+                            <span className={`${mobileOptimized ? 'min-h-7 gap-1.5 px-2.5 py-1 text-[9px] tracking-[0.1em]' : 'gap-1 px-1.5 py-1 text-[7px] tracking-[0.08em]'} inline-flex min-w-0 max-w-full items-center rounded-full border border-[var(--line)] bg-[var(--chip)] font-semibold uppercase text-[var(--ink)]`}>
                                 <span className="h-1 w-1 shrink-0 rounded-full" style={{ background: project.accent }} aria-hidden />
                                 <span className="truncate">{project.tags[0]}</span>
                             </span>
                             {project.tags.length > 1 && (
-                                <span className="shrink-0 text-[7px] font-bold text-[var(--ink-faint)]">+{project.tags.length - 1}</span>
+                                <span className={`${mobileOptimized ? 'text-[10px]' : 'text-[7px]'} shrink-0 font-bold text-[var(--ink-faint)]`}>+{project.tags.length - 1}</span>
                             )}
                         </div>
                     )}
@@ -241,7 +247,7 @@ function FixedPanel({ project, count, index, reduce }) {
                             {project.client} · {project.year}
                         </p>
                         <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3.25rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.03em] text-[var(--ink-strong)]">
-                            <Link href={`/work/${project.slug}`} data-cursor="view" className="link-underline">
+                            <Link href={projectLink(project)} data-cursor="view" className="link-underline">
                                 <GradientTitle text={project.title} />
                             </Link>
                         </h2>
@@ -260,12 +266,12 @@ function FixedPanel({ project, count, index, reduce }) {
                             </p>
                         )}
                         <Link
-                            href={`/work/${project.slug}`}
+                            href={projectLink(project)}
                             data-cursor="cta"
                             className="btn-press group/link mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-[var(--field-line)] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.17em] text-[var(--ink)] hover:border-transparent hover:text-white"
                             style={{ backgroundImage: `linear-gradient(var(--bg), var(--bg)), ${BRAND_GRADIENT}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}
                         >
-                            View case study
+                            {project.ctaLabel ?? 'View case study'}
                             <span data-arrow aria-hidden>↗</span>
                         </Link>
                     </motion.div>
@@ -283,15 +289,16 @@ function FixedPanel({ project, count, index, reduce }) {
  *
  * Every visual and every title remains a link to the project's existing case
  * study route — the animation is layered on top of the same navigation, never
- * in place of it.
+ * in place of it. A project may bring its own `href` and `ctaLabel` instead,
+ * which is how the UI/UX portfolio sends each project to its printer page.
  *
  * Large screens get the fixed panel, the 3D pass and the cursor tilt. Below
  * that the visuals keep their own captions and run the same pass flattened,
  * and reduced motion renders the list plainly with no transforms at all.
  *
- * @param {{ projects: Array<import('../../lib/projects').Project> }} props
+ * @param {{ projects: Array<import('../../lib/projects').Project>, mobileOptimized?: boolean }} props
  */
-export default function WorkShowcase({ projects = [] }) {
+export default function WorkShowcase({ projects = [], mobileOptimized = false }) {
     const reduce = useReducedMotion();
     const [rich, setRich] = useState(false);
     const [compact, setCompact] = useState(
@@ -324,7 +331,7 @@ export default function WorkShowcase({ projects = [] }) {
     const focused = projects[Math.min(active, projects.length - 1)];
 
     return (
-        <div className="work-flow mt-8 min-[769px]:mt-12 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-16 xl:gap-24">
+        <div className={`work-flow ${mobileOptimized ? 'work-flow--uiux' : ''} mt-8 min-[769px]:mt-12 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-16 xl:gap-24`}>
             <FixedPanel project={focused} count={projects.length} index={active} reduce={reduce} />
 
             <div className="work-flow__track">
@@ -338,6 +345,7 @@ export default function WorkShowcase({ projects = [] }) {
                                 rich={rich && !reduce}
                                 reduce={reduce}
                                 onFocus={setActive}
+                                mobileOptimized={mobileOptimized}
                             />
                         );
                     }
@@ -349,14 +357,15 @@ export default function WorkShowcase({ projects = [] }) {
                             initial={reduce ? false : { opacity: 0, y: 22, scale: 0.97 }}
                             whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
                             viewport={{ once: true, amount: 0.18 }}
-                            transition={{ duration: 0.48, delay: (index % 2) * 0.07, ease: [...EASE] }}
+                            transition={{ duration: mobileOptimized ? 0.32 : 0.48, delay: mobileOptimized ? 0 : (index % 2) * 0.07, ease: [...EASE] }}
                         >
                             <FlowItem
                                 project={project}
                                 index={index}
                                 rich={false}
-                                reduce={reduce}
+                                reduce={reduce || mobileOptimized}
                                 onFocus={setActive}
+                                mobileOptimized={mobileOptimized}
                             />
                         </motion.div>
                     );

@@ -4,6 +4,7 @@ import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import { projectHeroMedia } from '../../lib/projectHeroMedia';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 import { EASE, heroMediaEntrance } from '../../lib/motion';
+import BounceTitle from '../motion/BounceTitle';
 
 /** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
 function useRichScene() {
@@ -170,9 +171,9 @@ function HeroMedia({ project, reduce }) {
  * Deliberately the same scene as `SubServiceHero`: one large visual with an
  * oversized title layered over it, split across depth planes, each travelling
  * on scroll at its own speed while the stage compresses and hands off to the
- * section below. Timings, easing, plane transforms and the per-character title
- * rise are all matched to that hero so opening a project and opening a
- * sub-service feel identical.
+ * section below. Timings, easing and plane transforms are matched to that
+ * hero; the title's letters drop in and bounce, its last word in the brand
+ * purple, blue and cyan.
  *
  * The one difference is what the hero carries: only the project name sits over
  * the visual — no breadcrumb, no standfirst, no metric — so the work reads
@@ -188,9 +189,6 @@ export default function WorkHero({ project }) {
     const reduce = useReducedMotion();
     const rich = useRichScene();
     const full = rich && !reduce;
-
-    const words = project.title.toUpperCase().split(' ');
-    let charIndex = 0;
 
     const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
 
@@ -239,28 +237,8 @@ export default function WorkHero({ project }) {
                                 <h1
                                     className="max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white"
                                     style={{ fontSize: 'clamp(2.6rem, 10vw, 8.5rem)' }}
-                                    aria-label={project.title}
                                 >
-                                    {words.map((word, w) => (
-                                        <span key={w} className="mr-[0.24em] inline-block whitespace-nowrap last:mr-0" aria-hidden={w > 0}>
-                                            {word.split('').map((char) => {
-                                                const i = charIndex++;
-
-                                                return (
-                                                    <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-                                                        <motion.span
-                                                            className="inline-block will-change-transform"
-                                                            initial={reduce ? false : { y: '115%' }}
-                                                            animate={{ y: '0%' }}
-                                                            transition={{ duration: reduce ? 0 : 1, delay: 0.35 + Math.min(i, 14) * 0.045, ease: [...EASE] }}
-                                                        >
-                                                            {char}
-                                                        </motion.span>
-                                                    </span>
-                                                );
-                                            })}
-                                        </span>
-                                    ))}
+                                    <BounceTitle text={project.title} uppercase delay={0.35} />
                                 </h1>
                             </motion.div>
                         </motion.div>

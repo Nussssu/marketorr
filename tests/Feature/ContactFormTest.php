@@ -117,6 +117,23 @@ class ContactFormTest extends TestCase
         $this->assertDatabaseCount('contact_submissions', 0);
     }
 
+    public function test_the_ui_ux_project_type_is_accepted(): void
+    {
+        Mail::fake();
+
+        $this->from('/contact')->post('/contact', $this->validPayload(['type' => 'UI/UX']))
+            ->assertRedirect('/contact')
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('UI/UX', ContactSubmission::query()->sole()->type->value);
+    }
+
+    public function test_a_missing_project_type_asks_the_visitor_to_choose_one(): void
+    {
+        $this->from('/contact')->post('/contact', $this->validPayload(['type' => '']))
+            ->assertSessionHasErrors(['type' => 'Please choose a project type.']);
+    }
+
     public function test_a_filled_honeypot_is_rejected(): void
     {
         Mail::fake();
