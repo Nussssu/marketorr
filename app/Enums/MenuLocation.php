@@ -17,9 +17,9 @@ enum MenuLocation: string
     {
         return match ($this) {
             self::Header => 'Header navigation',
-            self::FooterSitemap => 'Footer — Sitemap',
-            self::FooterServices => 'Footer — Services',
-            self::FooterLegal => 'Footer — Legal',
+            self::FooterSitemap => 'Footer: Sitemap',
+            self::FooterServices => 'Footer: Services',
+            self::FooterLegal => 'Footer: Legal',
         };
     }
 

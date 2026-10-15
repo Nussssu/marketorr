@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\PublicAsset;
 use Database\Seeders\ProjectSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -73,7 +74,7 @@ class UiuxShowcaseTest extends TestCase
                 ->where('project.slug', 'microters')
                 ->where('project.name', 'Microters')
                 ->has('project.screens', 3)
-                ->where('project.screens.0.src', fn (string $src) => str_starts_with($src, '/'.$this->directory.'/microters/1-home.png?v='))
+                ->where('project.screens.0.src', fn (string $src) => str_starts_with($src, PublicAsset::to($this->directory.'/microters/1-home.png').'?v='))
                 ->where('project.screens.0.width', 144)
                 ->where('project.screens.0.height', 500)
                 ->where('project.screens.0.label', 'Home')
@@ -145,7 +146,7 @@ class UiuxShowcaseTest extends TestCase
         $this->get('/work/portfolio/uiux/adlbl')
             ->assertInertia(fn ($page) => $page
                 ->has('project.screens', 2)
-                ->where('project.screens.0.thumb', fn (string $thumb) => str_starts_with($thumb, '/'.$this->directory.'/adlbl/thumbs/01-dashboard.png?v='))
+                ->where('project.screens.0.thumb', fn (string $thumb) => str_starts_with($thumb, PublicAsset::to($this->directory.'/adlbl/thumbs/01-dashboard.png').'?v='))
                 ->where('project.screens.0.width', 144)
                 ->where('project.screens.1.thumb', fn (string $thumb) => str_contains($thumb, '/adlbl/02-team.png?v=')));
     }

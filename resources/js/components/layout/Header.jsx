@@ -1,12 +1,13 @@
 import { Link, usePage } from '@inertiajs/react';
 import { GradientTitle } from '../ui/primitives';
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 import MagneticButton from '../motion/MagneticButton';
 import ThemeToggle from './ThemeToggle';
 import { useTapIntent } from '../../lib/tapIntent';
 import { transitionTo } from '../motion/PageTransition';
+import { MARK, markBarStyle, markGap } from '../../lib/tokens';
 
 /**
  * Used only when the Header menu has been emptied in the admin panel — the
@@ -17,7 +18,6 @@ const FALLBACK_LINKS = [
     { label: 'About', href: '/about' },
     { label: 'Services', href: '/services' },
     { label: 'Our Work', href: '/work' },
-    { label: 'Contact', href: '/contact' },
 ];
 
 function isActive(url, href) {
@@ -35,7 +35,12 @@ function navigateWithCurtain(event, href, onNavigate) {
     transitionTo(href);
 }
 
-function Logo() {
+/** `compact` shrinks the mark to suit the floating pill the header becomes once scrolled. */
+function Logo({ compact = false }) {
+    const sizeClass = compact
+        ? '[&_img]:!h-[16px] sm:[&_img]:!h-[19px] lg:[&_img]:!h-[20px]'
+        : 'sm:[&_img]:!h-[24px] lg:[&_img]:!h-[26px]';
+
     return (
         <Link
             href="/"
@@ -44,14 +49,156 @@ function Logo() {
             aria-label="Marketorr home"
         >
             <BrandLogo
+                priority
                 height={19}
-                className="transition-transform duration-300 ease-out group-hover:scale-[1.03] sm:[&_img]:!h-[24px] lg:[&_img]:!h-[26px]"
+                className={`transition-transform duration-300 ease-out group-hover:scale-[1.03] [&_img]:transition-[height] [&_img]:duration-300 [&_img]:ease-[cubic-bezier(0.22,1,0.36,1)] ${sizeClass}`}
             />
         </Link>
     );
 }
 
 const EASE = [0.22, 1, 0.36, 1];
+
+/** Height of the docked header's mark: its tallest bar. */
+const DOCKED_MARK_SIZE = '20px';
+
+/** A section counts as current once its label passes this share of the viewport. */
+const READOUT_LINE = 0.42;
+
+/**
+ * One bar of the docked mark, in the logo's shape. It fills over its own
+ * third of the page: Idea, then Experience, then Result.
+ */
+function MarkBar({ index, progress }) {
+    const scaleY = useTransform(progress, [index / 3, (index + 1) / 3], [0.14, 1]);
+
+    return (
+        <span className="relative block overflow-hidden bg-[var(--line)]" style={markBarStyle(DOCKED_MARK_SIZE, index)}>
+            <motion.span
+                className="absolute inset-0 origin-bottom"
+                style={{ background: MARK.colors[index], scaleY }}
+            />
+        </span>
+    );
+}
+
+/**
+ * The docked header's logo: the brand mark on its own, doubling as the page's
+ * scroll meter.
+ */
+function BrandMark() {
+    const { scrollYProgress } = useScroll();
+    const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
+
+    return (
+        <span className="flex items-end" style={{ height: DOCKED_MARK_SIZE, gap: markGap(DOCKED_MARK_SIZE) }} aria-hidden>
+            {MARK.colors.map((color, index) => (
+                <MarkBar key={color} index={index} progress={progress} />
+            ))}
+        </span>
+    );
+}
+
+/**
+ * The label of the section the reader is currently in, read from
+ * the page's own section eyebrows. Null above the first one.
+ *
+ * @param {string} url
+ * @return {string|null}
+ */
+function useCurrentSectionLabel(url) {
+    const [label, setLabel] = useState(null);
+
+    useEffect(() => {
+        let ticking = false;
+
+        const update = () => {
+            ticking = false;
+            const line = window.innerHeight * READOUT_LINE;
+            let current = null;
+
+            document.querySelectorAll('main [data-section-label]').forEach((element) => {
+                // A label inside a layout hidden at this width has no box at
+                // all, and would otherwise read as sitting at the very top.
+                if (element.getClientRects().length === 0) return;
+
+                if (element.getBoundingClientRect().top <= line) {
+                    current = element.getAttribute('data-section-label');
+                }
+            });
+
+            setLabel(current);
+        };
+
+        const onScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(update);
+        };
+
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onScroll);
+        };
+    }, [url]);
+
+    return label;
+}
+
+/** The current section's label, rolling up to the next one as it changes. */
+function SectionReadout({ label }) {
+    const reduce = useReducedMotion();
+
+    return (
+        <span className="relative block h-4 min-w-0 overflow-hidden" aria-live="off">
+            <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                    key={label}
+                    className="block whitespace-nowrap font-display text-[11px] font-bold uppercase leading-4 tracking-[0.22em] text-[var(--ink)]"
+                    initial={reduce ? false : { y: '100%', opacity: 0 }}
+                    animate={{ y: '0%', opacity: 1 }}
+                    exit={reduce ? undefined : { y: '-100%', opacity: 0 }}
+                    transition={{ duration: 0.45, ease: EASE }}
+                >
+                    {label}
+                </motion.span>
+            </AnimatePresence>
+        </span>
+    );
+}
+
+/**
+ * The docked header's first pod: the mark, then where the reader is.
+ */
+function DockedBrand({ label }) {
+    return (
+        <Link
+            href="/"
+            onClick={(event) => navigateWithCurtain(event, '/')}
+            className="btn-press group flex min-w-0 items-center gap-3"
+            aria-label="Marketorr home"
+        >
+            <motion.span
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className="flex"
+            >
+                <BrandMark />
+            </motion.span>
+            {label && (
+                <>
+                    <span className="h-4 w-px shrink-0 bg-[var(--line)]" aria-hidden />
+                    <SectionReadout label={label} />
+                </>
+            )}
+        </Link>
+    );
+}
 
 /**
  * Mobile menu rows arrive one after another rather than as a single block, and
@@ -166,47 +313,24 @@ function MegaSubLink({ category, item, variants, onNavigate }) {
 }
 
 /**
- * One discipline section: an oversized heading that links to the category
- * page, and every sub-service ruled out beneath it.
+ * One discipline section: an oversized heading, which is a plain label rather
+ * than a link, and every sub-service ruled out beneath it.
  */
 function MegaSection({ category, index, variants, onNavigate }) {
-    const tapIntent = useTapIntent();
-    const href = category.href ?? `/services/${category.slug}`;
     const items = category.items ?? [];
 
     return (
         <div className="min-w-0">
             <motion.div variants={variants.item}>
-                <Link
-                    href={href}
-                    prefetch
-                    data-cursor="explore"
-                    {...tapIntent}
-                    onClick={(event) => {
-                        tapIntent.onClick(event);
-                        navigateWithCurtain(event, href, onNavigate);
-                    }}
-                    className="group/head block focus-visible:outline-none"
-                >
+                <div className="block">
                     <span className="flex items-center gap-3">
                         <span className="font-display text-[11px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
                             0{index + 1}
                         </span>
-                        <span
-                            className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/head:w-14"
-                            style={{ background: category.accent }}
-                            aria-hidden
-                        />
                     </span>
                     <span className="mt-4 flex items-baseline gap-3">
                         <span className="min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]">
                             {category.name}
-                        </span>
-                        <span
-                            aria-hidden
-                            className="shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100"
-                        >
-                            &#8599;
                         </span>
                     </span>
                     {category.short && (
@@ -214,7 +338,7 @@ function MegaSection({ category, index, variants, onNavigate }) {
                             {category.short}
                         </span>
                     )}
-                </Link>
+                </div>
             </motion.div>
             <ul className="mt-7 list-none border-t border-[var(--line-soft)]">
                 {items.map((item) => (
@@ -237,9 +361,10 @@ function MegaSection({ category, index, variants, onNavigate }) {
  *
  * The strip is two identical halves travelling exactly one half-width, so the
  * wrap is invisible and the gallery reads as continuous. Reduced motion gets
- * the same covers, still.
+ * the same covers, still. `compact` is the mobile menu's version: the same
+ * block with type and covers scaled down for a phone.
  */
-function WorkMegaSection({ category, index, variants, onNavigate }) {
+function WorkMegaSection({ category, index, variants, onNavigate, compact = false }) {
     const tapIntent = useTapIntent();
     const reduce = useReducedMotion();
     const href = category.href ?? '/work';
@@ -257,20 +382,17 @@ function WorkMegaSection({ category, index, variants, onNavigate }) {
                         tapIntent.onClick(event);
                         navigateWithCurtain(event, href, onNavigate);
                     }}
-                    className="group/head block focus-visible:outline-none"
+                    // Inside the mobile menu the header's touch rule makes links
+                    // inline-flex; the heading keeps its stacked desktop layout.
+                    className={`group/head block focus-visible:outline-none ${compact ? '!block' : ''}`.trimEnd()}
                 >
                     <span className="flex items-center gap-3">
-                        <span className="font-display text-[11px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
+                        <span className={`font-display ${compact ? 'text-[10px]' : 'text-[11px]'} font-bold tracking-[0.22em] text-[var(--ink-faint)]`} aria-hidden>
                             0{index + 1}
                         </span>
-                        <span
-                            className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/head:w-14"
-                            style={{ background: category.accent }}
-                            aria-hidden
-                        />
                     </span>
-                    <span className="mt-4 flex items-baseline gap-3">
-                        <span className="min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]">
+                    <span className={`${compact ? 'mt-3' : 'mt-4'} flex items-baseline gap-3`}>
+                        <span className={`min-w-0 font-display ${compact ? 'text-[1.35rem]' : 'text-[clamp(1.5rem,2vw,2.15rem)]'} font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]`}>
                             <GradientTitle text={category.name} />
                         </span>
                         <span
@@ -280,7 +402,7 @@ function WorkMegaSection({ category, index, variants, onNavigate }) {
                             &#8599;
                         </span>
                     </span>
-                    <span className="mt-2.5 block text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">
+                    <span className={`mt-2.5 block ${compact ? 'text-[10.5px]' : 'text-[12px]'} font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]`}>
                         {items.length} {items.length === 1 ? 'project' : 'projects'}
                     </span>
                 </Link>
@@ -288,7 +410,7 @@ function WorkMegaSection({ category, index, variants, onNavigate }) {
 
             <motion.div
                 variants={variants.row}
-                className="mt-7 overflow-hidden"
+                className={`${compact ? 'mt-5' : 'mt-7'} overflow-hidden`}
             >
                 <motion.div
                     className="flex w-max"
@@ -322,7 +444,7 @@ function WorkMegaSection({ category, index, variants, onNavigate }) {
                                             loading="lazy"
                                             decoding="async"
                                             draggable={false}
-                                            className="h-20 w-32 object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]"
+                                            className={`${compact ? 'h-16 w-24' : 'h-20 w-32'} object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]`}
                                         />
                                     </Link>
                                 </li>
@@ -474,45 +596,57 @@ function AccordionChevron({ expanded }) {
 }
 
 /**
- * One discipline block inside the mobile Services panel - the small-screen
- * reading of the full-screen menu. The heading links to the category page and
- * every sub-service is ruled out under it, so nothing hides behind a second
- * tap and the list still has room to breathe.
+ * One group inside a mobile accordion (a Services discipline or an Our Work
+ * portfolio) - the small-screen reading of the full-screen menu. The heading
+ * links to the group's page and every entry is ruled out under it, so nothing
+ * hides behind a second tap and the list still has room to breathe.
  */
 function MobileServiceGroup({ category, index, onNavigate }) {
     const items = category.items ?? [];
+    // Our Work groups carry their own hrefs and stay links; Services groups
+    // (Branding, UI/UX) are plain headings.
+    const groupHref = category.href;
+    const itemHref = (item) => item.href ?? `/services/${category.slug}/${item.slug}`;
+    const heading = (
+        <>
+            <span className="flex items-center gap-3">
+                <span className="font-display text-[10px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
+                    0{index + 1}
+                </span>
+            </span>
+            <span className="mt-3 flex items-baseline gap-2.5">
+                <span className="min-w-0 truncate font-display text-[1.5rem] font-bold leading-[1.1] tracking-[-0.01em] text-[var(--ink)]">
+                    {category.name}
+                </span>
+                {groupHref && <span aria-hidden className="shrink-0 text-[13px] leading-none text-[var(--ink-faint)]">&#8599;</span>}
+            </span>
+            {category.short && (
+                <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--mute)]">
+                    {category.short}
+                </span>
+            )}
+        </>
+    );
 
     return (
         <div className="pb-7 pl-11 pr-2 pt-5">
-            <Link
-                href={`/services/${category.slug}`}
-                onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}`, onNavigate)}
-                className="block"
-            >
-                <span className="flex items-center gap-3">
-                    <span className="font-display text-[10px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
-                        0{index + 1}
-                    </span>
-                    <span className="h-px w-7 shrink-0" style={{ background: category.accent }} aria-hidden />
-                </span>
-                <span className="mt-3 flex items-baseline gap-2.5">
-                    <span className="min-w-0 truncate font-display text-[1.5rem] font-bold leading-[1.1] tracking-[-0.01em] text-[var(--ink)]">
-                        {category.name}
-                    </span>
-                    <span aria-hidden className="shrink-0 text-[13px] leading-none text-[var(--ink-faint)]">&#8599;</span>
-                </span>
-                {category.short && (
-                    <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--mute)]">
-                        {category.short}
-                    </span>
-                )}
-            </Link>
+            {groupHref ? (
+                <Link
+                    href={groupHref}
+                    onClick={(event) => navigateWithCurtain(event, groupHref, onNavigate)}
+                    className="block"
+                >
+                    {heading}
+                </Link>
+            ) : (
+                <div className="block">{heading}</div>
+            )}
             <ul className="mt-5 list-none border-t border-[var(--line-soft)]">
                 {items.map((item) => (
                     <li key={item.slug} className="border-b border-[var(--line-soft)] last:border-b-0">
                         <Link
-                            href={`/services/${category.slug}/${item.slug}`}
-                            onClick={(event) => navigateWithCurtain(event, `/services/${category.slug}/${item.slug}`, onNavigate)}
+                            href={itemHref(item)}
+                            onClick={(event) => navigateWithCurtain(event, itemHref(item), onNavigate)}
                             className="flex items-center gap-3.5 py-3.5 active:opacity-70"
                         >
                             <span
@@ -537,18 +671,26 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [mega, setMega] = useState(false);
     const [workMega, setWorkMega] = useState(false);
-    const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+    const reduceMotion = useReducedMotion();
+    const workMenuVariants = megaVariants(reduceMotion);
+    /** Which mobile accordion is expanded ('/services', '/work' or null); one at a time. */
+    const [mobileSection, setMobileSection] = useState(null);
     const closeTimer = useRef(null);
     const workCloseTimer = useRef(null);
     const { url, props } = usePage();
     const serviceCategories = props.serviceCategories ?? [];
     const workGroups = props.workGroups ?? [];
     // Editor-managed navigation; `/services` still opens the mega menu.
-    const menuLinks = (props.menus?.header ?? []).map((item) => ({
-        label: item.label,
-        href: item.url,
-    }));
+    // On desktop Contact is reached through the header CTA, so it is not a nav
+    // link there; the mobile menu lists it after the rest.
+    const menuLinks = (props.menus?.header ?? [])
+        .filter((item) => item.url !== '/contact')
+        .map((item) => ({
+            label: item.label,
+            href: item.url,
+        }));
     const LINKS = menuLinks.length > 0 ? menuLinks : FALLBACK_LINKS;
+    const MOBILE_LINKS = [...LINKS, { label: 'Contact', href: '/contact' }];
     const settings = props.settings;
     const isSticky = settings?.headerSticky !== false;
     const ctaLink = settings?.headerCtaLink || '/contact';
@@ -621,12 +763,12 @@ export default function Header() {
         setOpen(false);
         setMega(false);
         setWorkMega(false);
-        setMobileServicesOpen(false);
+        setMobileSection(null);
     }, [url]);
 
     useEffect(() => {
         if (!open) {
-            setMobileServicesOpen(false);
+            setMobileSection(null);
         }
     }, [open]);
 
@@ -650,94 +792,111 @@ export default function Header() {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    /** Scrolled and not mid-menu: the bar collapses into the centered pill. */
+    /** Scrolled and not mid-menu: the bar docks, splitting into separate pods. */
     const floating = scrolled && !open;
+    const sectionLabel = useCurrentSectionLabel(url);
+    const readout = sectionLabel ?? LINKS.find((l) => l.href !== '/' && isActive(url, l.href))?.label ?? null;
 
     return (
         <header className={`${isSticky ? 'fixed' : 'relative'} inset-x-0 top-0 z-[9999]`}>
-            {/* full-width at the top of the page, compact floating pill once scrolled */}
-            <div className={`header-shell mobile-header-shell relative z-10 ${floating ? 'header-shell--float' : ''}`}>
+            {/* One full-width bar at the top of the page. Once scrolled, desktop
+                docks it into three pods - mark and section readout, links, CTA -
+                while phones keep the plain bar. */}
+            <div className={`header-shell mobile-header-shell relative z-10 ${floating ? 'header-shell--docked' : ''}`}>
                 <div
-                    className={`flex h-16 items-center justify-between transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        floating ? 'lg:h-[60px]' : 'lg:h-[72px]'
+                    className={`flex h-16 items-center justify-between gap-3 transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        floating ? 'lg:h-[52px]' : 'lg:h-[72px]'
                     }`}
                 >
-                    <Logo />
-                    <nav
-                        className={`hidden items-center transition-[gap] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:flex ${
-                            floating ? 'gap-6' : 'gap-8'
-                        }`}
-                        aria-label="Primary"
-                    >
-                        {LINKS.map((l) => {
-                            const active = isActive(url, l.href);
-                            const linkClass = `link-underline btn-press group relative py-2 text-[13px] font-bold uppercase tracking-[0.18em] transition-colors duration-200 ${
-                                active ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)] hover:text-[var(--ink)]'
-                            }`;
-                            if (l.href === '/services' || l.href === '/work') {
-                                const isWork = l.href === '/work';
-                                const enterMenu = isWork ? openWorkMega : openMega;
-                                const leaveMenu = isWork ? scheduleWorkMegaClose : scheduleMegaClose;
-                                const blurMenu = isWork ? handleWorkMegaBlur : handleMegaBlur;
-                                const menuOpen = isWork ? workMega : mega;
+                    <div className={`header-pod header-pod--brand flex min-w-0 items-center ${floating ? 'lg:h-full lg:pl-4 lg:pr-5' : ''}`}>
+                        <span className={floating ? 'lg:hidden' : undefined}>
+                            <Logo compact={floating} />
+                        </span>
+                        {floating && (
+                            <span className="hidden min-w-0 lg:flex">
+                                <DockedBrand label={readout} />
+                            </span>
+                        )}
+                    </div>
+                    <div className={`hidden items-center lg:flex ${floating ? 'h-full gap-2' : 'gap-5 xl:gap-8'}`}>
+                        <nav
+                            className={`header-pod header-pod--nav flex items-center transition-[gap] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                                floating ? 'h-full gap-4 pl-5 pr-2 xl:gap-6 xl:pl-6' : 'gap-5 xl:gap-8'
+                            }`}
+                            aria-label="Primary"
+                        >
+                            {LINKS.map((l) => {
+                                const active = isActive(url, l.href);
+                                const linkClass = `link-underline btn-press group relative whitespace-nowrap py-2 text-[13px] font-bold uppercase tracking-[0.18em] transition-colors duration-200 ${
+                                    active ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)] hover:text-[var(--ink)]'
+                                }`;
+                                if (l.href === '/services' || l.href === '/work') {
+                                    const isWork = l.href === '/work';
+                                    const enterMenu = isWork ? openWorkMega : openMega;
+                                    const leaveMenu = isWork ? scheduleWorkMegaClose : scheduleMegaClose;
+                                    const blurMenu = isWork ? handleWorkMegaBlur : handleMegaBlur;
+                                    const menuOpen = isWork ? workMega : mega;
 
-                                return (
-                                    <div
-                                        key={l.href}
-                                        onMouseEnter={enterMenu}
-                                        onMouseLeave={leaveMenu}
-                                        onFocus={enterMenu}
-                                        onBlur={blurMenu}
-                                        className="relative"
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={enterMenu}
-                                            aria-haspopup="true"
-                                            aria-expanded={menuOpen}
-                                            className={`${linkClass} cursor-pointer`}
+                                    return (
+                                        <div
+                                            key={l.href}
+                                            onMouseEnter={enterMenu}
+                                            onMouseLeave={leaveMenu}
+                                            onFocus={enterMenu}
+                                            onBlur={blurMenu}
+                                            className="relative"
                                         >
-                                            <span className="flex items-center gap-1.5">
-                                                <NavLabel label={l.label} />
-                                                <span
-                                                    aria-hidden
-                                                    className={`transition-transform duration-200 ease-out ${menuOpen ? 'rotate-180' : 'group-hover:translate-y-[1px]'}`}
-                                                >
-                                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="block">
-                                                        <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
+                                            <button
+                                                type="button"
+                                                onClick={enterMenu}
+                                                aria-haspopup="true"
+                                                aria-expanded={menuOpen}
+                                                className={`${linkClass} cursor-pointer`}
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    <NavLabel label={l.label} />
+                                                    <span
+                                                        aria-hidden
+                                                        className={`transition-transform duration-200 ease-out ${menuOpen ? 'rotate-180' : 'group-hover:translate-y-[1px]'}`}
+                                                    >
+                                                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="block">
+                                                            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                    </span>
                                                 </span>
-                                            </span>
-                                        </button>
-                                    </div>
+                                            </button>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <Link
+                                        key={l.href}
+                                        href={l.href}
+                                        onClick={(event) => navigateWithCurtain(event, l.href)}
+                                        className={linkClass}
+                                    >
+                                        <NavLabel label={l.label} />
+                                    </Link>
                                 );
-                            }
-                            return (
+                            })}
+                            <ThemeToggle />
+                        </nav>
+                        <div className={`header-pod header-pod--cta flex items-center ${floating ? 'h-full px-1' : ''}`}>
+                            <MagneticButton>
                                 <Link
-                                    key={l.href}
-                                    href={l.href}
-                                    onClick={(event) => navigateWithCurtain(event, l.href)}
-                                    className={linkClass}
+                                    href={ctaLink}
+                                    onClick={(event) => navigateWithCurtain(event, ctaLink)}
+                                    data-cursor="cta"
+                                    className="btn-press inline-flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-3 text-[12px] xl:px-6 font-bold uppercase tracking-[0.16em] text-white"
+                                    style={{
+                                        background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
+                                    }}
                                 >
-                                    <NavLabel label={l.label} />
+                                    {ctaText} <span aria-hidden>↗</span>
                                 </Link>
-                            );
-                        })}
-                        <ThemeToggle />
-                        <MagneticButton>
-                            <Link
-                                href={ctaLink}
-                                onClick={(event) => navigateWithCurtain(event, ctaLink)}
-                                data-cursor="cta"
-                                className="btn-press inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] font-bold uppercase tracking-[0.16em] text-white"
-                                style={{
-                                    background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
-                                }}
-                            >
-                                {ctaText} <span aria-hidden>↗</span>
-                            </Link>
-                        </MagneticButton>
-                    </nav>
+                            </MagneticButton>
+                        </div>
+                    </div>
                     <div className="flex items-center gap-3 lg:hidden">
                         <ThemeToggle compact />
                         <button
@@ -806,10 +965,20 @@ export default function Header() {
                             exit="hidden"
                             variants={MOBILE_MENU}
                         >
-                            {LINKS.map((l, i) => {
+                            {MOBILE_LINKS.map((l, i) => {
                                 const active = isActive(url, l.href);
 
-                                if (l.href === '/services') {
+                                // Services and Our Work open in place on mobile, listing the
+                                // same groups their desktop mega menus show.
+                                const accordion = l.href === '/services'
+                                    ? { groups: serviceCategories, label: 'services' }
+                                    : l.href === '/work'
+                                        ? { groups: workGroups, label: 'work' }
+                                        : null;
+
+                                if (accordion && accordion.groups.length > 0) {
+                                    const expanded = mobileSection === l.href;
+
                                     return (
                                         <motion.li key={l.href} variants={MOBILE_MENU_ITEM} className="w-full">
                                             <div className="flex h-16 w-full items-center gap-4 border-b border-[var(--line-soft)]">
@@ -818,8 +987,8 @@ export default function Header() {
                                                 </span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setMobileServicesOpen(true)}
-                                                    aria-expanded={mobileServicesOpen}
+                                                    onClick={() => setMobileSection(l.href)}
+                                                    aria-expanded={expanded}
                                                     aria-current={active ? 'page' : undefined}
                                                     className="flex min-w-0 flex-1 cursor-pointer items-center text-left"
                                                 >
@@ -831,16 +1000,16 @@ export default function Header() {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setMobileServicesOpen((v) => !v)}
-                                                    aria-expanded={mobileServicesOpen}
-                                                    aria-label={`${mobileServicesOpen ? 'Collapse' : 'Expand'} services`}
+                                                    onClick={() => setMobileSection((current) => (current === l.href ? null : l.href))}
+                                                    aria-expanded={expanded}
+                                                    aria-label={`${expanded ? 'Collapse' : 'Expand'} ${accordion.label}`}
                                                     className="btn-press shrink-0 p-1"
                                                 >
-                                                    <AccordionChevron expanded={mobileServicesOpen} />
+                                                    <AccordionChevron expanded={expanded} />
                                                 </button>
                                             </div>
                                             <AnimatePresence initial={false}>
-                                                {mobileServicesOpen && (
+                                                {expanded && (
                                                     <motion.div
                                                         initial={{ height: 0, opacity: 0 }}
                                                         animate={{ height: 'auto', opacity: 1 }}
@@ -848,7 +1017,28 @@ export default function Header() {
                                                         transition={{ duration: 0.28, ease: [...EASE] }}
                                                         className="overflow-hidden"
                                                     >
-                                                        {serviceCategories.map((category, categoryIndex) => (
+                                                        {l.href === '/work' ? (
+                                                            // The desktop Our Work blocks, stacked: one row per
+                                                            // portfolio, each with its rule and cover strip.
+                                                            <motion.div
+                                                                initial="hidden"
+                                                                animate="show"
+                                                                variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+                                                                className="space-y-8 pb-8 pt-6"
+                                                            >
+                                                                {accordion.groups.map((category, categoryIndex) => (
+                                                                    <div key={category.slug} className="min-w-0 border-l border-[var(--line-soft)] pl-4">
+                                                                        <WorkMegaSection
+                                                                            compact
+                                                                            category={category}
+                                                                            index={categoryIndex}
+                                                                            variants={workMenuVariants}
+                                                                            onNavigate={() => setOpen(false)}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </motion.div>
+                                                        ) : accordion.groups.map((category, categoryIndex) => (
                                                             <MobileServiceGroup
                                                                 key={category.slug}
                                                                 category={category}

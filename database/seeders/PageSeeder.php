@@ -74,11 +74,6 @@ class PageSeeder extends Seeder
                         ],
                     ],
                     [
-                        'type' => SectionType::Marquee,
-                        'name' => 'Idea → Experience → Result',
-                        'content' => ['items' => ['IDEA', 'EXPERIENCE', 'RESULT']],
-                    ],
-                    [
                         'type' => SectionType::About,
                         'name' => 'Who we are',
                         'content' => [
@@ -88,14 +83,29 @@ class PageSeeder extends Seeder
                         ],
                     ],
                     [
+                        'type' => SectionType::Work,
+                        'name' => 'Featured work',
+                        'content' => ['heading' => 'Our Work', 'intro' => ''],
+                    ],
+                    [
+                        'type' => SectionType::UiuxWork,
+                        'name' => 'UI/UX work',
+                        'content' => ['heading' => 'UI/UX Work', 'intro' => ''],
+                    ],
+                    [
                         'type' => SectionType::Services,
                         'name' => 'What we do',
                         'content' => ['heading' => 'Services', 'intro' => ''],
                     ],
                     [
-                        'type' => SectionType::Work,
-                        'name' => 'Featured work',
-                        'content' => ['heading' => 'Our Work', 'intro' => ''],
+                        'type' => SectionType::Process,
+                        'name' => 'How we work',
+                        'content' => self::processContent(),
+                    ],
+                    [
+                        'type' => SectionType::Recognition,
+                        'name' => 'Featured in',
+                        'content' => self::recognitionContent(),
                     ],
                     [
                         'type' => SectionType::Contact,
@@ -107,7 +117,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'about',
                 'title' => 'About',
-                'meta_title' => 'About — Marketorr',
+                'meta_title' => 'About | Marketorr',
                 'meta_description' => 'Marketorr is a creative and digital agency helping ambitious brands build stronger identities and measurable growth.',
                 'sections' => [
                     [
@@ -124,7 +134,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'contact',
                 'title' => 'Contact',
-                'meta_title' => 'Contact — Marketorr',
+                'meta_title' => 'Contact | Marketorr',
                 'meta_description' => 'Tell us about your project. We reply within 24–48 hours.',
                 'sections' => [
                     [
@@ -137,7 +147,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'privacy',
                 'title' => 'Privacy policy',
-                'meta_title' => 'Privacy — Marketorr',
+                'meta_title' => 'Privacy | Marketorr',
                 'meta_description' => 'How Marketorr handles inquiries submitted through this site.',
                 'meta_robots' => 'noindex,follow',
                 'sections' => [
@@ -157,7 +167,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'terms',
                 'title' => 'Terms',
-                'meta_title' => 'Terms — Marketorr',
+                'meta_title' => 'Terms | Marketorr',
                 'meta_description' => 'The terms that apply to this site and to work commissioned from Marketorr.',
                 'meta_robots' => 'noindex,follow',
                 'sections' => [
@@ -177,7 +187,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'services',
                 'title' => 'Services',
-                'meta_title' => 'Services — Marketorr',
+                'meta_title' => 'Services | Marketorr',
                 'meta_description' => 'Branding, web and product design services built for measurable growth.',
                 'sections' => [
                     [
@@ -190,7 +200,7 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'work',
                 'title' => 'Our Work',
-                'meta_title' => 'Our Work — Marketorr',
+                'meta_title' => 'Our Work | Marketorr',
                 'meta_description' => 'Selected branding, web and product work from the Marketorr studio.',
                 'sections' => [
                     [
@@ -200,6 +210,68 @@ class PageSeeder extends Seeder
                     ],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * The landing page's Idea -> Experience -> Result chapters.
+     *
+     * @return array{heading: string, items: array<int, array{stage: string, title: string, body: string}>}
+     */
+    public static function processContent(): array
+    {
+        return [
+            'heading' => 'How attention becomes results',
+            'items' => [
+                [
+                    'stage' => 'Idea',
+                    'title' => 'We find the angle.',
+                    'body' => 'Research, positioning and strategy that give a brand a clear reason to be chosen.',
+                ],
+                [
+                    'stage' => 'Experience',
+                    'title' => 'We make it felt.',
+                    'body' => 'Identity, interfaces and content crafted so people notice, understand and remember.',
+                ],
+                [
+                    'stage' => 'Result',
+                    'title' => 'We make it count.',
+                    'body' => 'Work measured against real numbers - traffic, leads and revenue - never vanity metrics.',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * The press and award logos the About page also shows.
+     *
+     * @return array{heading: string, items: array<int, array{name: string, image: string}>}
+     */
+    public static function recognitionContent(): array
+    {
+        $logos = [
+            'GoodFirms' => 'goodfirms.png',
+            'CrowdReviews' => 'crowdreviews.png',
+            'NTV' => 'ntv.png',
+            'The Business Standard' => 'business-standard.png',
+            'Asian Online' => 'asian-online.png',
+            'Bangladesh Pratidin' => 'bangladesh-pratidin.png',
+            'Samakal' => 'samakal.png',
+            'Banglanews24' => 'banglanews.jpg',
+            'Daily Inqilab' => 'inqilab.png',
+            'Bhorer Kagoj' => 'bhorer-kagoj.png',
+            'Bangladesh Post' => 'bangladesh-post.png',
+        ];
+
+        return [
+            'heading' => 'Featured and recognised',
+            'items' => collect($logos)
+                ->map(fn (string $file, string $name): array => [
+                    'name' => $name,
+                    'image' => '/images/about/recognition/'.$file,
+                ])
+                ->values()
+                ->all(),
         ];
     }
 }

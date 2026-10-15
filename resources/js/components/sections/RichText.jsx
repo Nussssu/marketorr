@@ -12,7 +12,7 @@ export default function RichText({ content }) {
     return (
         <section className="bg-[var(--bg)] pb-24 pt-32">
             <div className="container-x max-w-3xl">
-                {eyebrow && <SectionLabel index="§" name={eyebrow} />}
+                {eyebrow && <SectionLabel name={eyebrow} />}
                 {heading && (
                     <h1 className="display-md mt-8 uppercase text-[var(--ink-strong)]"><GradientTitle text={heading} /></h1>
                 )}

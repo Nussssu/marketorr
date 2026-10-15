@@ -48,14 +48,14 @@ export default function CategoriesIndex({ categories }) {
 
     return (
         <>
-            <Head title="Categories — Marketorr Admin" />
+            <Head title="Categories | Marketorr Admin" />
             <PageHeader title="Categories" subtitle={`${total} categories. Projects are filed under these.`}>
                 <Button as="link" href="/admin/categories/create">New category</Button>
             </PageHeader>
 
             <Panel className="overflow-hidden">
                 {categories.length === 0 ? (
-                    <EmptyState>No categories yet — create the first one.</EmptyState>
+                    <EmptyState>No categories yet, create the first one.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[720px] text-left text-[13px]">

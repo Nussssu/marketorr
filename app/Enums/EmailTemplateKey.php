@@ -14,8 +14,8 @@ enum EmailTemplateKey: string
     public function label(): string
     {
         return match ($this) {
-            self::AdminLeadNotification => 'Admin — new lead notification',
-            self::LeadAutoResponder => 'Customer — auto-responder',
+            self::AdminLeadNotification => 'Admin: new lead notification',
+            self::LeadAutoResponder => 'Customer: auto-responder',
         };
     }
 
@@ -58,7 +58,7 @@ enum EmailTemplateKey: string
     {
         return match ($this) {
             self::AdminLeadNotification => [
-                'subject' => 'New project inquiry — {{ name }}',
+                'subject' => 'New project inquiry: {{ name }}',
                 'body_html' => <<<'HTML'
                     <h1>New project inquiry</h1>
                     <p><strong>{{ name }}</strong> got in touch via {{ source_page }} on {{ submitted_at }}.</p>
@@ -80,7 +80,7 @@ enum EmailTemplateKey: string
                     <p>For reference, this is what you sent us:</p>
                     <blockquote>{{ message }}</blockquote>
                     <p>If anything changes in the meantime, just reply to this email or write to {{ contact_email }}.</p>
-                    <p>— The {{ site_name }} team</p>
+                    <p>The {{ site_name }} team</p>
                     HTML,
             ],
         };

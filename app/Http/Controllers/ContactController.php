@@ -29,6 +29,6 @@ class ContactController extends Controller
         // Kept alongside the database row as an audit trail.
         Log::info('Project inquiry received', $data);
 
-        return back()->with('success', 'Thanks — we reply within 24–48h.');
+        return back()->with('success', 'Thanks, we reply within 24–48h.');
     }
 }

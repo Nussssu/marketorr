@@ -1,9 +1,11 @@
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { useRef, useState } from 'react';
 import PageMeta from '../components/PageMeta';
 import LandingAbout from '../components/sections/About';
+import RecognitionStrip from '../components/sections/RecognitionStrip';
 import { GradientTitle, SectionLabel } from '../components/ui/primitives';
 import { BRAND_SEQUENCE } from '../lib/tokens';
+import { assetUrl } from '../lib/asset';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 
@@ -15,12 +17,12 @@ const TIMELINE = [
     {
         year: '2022',
         title: 'Two visionaries, one promise',
-        copy: 'Marketorr is born from a shared vision: help businesses cut through the noise and achieve meaningful growth. The founding promise — “Just Results” — still runs every engagement.',
+        copy: 'Marketorr is born from a shared vision: help businesses cut through the noise and achieve meaningful growth. The founding promise, “Just Results”, still runs every engagement.',
     },
     {
         year: 'Today',
         title: 'A full-stack growth crew',
-        copy: 'Strategists, media buyers, SEO specialists, designers and writers across Bangladesh and beyond — one dedicated pod behind every brand, led by CEO Kamrul Hasan Naim.',
+        copy: 'Strategists, media buyers, SEO specialists, designers and writers across Bangladesh and beyond: one dedicated pod behind every brand, led by CEO Kamrul Hasan Naim.',
     },
     {
         year: 'Proof',
@@ -31,76 +33,76 @@ const TIMELINE = [
 
 const MISSION = {
     title: 'Our Mission',
-    copy: 'To help businesses grow through digital marketing that connects, engages and converts — blending creativity, technology and data into strategies that turn marketing into a true engine for growth.',
+    copy: 'To help businesses grow through digital marketing that connects, engages and converts: blending creativity, technology and data into strategies that turn marketing into a true engine for growth.',
 };
 
 const VISION = {
     title: 'Our Vision',
-    copy: 'To redefine digital marketing in Bangladesh and beyond — every campaign purposeful, data-driven and built for lasting growth, from the trusted partner businesses choose for clarity and measurable impact.',
+    copy: 'To redefine digital marketing in Bangladesh and beyond: every campaign purposeful, data-driven and built for lasting growth, from the trusted partner businesses choose for clarity and measurable impact.',
 };
 
 const CEO = {
     name: 'Md Kamrul Hasan Naim',
     role: 'Founder & CEO',
     copy: 'Leads Marketorr with a performance-first mindset, turning fast action, practical solutions and clear strategy into measurable growth for ambitious brands.',
-    image: '/images/about/kamrul-hasan-naim.jpg',
+    image: assetUrl('/images/about/kamrul-hasan-naim.jpg'),
 };
 
 const RECOGNITION = [
     {
         name: 'GoodFirms',
         detail: 'Agency recognition',
-        image: '/images/about/recognition/goodfirms.png',
+        image: assetUrl('/images/about/recognition/goodfirms.png'),
     },
     {
         name: 'CrowdReviews',
         detail: 'Agency recognition',
-        image: '/images/about/recognition/crowdreviews.png',
+        image: assetUrl('/images/about/recognition/crowdreviews.png'),
     },
     {
         name: 'NTV',
         detail: 'Featured in',
-        image: '/images/about/recognition/ntv.png',
+        image: assetUrl('/images/about/recognition/ntv.png'),
     },
     {
         name: 'The Business Standard',
         detail: 'Featured in',
-        image: '/images/about/recognition/business-standard.png',
+        image: assetUrl('/images/about/recognition/business-standard.png'),
     },
     {
         name: 'Asian Online',
         detail: 'Featured in',
-        image: '/images/about/recognition/asian-online.png',
+        image: assetUrl('/images/about/recognition/asian-online.png'),
     },
     {
         name: 'Bangladesh Pratidin',
         detail: 'Featured in',
-        image: '/images/about/recognition/bangladesh-pratidin.png',
+        image: assetUrl('/images/about/recognition/bangladesh-pratidin.png'),
     },
     {
         name: 'Samakal',
         detail: 'Featured in',
-        image: '/images/about/recognition/samakal.png',
+        image: assetUrl('/images/about/recognition/samakal.png'),
     },
     {
         name: 'Banglanews24',
         detail: 'Featured in',
-        image: '/images/about/recognition/banglanews.jpg',
+        image: assetUrl('/images/about/recognition/banglanews.jpg'),
     },
     {
         name: 'Daily Inqilab',
         detail: 'Featured in',
-        image: '/images/about/recognition/inqilab.png',
+        image: assetUrl('/images/about/recognition/inqilab.png'),
     },
     {
         name: 'Bhorer Kagoj',
         detail: 'Featured in',
-        image: '/images/about/recognition/bhorer-kagoj.png',
+        image: assetUrl('/images/about/recognition/bhorer-kagoj.png'),
     },
     {
         name: 'Bangladesh Post',
         detail: 'Featured in',
-        image: '/images/about/recognition/bangladesh-post.png',
+        image: assetUrl('/images/about/recognition/bangladesh-post.png'),
     },
 ];
 
@@ -152,7 +154,7 @@ function Story() {
             >
                 <div className="lg:sticky lg:top-32 lg:self-start">
                     <ScrubRise>
-                        <SectionLabel index="02" name="Our story" />
+                        <SectionLabel name="Our story" />
                         <h2 id="story-title" className="display-md mt-6 uppercase text-[var(--ink-strong)]">
                             <GradientTitle text="Born to cut noise" highlightWords={2} />
                         </h2>
@@ -161,7 +163,7 @@ function Story() {
                             many good businesses drown in vanity metrics. The antidote became the company promise:
                         </p>
                         <p className="mt-6 border-l-2 pl-5 font-display text-2xl font-extrabold uppercase tracking-tight text-[var(--ink-strong)] md:text-3xl" style={{ borderImage: `${BRAND_GRADIENT} 1` }}>
-                            “Just <span className="text-gradient">Results.”</span>
+                            Just <span className="text-gradient">Results.</span>
                         </p>
                     </ScrubRise>
                 </div>
@@ -207,8 +209,8 @@ function StoryPoint({ stop, index, progress, reduce }) {
             style={reduce ? undefined : { opacity, y, rotateX, scale, transformPerspective: 900, transformOrigin: '50% 100%' }}
         >
             <span
-                className="absolute top-1.5 h-2.5 w-2.5 rounded-full"
-                style={{ left: '-2.35rem', background: BRAND_SEQUENCE[index % BRAND_SEQUENCE.length] }}
+                className="absolute top-1.5 left-[calc(-2rem+0.5px)] h-2.5 w-2.5 -translate-x-1/2 rounded-full md:left-[calc(-2.5rem+0.5px)]"
+                style={{ background: BRAND_SEQUENCE[index % BRAND_SEQUENCE.length] }}
                 aria-hidden
             />
             <p className="font-display text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]">
@@ -222,42 +224,64 @@ function StoryPoint({ stop, index, progress, reduce }) {
     );
 }
 
+/** How far into the pinned section one scroll carries the reader to Mission. */
+const MISSION_THRESHOLD = 0.01;
+const SCENE_EASE = [0.22, 1, 0.36, 1];
+
+/**
+ * Vision, then Mission, in one pinned frame. Scroll only decides WHICH card
+ * shows — one scroll down brings Mission, scrolling back up returns Vision —
+ * and the swap itself plays as a short timed animation: the outgoing card
+ * leaves first, then the incoming one settles in. Nothing is scrubbed by the
+ * wheel, so the two cards never sit half-overlapped while the reader reads.
+ */
 function MissionVision() {
     const ref = useRef(null);
     const reduce = useReducedMotion();
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
-    const progress = useSpring(scrollYProgress, { stiffness: 92, damping: 28, mass: 0.55 });
-    const visionY = useTransform(progress, [0, 0.42, 0.58, 1], reduce
-        ? ['0%', '0%', '0%', '0%']
-        : ['0%', '0%', '-10%', '-10%']);
-    const visionOpacity = useTransform(progress, [0, 0.42, 0.58, 1], [1, 1, 0, 0]);
-    const visionScale = useTransform(progress, [0, 0.42, 0.58, 1], [1, 1, 0.99, 0.99]);
-    const missionY = useTransform(progress, [0, 0.46, 0.62, 1], reduce
-        ? ['0%', '0%', '0%', '0%']
-        : ['10%', '10%', '0%', '0%']);
-    const missionOpacity = useTransform(progress, [0, 0.46, 0.62, 1], [0, 0, 1, 1]);
-    const missionScale = useTransform(progress, [0, 0.46, 0.62, 1], [0.99, 0.99, 1, 1]);
+    const [active, setActive] = useState(0);
+
+    useMotionValueEvent(scrollYProgress, 'change', (value) => {
+        const next = value > MISSION_THRESHOLD ? 1 : 0;
+        setActive((current) => (current === next ? current : next));
+    });
+
+    const sceneMotion = (index) => {
+        const isActive = index === active;
+        // The card that is not showing waits off to the side it left from:
+        // Vision above, Mission below.
+        const offset = index === 0 ? -28 : 28;
+
+        return {
+            initial: false,
+            animate: { opacity: isActive ? 1 : 0, y: isActive || reduce ? 0 : offset },
+            transition: reduce
+                ? { duration: 0 }
+                : { duration: isActive ? 0.6 : 0.35, delay: isActive ? 0.22 : 0, ease: SCENE_EASE },
+            style: { pointerEvents: isActive ? 'auto' : 'none' },
+            'aria-hidden': !isActive,
+        };
+    };
+
     const scenes = [
         {
             card: VISION,
             index: '03',
             label: 'Our vision',
-            image: '/images/about/vision-cartoon.png',
+            image: assetUrl('/images/about/vision-cartoon.png'),
             imageAlt: '3D character exploring ideas with a laptop',
-            style: { y: visionY, opacity: visionOpacity, scale: visionScale },
         },
         {
             card: MISSION,
             index: '04',
             label: 'Our mission',
-            image: '/images/about/mission-cartoon.png',
+            image: assetUrl('/images/about/mission-cartoon.png'),
             imageAlt: '3D character carrying a laptop toward a goal',
-            style: { y: missionY, opacity: missionOpacity, scale: missionScale },
         },
     ];
 
     return (
-        <section ref={ref} aria-label="Mission and vision" className="relative h-[260svh] overflow-clip bg-[var(--bg-soft)]">
+        <section ref={ref} aria-label="Mission and vision" className="relative h-[200svh] overflow-clip bg-[var(--bg-soft)]">
             <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-hidden lg:top-[72px] lg:h-[calc(100svh-72px)]">
                 <div
                     className="pointer-events-none absolute inset-0 opacity-70"
@@ -269,14 +293,14 @@ function MissionVision() {
                 />
                 <div className="container-x relative h-full">
                     <div className="grid h-full">
-                        {scenes.map(({ card, index, label, image, imageAlt, style }) => (
+                        {scenes.map(({ card, label, image, imageAlt }, sceneIndex) => (
                             <motion.article
                                 key={card.title}
-                                style={style}
+                                {...sceneMotion(sceneIndex)}
                                 className="relative col-start-1 row-start-1 grid h-full w-full content-center gap-6 py-8 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.78fr)] sm:items-center sm:gap-10 md:gap-14"
                             >
                                 <div>
-                                    <SectionLabel index={index} name={label} />
+                                    <SectionLabel name={label} />
                                     <h3 className="mt-3 font-display text-3xl font-extrabold uppercase tracking-tight text-[var(--ink-strong)] md:text-5xl">
                                         <GradientTitle text={card.title} highlightWords={1} />
                                     </h3>
@@ -351,7 +375,7 @@ function Team() {
         <section aria-labelledby="team-title" className="section-pad relative border-t border-[var(--line)]">
             <div className="container-x">
                 <ScrubRise>
-                    <SectionLabel index="05" name="Leadership" />
+                    <SectionLabel name="Leadership" />
                     <h2 id="team-title" className="display-md mt-6 max-w-3xl uppercase text-[var(--ink-strong)]">
                         <GradientTitle text="Minds behind the growth" highlightWords={2} />
                     </h2>
@@ -369,8 +393,6 @@ function Team() {
 }
 
 function Awards() {
-    const reduce = useReducedMotion();
-
     return (
         <div aria-labelledby="awards-title" className="mt-24 overflow-hidden sm:mt-28 lg:mt-32">
             <div className="container-x text-center">
@@ -379,35 +401,8 @@ function Awards() {
                 </h3>
             </div>
 
-            <div className="mt-8 overflow-hidden py-4 md:mt-10 md:py-6">
-                <motion.div
-                    className="flex w-max"
-                    animate={reduce ? undefined : { x: ['0%', '-50%'] }}
-                    transition={reduce ? undefined : { duration: 58, ease: 'linear', repeat: Infinity }}
-                >
-                    {[false, true].map((duplicate) => (
-                        <ul
-                            key={duplicate ? 'duplicate' : 'primary'}
-                            className="flex shrink-0 gap-4 pr-4 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8"
-                            aria-hidden={duplicate || undefined}
-                        >
-                            {RECOGNITION.map((item) => (
-                                <li
-                                    key={`${duplicate ? 'duplicate-' : ''}${item.name}`}
-                                    className="award-plate flex h-20 w-40 shrink-0 items-center justify-center rounded-2xl px-5 sm:h-24 sm:w-44 md:w-48 md:px-6"
-                                >
-                                    <img
-                                        src={item.image}
-                                        alt={duplicate ? '' : item.name}
-                                        loading="lazy"
-                                        decoding="async"
-                                        className="max-h-9 w-full max-w-[124px] object-contain sm:max-h-11 sm:max-w-[140px] md:max-w-[150px]"
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                    ))}
-                </motion.div>
+            <div className="mt-8 md:mt-10">
+                <RecognitionStrip items={RECOGNITION} />
             </div>
         </div>
     );
@@ -427,7 +422,7 @@ export default function AboutPage({ page }) {
 
     return (
         <>
-            <PageMeta page={page} fallbackTitle="About — Marketorr" />
+            <PageMeta page={page} fallbackTitle="About | Marketorr" />
             <LandingAbout content={aboutContent} heroHeading />
             <main>
                 <StoryVisionSequence />

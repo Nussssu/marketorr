@@ -56,6 +56,32 @@ class ProjectSeeder extends Seeder
     /** How many of BRANDING_ORDER lead the landing page's work section. */
     private const LANDING_COUNT = 7;
 
+    /**
+     * Gallery folders that intentionally use a different public project slug.
+     *
+     * @var array<string, string>
+     */
+    private const GALLERY_SLUGS = [
+        'imperial-jute-b2b-seo' => 'imperial-jute-brand-design',
+    ];
+
+    /**
+     * Galleries whose display order is curated rather than alphabetical.
+     *
+     * ShuddhoMart's last two frames lead the story and the two near-bottom
+     * repeat exports (the second T-shirt and the second Thank You) are left
+     * out, so the page ends on a single Thank You.
+     *
+     * @var array<string, list<string>>
+     */
+    private const GALLERY_ORDER = [
+        'shuddhomart-branding' => [
+            '14.webp', '15.webp',
+            '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp',
+            '07.webp', '08.webp', '09.webp', '10.webp', '11.webp',
+        ],
+    ];
+
     public function run(): void
     {
         $rank = array_flip(self::BRANDING_ORDER);
@@ -99,7 +125,8 @@ class ProjectSeeder extends Seeder
      */
     private function gallery(string $slug, string $title): ?array
     {
-        $directory = public_path('images/work/gallery/'.$slug);
+        $gallerySlug = self::GALLERY_SLUGS[$slug] ?? $slug;
+        $directory = public_path('images/work/gallery/'.$gallerySlug);
 
         if (! File::isDirectory($directory)) {
             return null;
@@ -116,15 +143,34 @@ class ProjectSeeder extends Seeder
             ], true))
             ->sortBy(fn ($file): string => $file->getFilename())
             ->values()
-            ->map(function ($file, int $index) use ($slug, $title): array {
+            ->mapWithKeys(function ($file) use ($gallerySlug, $title): array {
                 $isVideo = strtolower($file->getExtension()) === 'mp4';
 
-                return [
-                    'src' => '/images/work/gallery/'.$slug.'/'.$file->getFilename(),
-                    'alt' => $title.' project '.($isVideo ? 'film ' : 'image ').($index + 1),
+                return [$file->getFilename() => [
+                    'src' => '/images/work/gallery/'.$gallerySlug.'/'.$file->getFilename(),
+                    'alt' => $title.' project '.($isVideo ? 'film ' : 'image '),
                     'wide' => false,
                     'video' => $isVideo,
-                ];
+                ]];
+            });
+
+        // A curated order wins when declared; anything unlisted trails it,
+        // and anything listed but missing from disk is skipped.
+        if (isset(self::GALLERY_ORDER[$slug])) {
+            $ordered = collect(self::GALLERY_ORDER[$slug])
+                ->filter(fn (string $filename): bool => $images->has($filename))
+                ->map(fn (string $filename) => $images->get($filename))
+                ->values()
+                ->all();
+        } else {
+            $ordered = $images->values()->all();
+        }
+
+        $images = collect($ordered)
+            ->map(function (array $image, int $index): array {
+                $image['alt'] = trim($image['alt']).' '.($index + 1);
+
+                return $image;
             })
             ->all();
 
@@ -174,7 +220,7 @@ class ProjectSeeder extends Seeder
         return collect($map[$slug] ?? [])
             ->map(fn (array $film, int $index): array => [
                 'src' => 'https://vimeo.com/'.$film['vimeo'],
-                'alt' => 'Amanah Global Network project film '.($index + 1).' — '.$film['title'],
+                'alt' => 'Amanah Global Network project film '.($index + 1).', '.$film['title'],
                 'wide' => true,
                 'video' => true,
                 'vimeo' => $film['vimeo'],
@@ -258,12 +304,13 @@ class ProjectSeeder extends Seeder
                 'client' => 'Imperial Jute · Jute Goods Manufacturer',
                 'category' => 'B2B SEO · Content Strategy',
                 'year' => '2023',
-                'description' => 'An SEO overhaul for a jute goods manufacturer and exporter: website UI redesign, industry keyword research and a content-first strategy that put 200+ keywords on page one in six months — without a backlink strategy.',
+                'description' => 'An SEO overhaul for a jute goods manufacturer and exporter: website UI redesign, industry keyword research and a content-first strategy that put 200+ keywords on page one in six months, without a backlink strategy.',
                 'metric' => '2100%',
                 'metric_label' => 'Organic Traffic Increase',
                 'accent' => '#891FFB',
                 'image_path' => '/images/work/imperial-jute-logo.webp',
                 'image_alt' => 'Imperial Jute 3D logo animation',
+                'external_url' => 'https://www.behance.net/gallery/175626169/Jute-Company-Minimal-Logo-Brand-Design-Imperial-Jute',
                 'tags' => ['Branding', 'Logo Design'],
                 'brief' => [
                     'overview' => 'Imperial Jute is a leading jute goods manufacturer, supplier and exporter, exporting jute bags, jute tape, fabrics, yarn and ropes. Quality jute product within the shortest period of delivery is its main motto as a leading jute goods manufacturer and exporter in Bangladesh, and the company is committed to developing the food-grade jute bag and creating an ecologically sustainable future.',
@@ -342,7 +389,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Bangladesh Television',
                 'category' => 'Brand Design · Logo Design',
                 'year' => '2026',
-                'description' => 'A proposed logo concept for Bangladesh Television — a self-initiated identity study published to the studio portfolio.',
+                'description' => 'A proposed logo concept for Bangladesh Television, a self-initiated identity study published to the studio portfolio.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -369,7 +416,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'City Online Limited',
                 'category' => 'Brand Design · Identity Guidelines',
                 'year' => '2023',
-                'description' => 'The full City Online engagement — brand identity and guidelines plus the website built on them, for an internet service provider.',
+                'description' => 'The full City Online engagement: brand identity and guidelines plus the website built on them, for an internet service provider.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -397,7 +444,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Microters · SaaS',
                 'category' => 'Web UI/UX · Development',
                 'year' => '2024',
-                'description' => 'Website UI design case study for Microters — clean layouts and a confident visual system tuned for conversion.',
+                'description' => 'Website UI design case study for Microters, clean layouts and a confident visual system tuned for conversion.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#507AF4',
@@ -424,12 +471,13 @@ class ProjectSeeder extends Seeder
                 'client' => 'Dusty Vision · Home Improvement',
                 'category' => 'Brand Design · Visual Identity',
                 'year' => '2023',
-                'description' => 'Dusty Vision visual identity — logo and brand system for a home improvement brand.',
+                'description' => 'Dusty Vision visual identity, logo and brand system for a home improvement brand.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',
                 'image_path' => '/images/work/dusty-vision.webp',
                 'image_alt' => 'Dusty Vision visual identity cover',
+                'external_url' => 'https://www.behance.net/gallery/172596821/Dusty-Vision-Visual-Identity',
                 'tags' => ['Branding', 'Logo Design'],
                 'brief' => [
                     'overview' => 'Dusty Vision is an efficient toilet paper holder that offers a distinctive storage solution in the form of a drawer-style design, setting it apart from the prevailing lid-style approach commonly seen in its competitors. The brand aims to establish itself in the home improvement niche, with a storage solution that provides efficient organization, easy accessibility and enhanced hygiene.',
@@ -452,7 +500,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Virgin Trend · Fashion',
                 'category' => 'Brand Design · Fashion',
                 'year' => '2023',
-                'description' => 'Fashion brand visual identity design for Virgin Trend — logo, look and brand world for a clothing label.',
+                'description' => 'Fashion brand visual identity design for Virgin Trend: logo, look and brand world for a clothing label.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -479,7 +527,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Alarabi fashion',
                 'category' => 'Brand Design · Fashion',
                 'year' => '2023',
-                'description' => 'Brand design for Alarabi Fashion — an AF letter mark built from the two initials, carried across apparel, print and packaging.',
+                'description' => 'Brand design for Alarabi Fashion: an AF letter mark built from the two initials, carried across apparel, print and packaging.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -512,7 +560,7 @@ class ProjectSeeder extends Seeder
                 'metric_label' => null,
                 'accent' => '#507AF4',
                 'image_path' => '',
-                'image_alt' => 'Imperial Jute website design — image not supplied yet',
+                'image_alt' => 'Imperial Jute website design, image not supplied yet',
                 'tags' => ['Web UI/UX', 'Development'],
                 'brief' => [
                     'overview' => 'Imperial Jute is a leading jute goods manufacturer, supplier and exporter, exporting jute bags, jute tape, fabrics, yarn and ropes. Quality jute product within the shortest period of delivery is its main motto as a leading jute goods manufacturer and exporter in Bangladesh, and the company is committed to developing the food-grade jute bag and creating an ecologically sustainable future.',
@@ -534,7 +582,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Engineering Consulting Firm · Consulting',
                 'category' => 'Brand Design · Engineering',
                 'year' => '2023',
-                'description' => 'Visual identity design for an engineering consulting firm — a precise, technical brand system.',
+                'description' => 'Visual identity design for an engineering consulting firm: a precise, technical brand system.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',
@@ -561,7 +609,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'NTNB Agro · Agro Firm',
                 'category' => 'Brand Design · Agro',
                 'year' => '2023',
-                'description' => 'Visual identity for NTNB Agro — a warm, grounded brand system for an agro firm.',
+                'description' => 'Visual identity for NTNB Agro: a warm, grounded brand system for an agro firm.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -588,7 +636,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Sabdita Fashion',
                 'category' => 'Brand Design · Rebranding',
                 'year' => '2024',
-                'description' => 'Rebranding for Sabdita Fashion — logo, packaging and a refreshed visual identity for the fashion label.',
+                'description' => 'Rebranding for Sabdita Fashion: logo, packaging and a refreshed visual identity for the fashion label.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#507AF4',
@@ -688,7 +736,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'AnimateUIX',
                 'category' => 'Brand Design · Product',
                 'year' => '2023',
-                'description' => 'AnimateUIX brand design — a logo presentation system for a motion-led product studio.',
+                'description' => 'AnimateUIX brand design, a logo presentation system for a motion-led product studio.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',
@@ -716,12 +764,12 @@ class ProjectSeeder extends Seeder
                 'client' => 'AnimateUIX',
                 'category' => 'Web UI/UX · Development',
                 'year' => '2022',
-                'description' => 'The interface half of the AnimateUIX engagement — UI/UX design and web development, published separately from the brand design.',
+                'description' => 'The interface half of the AnimateUIX engagement: UI/UX design and web development, published separately from the brand design.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#507AF4',
                 'image_path' => '',
-                'image_alt' => 'AnimateUIX website design — image not supplied yet',
+                'image_alt' => 'AnimateUIX website design, image not supplied yet',
                 'tags' => ['Web UI/UX', 'Development'],
                 'brief' => [
                     'overview' => null,
@@ -773,7 +821,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'ShuddhoMart',
                 'category' => 'Brand Design · Logo Design',
                 'year' => '2025',
-                'description' => 'Brand identity for ShuddhoMart — logo, identity system and the collateral built on it.',
+                'description' => 'Brand identity for ShuddhoMart: logo, identity system and the collateral built on it.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -831,7 +879,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Marketorr Studio · Illustration',
                 'category' => 'Illustration · Digital Art',
                 'year' => '2024',
-                'description' => 'Custom illustration and digital art — bespoke visuals crafted for content and campaigns.',
+                'description' => 'Custom illustration and digital art, bespoke visuals crafted for content and campaigns.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -858,7 +906,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Carpet Cleaning · Services',
                 'category' => 'Illustration · Digital Art',
                 'year' => '2024',
-                'description' => 'Digital art and illustration series for a carpet cleaning brand — playful visuals for service marketing.',
+                'description' => 'Digital art and illustration series for a carpet cleaning brand, playful visuals for service marketing.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#507AF4',
@@ -885,7 +933,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Marketorr Studio · Illustration',
                 'category' => 'Illustration · Digital Art',
                 'year' => '2024',
-                'description' => 'Line drawing and illustration art for content infographics — clean explanatory visuals.',
+                'description' => 'Line drawing and illustration art for content infographics, clean explanatory visuals.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',
@@ -912,7 +960,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Amanah Global Network · Travel Agency',
                 'category' => 'Brand Design · Travel',
                 'year' => '2025',
-                'description' => 'Brand identity for Amanah Global Network — logo, 3D icon films and a teal travel system across print, outdoor, app and social.',
+                'description' => 'Brand identity for Amanah Global Network: logo, 3D icon films and a teal travel system across print, outdoor, app and social.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',
@@ -920,7 +968,7 @@ class ProjectSeeder extends Seeder
                 'image_alt' => 'Amanah Global Network green business card with logo',
                 'tags' => ['Branding', 'Visual Identity'],
                 'brief' => [
-                    'overview' => 'Amanah Global Network is a travel agency built on trust — airline ticketing, religious travel and global reach wrapped in a teal identity system spanning stationery, billboards, app icon, social and outdoor.',
+                    'overview' => 'Amanah Global Network is a travel agency built on trust: airline ticketing, religious travel and global reach wrapped in a teal identity system spanning stationery, billboards, app icon, social and outdoor.',
                     'worked_on' => [],
                     'services' => [
                         'Brand Identity Design',
@@ -939,7 +987,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Editwing · Video & Podcast Studio',
                 'category' => 'Brand Design · Logo Design',
                 'year' => '2025',
-                'description' => 'Logo and brand design for Editwing — a play-button mark and wordmark carried across stationery, signage, merch and studio.',
+                'description' => 'Logo and brand design for Editwing: a play-button mark and wordmark carried across stationery, signage, merch and studio.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -967,7 +1015,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Smilez · Streetwear',
                 'category' => 'Brand Design · Fashion',
                 'year' => '2025',
-                'description' => 'Logo design for Smilez, a streetwear brand — an arrow-Z mark across apparel, caps, packaging and retail.',
+                'description' => 'Logo design for Smilez, a streetwear brand: an arrow-Z mark across apparel, caps, packaging and retail.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#507AF4',
@@ -995,7 +1043,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Go Yara · Travel Agency',
                 'category' => 'Brand Design · Travel',
                 'year' => '2025',
-                'description' => 'Campaign and brand pitch for Go Yara travel agency — One Click To Anywhere key visuals across outdoor, social and web.',
+                'description' => 'Campaign and brand pitch for Go Yara travel agency: One Click To Anywhere key visuals across outdoor, social and web.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#891FFB',
@@ -1023,7 +1071,7 @@ class ProjectSeeder extends Seeder
                 'client' => 'Tapmad · Streaming',
                 'category' => 'Brand Design · Advertising',
                 'year' => '2025',
-                'description' => 'Media ads for Tapmad — All in 1 sports campaign across billboards, press, match-day and tournament creatives.',
+                'description' => 'Media ads for Tapmad: All in 1 sports campaign across billboards, press, match-day and tournament creatives.',
                 'metric' => null,
                 'metric_label' => null,
                 'accent' => '#1BE2EB',

@@ -59,7 +59,7 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
 
     return (
         <>
-            <Head title={`${isEdit ? 'Edit' : 'New'} category — Marketorr Admin`} />
+            <Head title={`${isEdit ? 'Edit' : 'New'} category | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${category.name}` : 'New category'}
                 subtitle="Categories file projects and can nest one level deep."
@@ -95,7 +95,7 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
                                 hint="Leave empty for a top-level discipline."
                             >
                                 <Select value={data.parent_id ?? ''} onChange={(e) => setData('parent_id', e.target.value)}>
-                                    <option value="">— None (top level)</option>
+                                    <option value="">None (top level)</option>
                                     {parents.map((parent) => (
                                         <option key={parent.id} value={parent.id}>{parent.label}</option>
                                     ))}

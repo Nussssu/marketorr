@@ -11,7 +11,7 @@ export default function Cta({ content }) {
     return (
         <section className="bg-[var(--bg-soft)] section-pad">
             <div className="container-x max-w-3xl text-center">
-                <SectionLabel index="§" name="NEXT STEP" />
+                <SectionLabel name="NEXT STEP" />
                 {heading && (
                     <h2 className="display-md mt-8 uppercase text-[var(--ink-strong)]"><GradientTitle text={heading} /></h2>
                 )}

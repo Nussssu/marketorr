@@ -15,11 +15,12 @@ import { useBoxPointer } from '../../lib/pointer';
 import { projectCardMedia } from '../../lib/projectHeroMedia';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 import { GradientTitle, Tag } from '../ui/primitives';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 
 const EASE = [0.22, 1, 0.36, 1];
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 const RICH_QUERY = '(min-width: 1024px)';
-const COMPACT_QUERY = '(max-width: 768px)';
+const COMPACT_QUERY = '(max-width: 1023px)';
 
 /** Where a project leads: its own `href` when it has one, otherwise its case study. */
 const projectLink = (project) => project.href ?? `/work/${project.slug}`;
@@ -75,12 +76,12 @@ const FLOW = {
  *   rich: boolean,
  *   reduce: boolean,
  *   onFocus: (index: number) => void,
- *   mobileOptimized?: boolean,
  * }} props
  */
-function FlowItem({ project, index, rich, reduce, onFocus, mobileOptimized = false }) {
+function FlowItem({ project, index, rich, reduce, onFocus }) {
     const ref = useRef(null);
-    const cardMedia = projectCardMedia(project);
+    // Two columns on phones and tablets, the right-hand column on desktop.
+    const cardMedia = projectCardMedia(project, '(max-width: 1023px) 46vw, 55vw');
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
     const frames = rich ? FLOW.rich : FLOW.light;
 
@@ -152,14 +153,17 @@ function FlowItem({ project, index, rich, reduce, onFocus, mobileOptimized = fal
             >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[#111116] min-[769px]:aspect-[16/10]" style={{ containerType: 'inline-size' }}>
                     {isCharukothon(project.slug) ? (
-                        <CharukothonCover image={project.image} />
+                        <CharukothonCover image={project.thumb || project.image} />
                     ) : !cardMedia.src ? (
                         <MediaPlaceholder label={`${project.title} - cover image placeholder`} />
                     ) : (
                     <img
                         src={cardMedia.src}
+                        srcSet={cardMedia.srcSet}
+                        sizes={cardMedia.sizes}
                         alt={cardMedia.alt}
-                        loading="lazy"
+                        loading={index < 2 ? 'eager' : 'lazy'}
+                        fetchPriority={index === 0 ? 'high' : undefined}
                         decoding="async"
                         draggable={false}
                         style={project.imagePosition ? { objectPosition: project.imagePosition } : undefined}
@@ -187,28 +191,26 @@ function FlowItem({ project, index, rich, reduce, onFocus, mobileOptimized = fal
                 </div>
 
                 {/* Below the large screens the fixed panel is not on screen, so each
-                    visual carries its own caption exactly as it did before. */}
+                    visual carries its own caption. Both archives share the phone
+                    two-column grid, so they share its caption sizes too. */}
                 <div className="min-w-0 pt-3 lg:hidden">
-                    <p className={`${mobileOptimized ? 'text-[11px] tracking-[0.16em]' : 'text-[8px] tracking-[0.1em]'} truncate font-bold uppercase text-[var(--ink-faint)] min-[769px]:text-[11px] min-[769px]:tracking-[0.2em]`}>
+                    <p className="text-[8px] tracking-[0.1em] truncate font-bold uppercase text-[var(--ink-faint)] min-[769px]:text-[11px] min-[769px]:tracking-[0.2em]">
                         {project.client} · {project.year}
                     </p>
-                    <h2 className={`${mobileOptimized ? 'mt-1.5 text-[clamp(1.15rem,5vw,1.5rem)] leading-[1.08]' : 'mt-1 text-[13px] leading-[1.05]'} overflow-hidden font-display font-extrabold uppercase text-[var(--ink-strong)] min-[769px]:mt-1 min-[769px]:text-2xl min-[769px]:leading-normal`}>
+                    <h2 className="mt-1 text-[13px] leading-[1.05] overflow-hidden font-display font-extrabold uppercase text-[var(--ink-strong)] min-[769px]:mt-1.5 min-[769px]:text-xl min-[769px]:leading-tight">
                         <GradientTitle text={project.title} />
                     </h2>
                     {project.tags.length > 0 && (
-                        <div className={`${mobileOptimized ? 'mt-2.5 gap-1.5' : 'mt-2 gap-1'} flex min-w-0 items-center min-[769px]:hidden`}>
-                            <span className={`${mobileOptimized ? 'min-h-7 gap-1.5 px-2.5 py-1 text-[9px] tracking-[0.1em]' : 'gap-1 px-1.5 py-1 text-[7px] tracking-[0.08em]'} inline-flex min-w-0 max-w-full items-center rounded-full border border-[var(--line)] bg-[var(--chip)] font-semibold uppercase text-[var(--ink)]`}>
+                        <div className="mt-2 gap-1 flex min-w-0 items-center min-[769px]:mt-3 min-[769px]:gap-1.5">
+                            <span className="gap-1 px-1.5 py-1 text-[7px] tracking-[0.08em] min-[769px]:gap-1.5 min-[769px]:px-2.5 min-[769px]:text-[9px] min-[769px]:tracking-[0.1em] inline-flex min-w-0 max-w-full items-center rounded-full border border-[var(--line)] bg-[var(--chip)] font-semibold uppercase text-[var(--ink)]">
                                 <span className="h-1 w-1 shrink-0 rounded-full" style={{ background: project.accent }} aria-hidden />
                                 <span className="truncate">{project.tags[0]}</span>
                             </span>
                             {project.tags.length > 1 && (
-                                <span className={`${mobileOptimized ? 'text-[10px]' : 'text-[7px]'} shrink-0 font-bold text-[var(--ink-faint)]`}>+{project.tags.length - 1}</span>
+                                <span className="text-[7px] shrink-0 font-bold text-[var(--ink-faint)] min-[769px]:text-[10px]">+{project.tags.length - 1}</span>
                             )}
                         </div>
                     )}
-                    <div className="mt-3 hidden flex-wrap gap-2 min-[769px]:flex">
-                        {project.tags.map((t) => <Tag key={t} accent={project.accent}>{t}</Tag>)}
-                    </div>
                 </div>
             </Link>
         </motion.article>
@@ -292,32 +294,22 @@ function FixedPanel({ project, count, index, reduce }) {
  * in place of it. A project may bring its own `href` and `ctaLabel` instead,
  * which is how the UI/UX portfolio sends each project to its printer page.
  *
- * Large screens get the fixed panel, the 3D pass and the cursor tilt. Below
- * that the visuals keep their own captions and run the same pass flattened,
- * and reduced motion renders the list plainly with no transforms at all.
+ * Large screens get the fixed panel, the 3D pass and the cursor tilt. Phones
+ * and tablets get a two-column grid of cards, each with its own caption,
+ * revealed as it scrolls into view; reduced motion renders the list plainly
+ * with no transforms at all.
  *
  * @param {{ projects: Array<import('../../lib/projects').Project>, mobileOptimized?: boolean }} props
  */
 export default function WorkShowcase({ projects = [], mobileOptimized = false }) {
     const reduce = useReducedMotion();
     const [rich, setRich] = useState(false);
-    const [compact, setCompact] = useState(
-        () => typeof window !== 'undefined' && window.matchMedia(COMPACT_QUERY).matches,
-    );
+    const compact = useMediaQuery(COMPACT_QUERY);
     const [active, setActive] = useState(0);
 
     useEffect(() => {
         const query = window.matchMedia(RICH_QUERY);
         const update = () => setRich(query.matches);
-        update();
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    useEffect(() => {
-        const query = window.matchMedia(COMPACT_QUERY);
-        const update = () => setCompact(query.matches);
         update();
         query.addEventListener('change', update);
 
@@ -336,36 +328,28 @@ export default function WorkShowcase({ projects = [], mobileOptimized = false })
 
             <div className="work-flow__track">
                 {projects.map((project, index) => {
-                    if (!compact) {
-                        return (
-                            <FlowItem
-                                key={project.slug}
-                                project={project}
-                                index={index}
-                                rich={rich && !reduce}
-                                reduce={reduce}
-                                onFocus={setActive}
-                                mobileOptimized={mobileOptimized}
-                            />
-                        );
-                    }
+                    // One wrapper in every layout, so server-rendered markup and
+                    // the first client render share a structure; only phones
+                    // give it the reveal-on-scroll entrance.
+                    const reveal = compact && !reduce;
 
                     return (
                         <motion.div
-                            key={project.slug}
-                            className="min-w-0"
-                            initial={reduce ? false : { opacity: 0, y: 22, scale: 0.97 }}
-                            whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                            // Remounts once the layout is known after hydration, so a
+                            // phone's cards start from their own reveal pose.
+                            key={`${project.slug}-${compact ? 'compact' : 'wide'}`}
+                            className="work-flow__reveal w-full min-w-0"
+                            initial={reveal ? { opacity: 0, y: 22, scale: 0.97 } : false}
+                            whileInView={reveal ? { opacity: 1, y: 0, scale: 1 } : undefined}
                             viewport={{ once: true, amount: 0.18 }}
                             transition={{ duration: mobileOptimized ? 0.32 : 0.48, delay: mobileOptimized ? 0 : (index % 2) * 0.07, ease: [...EASE] }}
                         >
                             <FlowItem
                                 project={project}
                                 index={index}
-                                rich={false}
-                                reduce={reduce || mobileOptimized}
+                                rich={!compact && rich && !reduce}
+                                reduce={compact ? reduce || mobileOptimized : reduce}
                                 onFocus={setActive}
-                                mobileOptimized={mobileOptimized}
                             />
                         </motion.div>
                     );

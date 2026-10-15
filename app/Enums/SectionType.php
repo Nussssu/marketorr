@@ -13,6 +13,7 @@ enum SectionType: string
     case About = 'about';
     case Services = 'services';
     case Work = 'work';
+    case UiuxWork = 'uiux_work';
     case Contact = 'contact';
     case Marquee = 'marquee';
     case RichText = 'rich_text';
@@ -20,6 +21,9 @@ enum SectionType: string
     case Testimonials = 'testimonials';
     case Faq = 'faq';
     case Cta = 'cta';
+    case Process = 'process';
+    case Results = 'results';
+    case Recognition = 'recognition';
 
     public function label(): string
     {
@@ -28,6 +32,7 @@ enum SectionType: string
             self::About => 'About',
             self::Services => 'Services',
             self::Work => 'Our Work',
+            self::UiuxWork => 'UI/UX Work',
             self::Contact => 'Contact',
             self::Marquee => 'Marquee Strip',
             self::RichText => 'Text Block',
@@ -35,6 +40,9 @@ enum SectionType: string
             self::Testimonials => 'Testimonials',
             self::Faq => 'FAQ Accordion',
             self::Cta => 'Call To Action',
+            self::Process => 'Process Story',
+            self::Results => 'Results In Numbers',
+            self::Recognition => 'Recognition Strip',
         };
     }
 
@@ -47,7 +55,8 @@ enum SectionType: string
             self::Hero => 'Full-height opening frame with eyebrow, headline lines and subtext.',
             self::About => 'Intro paragraph with animated metric counters.',
             self::Services => 'Service categories and their sub-services.',
-            self::Work => 'Scrolling showcase of featured projects.',
+            self::Work => 'Scrolling showcase of featured branding projects.',
+            self::UiuxWork => 'UI/UX projects fed out of a printer as the reader scrolls.',
             self::Contact => 'Contact details, office map and the inquiry form.',
             self::Marquee => 'Looping strip of short words.',
             self::RichText => 'Heading plus free-form rich text.',
@@ -55,6 +64,9 @@ enum SectionType: string
             self::Testimonials => 'Quotes with author and role.',
             self::Faq => 'Expandable question and answer list.',
             self::Cta => 'Headline with a primary button.',
+            self::Process => 'Pinned, scroll-driven chapters - one per stage of the process.',
+            self::Results => 'Oversized client results that count up as they arrive.',
+            self::Recognition => 'Press and award logos drifting in two opposing rows.',
         };
     }
 
@@ -64,7 +76,7 @@ enum SectionType: string
      */
     public function isDataDriven(): bool
     {
-        return in_array($this, [self::Services, self::Work, self::Contact], true);
+        return in_array($this, [self::Services, self::Work, self::UiuxWork, self::Contact], true);
     }
 
     /**
@@ -89,7 +101,7 @@ enum SectionType: string
                     ['name' => 'label', 'label' => 'Label', 'type' => 'text'],
                 ]],
             ],
-            self::Services, self::Work, self::Contact => [
+            self::Services, self::Work, self::UiuxWork, self::Contact => [
                 ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
                 ['name' => 'intro', 'label' => 'Intro', 'type' => 'textarea'],
             ],
@@ -129,6 +141,32 @@ enum SectionType: string
                 ['name' => 'body', 'label' => 'Body', 'type' => 'textarea'],
                 ['name' => 'buttonLabel', 'label' => 'Button label', 'type' => 'text'],
                 ['name' => 'buttonUrl', 'label' => 'Button URL', 'type' => 'text'],
+            ],
+            self::Process => [
+                ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
+                ['name' => 'items', 'label' => 'Stages', 'type' => 'repeater', 'item_fields' => [
+                    ['name' => 'stage', 'label' => 'Stage word', 'type' => 'text'],
+                    ['name' => 'title', 'label' => 'Title', 'type' => 'text'],
+                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea'],
+                ]],
+            ],
+            self::Results => [
+                ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
+                ['name' => 'items', 'label' => 'Results', 'type' => 'repeater', 'item_fields' => [
+                    ['name' => 'prefix', 'label' => 'Prefix', 'type' => 'text'],
+                    ['name' => 'value', 'label' => 'Value', 'type' => 'number'],
+                    ['name' => 'suffix', 'label' => 'Suffix', 'type' => 'text'],
+                    ['name' => 'label', 'label' => 'Label', 'type' => 'text'],
+                    ['name' => 'context', 'label' => 'Context', 'type' => 'textarea'],
+                    ['name' => 'url', 'label' => 'Link (optional)', 'type' => 'text'],
+                ]],
+            ],
+            self::Recognition => [
+                ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
+                ['name' => 'items', 'label' => 'Logos', 'type' => 'repeater', 'item_fields' => [
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text'],
+                    ['name' => 'image', 'label' => 'Logo URL', 'type' => 'text'],
+                ]],
             ],
         };
     }

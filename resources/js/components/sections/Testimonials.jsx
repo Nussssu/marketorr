@@ -15,7 +15,7 @@ export default function Testimonials({ content }) {
     return (
         <section className="bg-[var(--bg-soft)] section-pad">
             <div className="container-x">
-                <SectionLabel index="§" name={content?.heading || 'Testimonials'} />
+                <SectionLabel name={content?.heading || 'Testimonials'} />
                 <div className="mt-10 grid gap-6 lg:grid-cols-3">
                     {items.map((item, index) => (
                         <motion.figure

@@ -47,7 +47,7 @@ export default function AuditLogsIndex({ logs = [], filters = {}, stats = {} }) 
 
     return (
         <>
-            <Head title="Audit Logs — Marketorr Admin" />
+            <Head title="Audit Logs | Marketorr Admin" />
             <PageHeader
                 title="Audit logs"
                 subtitle="Chronological audit trail of customer inquiries, SMTP dispatches, system logs and administrative actions."

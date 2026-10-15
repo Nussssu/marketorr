@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
+        // Written by the theme script in the browser, read back so the server
+        // renders the visitor's theme; it is a plain preference, never secret.
+        $middleware->encryptCookies(except: ['theme']);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'super-admin' => EnsureUserIsSuperAdmin::class,

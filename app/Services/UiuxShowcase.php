@@ -143,7 +143,8 @@ class UiuxShowcase
     }
 
     /**
-     * Public URLs and intrinsic size of one export; null when it is not a readable image.
+     * Public URLs (on the configured asset URL) and intrinsic size of one
+     * export; null when it is not a readable image.
      *
      * `thumb` is the top of the screen from the project's `thumbs/` folder,
      * used wherever only a preview is shown, so the full-length page is only
@@ -161,13 +162,13 @@ class UiuxShowcase
             return null;
         }
 
-        $src = '/'.$publicDirectory.'/'.rawurlencode(basename($file)).'?v='.filemtime($file);
+        $src = PublicAsset::to($publicDirectory.'/'.rawurlencode(basename($file))).'?v='.filemtime($file);
         $thumbFile = dirname($file).'/thumbs/'.basename($file);
 
         return [
             'src' => $src,
             'thumb' => is_file($thumbFile)
-                ? '/'.$publicDirectory.'/thumbs/'.rawurlencode(basename($file)).'?v='.filemtime($thumbFile)
+                ? PublicAsset::to($publicDirectory.'/thumbs/'.rawurlencode(basename($file))).'?v='.filemtime($thumbFile)
                 : $src,
             'width' => $size[0],
             'height' => $size[1],

@@ -17,7 +17,7 @@ function FetchFromUrl() {
     };
 
     return (
-        <Panel title="Fetch from URL" description="Download a remote image straight into the library — useful for portfolio artwork.">
+        <Panel title="Fetch from URL" description="Download a remote image straight into the library, useful for portfolio artwork.">
             <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
                 <Field label="Image URL" error={errors.url} required className="md:col-span-2">
                     <Input
@@ -64,7 +64,7 @@ export default function MediaIndex({ media, categories = [] }) {
 
     return (
         <>
-            <Head title="Media — Marketorr Admin" />
+            <Head title="Media | Marketorr Admin" />
             <PageHeader title="Media" subtitle={`${rows.length} files. Uploads, fetched artwork and every replacement live here.`}>
                 <Button as="link" href="/admin/media/create">Upload media</Button>
             </PageHeader>
@@ -92,7 +92,7 @@ export default function MediaIndex({ media, categories = [] }) {
                     </div>
 
                     {visible.length === 0 ? (
-                        <EmptyState>No media yet — upload the first file or fetch one from a URL.</EmptyState>
+                        <EmptyState>No media yet, upload the first file or fetch one from a URL.</EmptyState>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[860px] text-left text-[13px]">
@@ -127,9 +127,9 @@ export default function MediaIndex({ media, categories = [] }) {
                                             </td>
                                             <td className="py-3 pr-4"><Badge tone="published">{medium.category}</Badge></td>
                                             <td className="max-w-[220px] truncate py-3 pr-4 text-[var(--mute)]" title={medium.usage_location ?? ''}>
-                                                {medium.usage_location ?? '—'}
+                                                {medium.usage_location ?? '-'}
                                             </td>
-                                            <td className="py-3 pr-4 text-[var(--mute)]">{medium.created_at ?? '—'}</td>
+                                            <td className="py-3 pr-4 text-[var(--mute)]">{medium.created_at ?? '-'}</td>
                                             <td className="py-3 text-right whitespace-nowrap">
                                                 <Link
                                                     href={`/admin/media/${medium.id}/edit`}

@@ -12,11 +12,10 @@ import MediaPlaceholder from '../../components/media/MediaPlaceholder';
 /**
  * Dedicated project page.
  *
- * Opens exactly like a sub-service page: the same colour-panel page cover on
- * click, then `WorkHero` — the sub-service hero scene, same planes, same
- * timings, same per-character title rise — carrying only the project's name.
+ * Opens with the colour-panel page cover on click, then `WorkHero` — the
+ * project's name over the work itself, shown clean in a large frame.
  *
- * Once the hero hands off, the written detail sits in the left column and the
+ * Below the hero, the written detail sits in the left column and the
  * project's own photographs run down the right. Everything in that detail is
  * transcribed from the project's published page on marketorr.com.bd (see
  * `Project::publicBrief()`); a project with no transcribed entry renders fewer
@@ -297,7 +296,7 @@ export default function CaseStudy({ project: p }) {
 
     return (
         <>
-            <Head title={`${p.title} — Marketorr`} />
+            <Head title={`${p.title} | Marketorr`} />
             <article className="bg-[var(--bg)] pb-28">
                 <WorkHero project={p} />
 

@@ -17,7 +17,7 @@ export default function Faq({ content }) {
     return (
         <section className="bg-[var(--bg)] section-pad">
             <div className="container-x max-w-3xl">
-                <SectionLabel index="§" name={content?.heading || 'FAQ'} />
+                <SectionLabel name={content?.heading || 'FAQ'} />
                 <dl className="mt-10 divide-y divide-[var(--line)] border-y border-[var(--line)]">
                     {items.map((item, index) => {
                         const open = openIndex === index;
@@ -36,11 +36,16 @@ export default function Faq({ content }) {
                                         <span className="font-display text-[16px] font-bold text-[var(--ink-strong)]">
                                             {item.question}
                                         </span>
-                                        <span
-                                            aria-hidden
-                                            className={`shrink-0 text-[18px] leading-none text-[var(--ink-faint)] transition-transform duration-[120ms] ease-out ${open ? 'rotate-45' : ''}`}
-                                        >
-                                            +
+                                        <span aria-hidden className="shrink-0 text-[var(--ink-faint)]">
+                                            {open ? (
+                                                <svg viewBox="0 0 12 12" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                                                    <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+                                                </svg>
+                                            ) : (
+                                                <svg viewBox="0 0 12 12" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                                                    <path d="M6 1.5v9M1.5 6h9" />
+                                                </svg>
+                                            )}
                                         </span>
                                     </button>
                                 </dt>

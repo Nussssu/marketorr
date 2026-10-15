@@ -165,7 +165,7 @@ function MenuEditor({ menu }) {
 export default function MenusIndex({ menus }) {
     return (
         <>
-            <Head title="Menus — Marketorr Admin" />
+            <Head title="Menus | Marketorr Admin" />
             <PageHeader
                 title="Menus"
                 subtitle="Navigation for the header and footer. Emptying a menu falls back to the built-in links."

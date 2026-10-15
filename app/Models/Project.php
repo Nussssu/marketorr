@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Services\PublicAsset;
 use App\Services\UiuxShowcase;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'slug', 'title', 'client', 'category_id', 'work_group', 'year', 'description',
@@ -83,7 +83,8 @@ class Project extends Model
 
     /**
      * Public URL for the cover image, whether stored on disk or a legacy
-     * path already living under `public/`.
+     * path already living under `public/`, built on the configured asset URL
+     * and pointing at the optimized copy when one exists.
      */
     public function imageUrl(): string
     {
@@ -94,31 +95,37 @@ class Project extends Model
             return '';
         }
 
-        if (str_starts_with($this->image_path, '/') || str_starts_with($this->image_path, 'http')) {
-            return $this->image_path;
-        }
-
-        if (file_exists(public_path('storage/'.$this->image_path))) {
-            return self::publicDiskUrl($this->image_path);
-        }
-
-        $legacyPath = 'images/work/'.basename($this->image_path);
-        if (file_exists(public_path($legacyPath))) {
-            return '/'.$legacyPath;
-        }
-
-        return self::publicDiskUrl($this->image_path);
+        return self::mediaUrl($this->image_path);
     }
 
     /**
-     * Root-relative URL for a file on the public disk, so cover images resolve
-     * the same way regardless of the configured `APP_URL`.
+     * A grid-sized copy of the cover for cards and menus, falling back to the
+     * cover itself.
+     */
+    public function thumbUrl(): string
+    {
+        $legacy = self::legacyPath($this->image_path);
+
+        return $legacy !== null ? (string) PublicAsset::thumb($legacy) : $this->imageUrl();
+    }
+
+    /**
+     * A phone-grid-sized (480px) copy of the cover, falling back like
+     * `thumbUrl()`.
+     */
+    public function thumbSmallUrl(): string
+    {
+        $legacy = self::legacyPath($this->image_path);
+
+        return $legacy !== null ? (string) PublicAsset::thumbSmall($legacy) : $this->imageUrl();
+    }
+
+    /**
+     * Public URL for a file on the public disk, on the configured asset URL.
      */
     public static function publicDiskUrl(string $path): string
     {
-        $url = Storage::disk('public')->url($path);
-
-        return parse_url($url, PHP_URL_PATH) ?: $url;
+        return PublicAsset::disk($path);
     }
 
     /**
@@ -145,6 +152,8 @@ class Project extends Model
             'tags' => $this->tags ?? [],
             'accent' => $this->accent,
             'image' => $this->imageUrl(),
+            'thumb' => $this->thumbUrl(),
+            'thumbSmall' => $this->thumbSmallUrl(),
             'imageAlt' => $this->image_alt,
             'metric' => $this->metric,
             'metricLabel' => $this->metric_label,
@@ -219,7 +228,7 @@ class Project extends Model
                             'slug' => $project->slug,
                             'name' => $project->title,
                             'accent' => $project->accent,
-                            'image' => $project->imageUrl(),
+                            'image' => $project->thumbUrl(),
                             'imageAlt' => $project->image_alt,
                             'href' => '/work/'.$project->slug,
                         ])
@@ -366,25 +375,46 @@ class Project extends Model
     }
 
     /**
-     * Resolve one case-study image path the same way a cover resolves: an
-     * absolute path or URL is taken as-is, an uploaded file comes off the
-     * public disk, and a legacy `public/images/work/...` file is served from
-     * where it already sits.
+     * Resolve a cover or case-study path: an absolute URL is taken as-is, a
+     * root-relative path resolves against the asset URL, a seeded file that
+     * also ships under `public/images/work/` is served from there (where its
+     * optimized copy lives), and anything else comes off the public disk.
      */
     public static function mediaUrl(string $path): string
     {
         if (str_starts_with($path, '/') || str_starts_with($path, 'http')) {
+            return (string) PublicAsset::url($path);
+        }
+
+        $legacy = self::legacyPath($path);
+
+        if ($legacy !== null && (PublicAsset::hasOptimized($legacy) || ! file_exists(public_path('storage/'.$path)))) {
+            return (string) PublicAsset::url($legacy);
+        }
+
+        return self::publicDiskUrl($path);
+    }
+
+    /**
+     * The root-relative `public/images/work/` copy of a seeded path, when that
+     * file ships with the site.
+     */
+    private static function legacyPath(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        if (str_starts_with($path, '/images/')) {
             return $path;
         }
 
-        if (file_exists(public_path('storage/'.$path))) {
-            return self::publicDiskUrl($path);
+        if (str_starts_with($path, '/') || str_starts_with($path, 'http')) {
+            return null;
         }
 
-        $legacyPath = 'images/work/'.basename($path);
+        $legacy = 'images/work/'.basename($path);
 
-        return file_exists(public_path($legacyPath))
-            ? '/'.$legacyPath
-            : self::publicDiskUrl($path);
+        return file_exists(public_path($legacy)) ? '/'.$legacy : null;
     }
 }

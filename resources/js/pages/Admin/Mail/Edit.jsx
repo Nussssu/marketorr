@@ -50,12 +50,12 @@ export default function MailEdit({ mail, encryptions, envMailer }) {
 
     return (
         <>
-            <Head title="Email & SMTP — Marketorr Admin" />
+            <Head title="Email & SMTP | Marketorr Admin" />
             <PageHeader
                 title="Email & SMTP"
                 subtitle={data.enabled
                     ? 'Stored SMTP settings are in use.'
-                    : `Disabled — mail is going through the .env mailer (${envMailer}).`}
+                    : `Disabled: mail is going through the .env mailer (${envMailer}).`}
             />
 
             <MailNav activeTab="smtp" />

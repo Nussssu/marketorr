@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Hidden files (.env, .git, ...) are never served, wherever they sit —
+    # except /.well-known/, which HTTPS certificate renewal relies on.
+    RewriteCond %{REQUEST_URI} !^/\.well-known/
+    RewriteRule (^|/)\. - [F,L]
+
+    # Everything else is answered from public/, where Laravel's own .htaccess
+    # takes over (static files directly, the rest through index.php).
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Without mod_rewrite nothing can be served safely from here.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

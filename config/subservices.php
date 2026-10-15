@@ -17,12 +17,11 @@
 | waiting for the photograph that actually belongs to that discipline; the
 | path each one used before is kept in the comment above it.
 |
-| `work` is the pair of real-project slots on the dedicated page, one per
-| piece of Marketorr work in that exact discipline. A slot with `src` set to
-| null renders as a clean empty frame holding that space; point `src` at an
-| image and that same slot renders the photograph instead, with no other
-| change needed anywhere. `title` is a note for whoever fills the slot - it
-| is never shown on the page.
+| `related_work` picks the real Marketorr work shown on the dedicated page
+| (see `App\Services\SubServiceRelatedWork`). `pin` lists project slugs that
+| always lead; `match` lists tags (Branding projects) or showcase services
+| and disciplines (UI/UX projects) that make a project related. The section
+| tops up from the rest of the same portfolio so it is never empty.
 |
 */
 
@@ -37,69 +36,45 @@ return [
                 'slug' => 'brand-strategy',
                 'name' => 'Brand Strategy',
                 'short' => 'Positioning that makes choosing you obvious.',
-                'description' => 'Research-led positioning, audience insight and messaging hierarchies that give every brand decision a sharp strategic backbone — so the creative that follows has something true to stand on.',
+                'description' => 'Research-led positioning, audience insight and messaging hierarchies that give every brand decision a sharp strategic backbone, so the creative that follows has something true to stand on.',
                 'deliverables' => ['Positioning statement', 'Audience & competitor audit', 'Messaging hierarchy', 'Verbal identity starter'],
                 // Previously '/images/work/nature-to-near.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'NTNB Agro visual identity cover from the Marketorr portfolio',
                 'accent' => '#891FFB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Positioning & messaging deck',
-                        'alt' => 'Brand strategy positioning and messaging work by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Audience & competitor audit',
-                        'alt' => 'Brand strategy audience and competitor audit by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Visual Identity', 'Brand Identity', 'Campaign'],
+                    'pin' => [],
                 ],
             ],
             [
                 'slug' => 'brand-identity-design',
                 'name' => 'Brand Identity Design',
                 'short' => 'Visual identities with gravity.',
-                'description' => 'Logo systems, typography, color and art direction composed into a distinctive identity toolkit — built to stay recognizable from favicon to facade.',
+                'description' => 'Logo systems, typography, color and art direction composed into a distinctive identity toolkit, built to stay recognizable from favicon to facade.',
                 'deliverables' => ['Logo suite & lockups', 'Typography system', 'Color palette', 'Art direction'],
                 // Previously '/images/work/imperial-jute-brand.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Imperial Jute minimal logo and brand cover',
                 'accent' => '#507AF4',
-                'work' => [
-                    [
-                        'src' => '/images/work/dusty-vision-logo.png',
-                        'title' => 'Primary logo & mark system',
-                        'alt' => 'Dusty Vision 3D logo mark from the Marketorr brand identity portfolio',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Identity across collateral',
-                        'alt' => 'Brand identity applied across print and digital collateral by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Brand Identity', 'Visual Identity', 'Logo Design'],
+                    'pin' => ['medica-lifecare-brand-identity', 'dusty-vision'],
                 ],
             ],
             [
                 'slug' => 'rebranding',
                 'name' => 'Rebranding',
                 'short' => 'New chapters, zero confusion.',
-                'description' => 'End-to-end rebrands — audit, strategy, identity and rollout planning — that move market perception without losing the equity you have already earned.',
+                'description' => 'End-to-end rebrands (audit, strategy, identity and rollout planning) that move market perception without losing the equity you have already earned.',
                 'deliverables' => ['Brand audit', 'Migration strategy', 'Refreshed identity', 'Launch rollout kit'],
                 // Previously '/images/work/sabdita-fashion.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Sabdita Fashion rebranding cover',
                 'accent' => '#1BE2EB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Before / after identity',
-                        'alt' => 'Rebranding before and after identity comparison by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Rollout across touchpoints',
-                        'alt' => 'Rebranding rollout across brand touchpoints by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Rebranding'],
+                    'pin' => [],
                 ],
                 'case_study' => [
                     'meta' => 'Published November 2023 · Crafted in Illustrator, Photoshop and After Effects',
@@ -107,7 +82,7 @@ return [
                         [
                             'eyebrow' => 'About the project',
                             'heading' => 'A women\'s clothing brand, reimagined',
-                            'body' => 'Tasked with rebranding Sabdita Fashion, a women\'s clothing brand, the goal was to infuse the identity with modern minimalism — reflecting the elegance of today\'s fashion-forward woman.',
+                            'body' => 'Tasked with rebranding Sabdita Fashion, a women\'s clothing brand, the goal was to infuse the identity with modern minimalism, reflecting the elegance of today\'s fashion-forward woman.',
                             'images' => [
                                 ['src' => '/images/work/sabdita/about.jpg', 'alt' => 'About Sabdita Fashion'],
                                 ['src' => '/images/work/sabdita/logo-presentation.jpg', 'alt' => 'Sabdita Fashion logo presentation'],
@@ -125,7 +100,7 @@ return [
                         [
                             'eyebrow' => 'Audience',
                             'heading' => 'Made for the fashion-forward woman',
-                            'body' => 'Every choice speaks to a style-conscious female audience — elegance expressed through restraint, in line with the brand\'s vision of empowering women through fashion.',
+                            'body' => 'Every choice speaks to a style-conscious female audience: elegance expressed through restraint, in line with the brand\'s vision of empowering women through fashion.',
                             'images' => [],
                         ],
                         [
@@ -139,7 +114,7 @@ return [
                         [
                             'eyebrow' => 'Final identity',
                             'heading' => 'Minimalist beauty, explained',
-                            'body' => 'The new logo encapsulates minimalist beauty — a mark whose concept, construction and backgrounds are documented as part of the system.',
+                            'body' => 'The new logo encapsulates minimalist beauty: a mark whose concept, construction and backgrounds are documented as part of the system.',
                             'images' => [
                                 ['src' => '/images/work/sabdita/logo-explainer.jpg', 'alt' => 'Sabdita Fashion logo concept explanation'],
                                 ['src' => '/images/work/sabdita/logo-backgrounds.jpg', 'alt' => 'Sabdita Fashion logo on different backgrounds'],
@@ -151,14 +126,14 @@ return [
                             'body' => 'Logo animations bring the mark to life across screens and social.',
                             'images' => [
                                 ['src' => '/images/work/sabdita/logo-intro-animation.gif', 'alt' => 'Sabdita Fashion logo intro animation'],
-                                ['src' => '/images/work/sabdita/logo-motion-s.gif', 'alt' => 'Sabdita Fashion S logo animation'],
-                                ['src' => '/images/work/sabdita/logo-animation.gif', 'alt' => 'Sabdita Fashion animated logo'],
+                                ['src' => '/images/work/sabdita/logo-motion-s.webp', 'alt' => 'Sabdita Fashion S logo animation'],
+                                ['src' => '/images/work/sabdita/logo-animation.webp', 'alt' => 'Sabdita Fashion animated logo'],
                             ],
                         ],
                         [
                             'eyebrow' => 'Applications',
                             'heading' => 'One system, every touchpoint',
-                            'body' => 'The theme extends across all branding elements — stationery, packaging and out-of-home — reinforcing Sabdita\'s presence in the women\'s fashion sector.',
+                            'body' => 'The theme extends across all branding elements (stationery, packaging and out-of-home), reinforcing Sabdita\'s presence in the women\'s fashion sector.',
                             'images' => [
                                 ['src' => '/images/work/sabdita/thank-you-card.jpg', 'alt' => 'Sabdita Fashion thank you card design'],
                                 ['src' => '/images/work/sabdita/envelope.jpg', 'alt' => 'Sabdita Fashion envelope design'],
@@ -181,69 +156,45 @@ return [
                 'slug' => 'packaging-design',
                 'name' => 'Packaging Design',
                 'short' => 'Shelf presence that sells.',
-                'description' => 'Structural thinking plus standout surface design for physical products — from dielines to shelf-blocking systems that convert at a glance.',
+                'description' => 'Structural thinking plus standout surface design for physical products, from dielines to shelf-blocking systems that convert at a glance.',
                 'deliverables' => ['Structural concepts', 'Surface design system', 'Print-ready dielines', 'Mockups & renders'],
                 // Previously '/images/work/commercial-cleaning-seo.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
-                'imageAlt' => 'Product packaging in hand — spray and pump bottles on shelf',
+                'imageAlt' => 'Product packaging in hand, spray and pump bottles on shelf',
                 'accent' => '#891FFB',
-                'work' => [
-                    [
-                        'src' => '/images/work/dusty-vision-logo.png',
-                        'title' => 'Primary pack & label',
-                        'alt' => 'Dusty Vision 3D logo mark from the Marketorr packaging design portfolio',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Shelf & unboxing mockups',
-                        'alt' => 'Packaging design shelf presence and unboxing mockups by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Packaging'],
+                    'pin' => [],
                 ],
             ],
             [
                 'slug' => 'motion-branding',
                 'name' => 'Motion Branding',
                 'short' => 'Identities that move.',
-                'description' => 'Logo animations, kinetic typography and motion principles that give your brand a living rhythm — recognizable across video, social and product.',
+                'description' => 'Logo animations, kinetic typography and motion principles that give your brand a living rhythm: recognizable across video, social and product.',
                 'deliverables' => ['Motion principles', 'Logo animation suite', 'Kinetic type presets', 'Handoff files (Lottie/MP4)'],
                 // Previously '/images/work/dusty-vision.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Dusty Vision visual identity cover',
                 'accent' => '#507AF4',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Animated logo reveal',
-                        'alt' => 'Motion branding animated logo reveal by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Motion system for social',
-                        'alt' => 'Motion branding social media motion system by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => [],
+                    'pin' => ['amanah-global-network', 'virgin-trend', 'city-online-brand-design', 'sabdita-fashion'],
                 ],
             ],
             [
                 'slug' => 'brand-guidelines',
                 'name' => 'Brand Guidelines',
                 'short' => 'Consistency, documented.',
-                'description' => 'Living guideline systems — rules, examples, templates and governance — so every team and vendor ships on-brand without guesswork.',
+                'description' => 'Living guideline systems (rules, examples, templates and governance) so every team and vendor ships on-brand without guesswork.',
                 'deliverables' => ['Guideline book', "Do & don't library", 'Template starter kit', 'Governance checklist'],
                 // Previously '/images/work/virgin-trend.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Virgin Trend fashion brand identity cover',
                 'accent' => '#1BE2EB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Guidelines — logo rules',
-                        'alt' => 'Brand guidelines spread covering logo usage rules by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Guidelines — colour & type',
-                        'alt' => 'Brand guidelines spread covering colour and typography by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Identity Guidelines', 'Brand Identity'],
+                    'pin' => [],
                 ],
             ],
         ],
@@ -264,17 +215,9 @@ return [
                 'image' => null,
                 'imageAlt' => 'City Online website UI design case study cover',
                 'accent' => '#891FFB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Desktop homepage design',
-                        'alt' => 'Website UI/UX desktop homepage design by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Responsive page set',
-                        'alt' => 'Website UI/UX responsive page set by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Website UI/UX Design', 'Website Design'],
+                    'pin' => [],
                 ],
             ],
             [
@@ -287,40 +230,24 @@ return [
                 'image' => null,
                 'imageAlt' => 'Photo Fix Zone mobile app interface on a handset',
                 'accent' => '#507AF4',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Core app screens',
-                        'alt' => 'Mobile app UI/UX core screen designs by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Key journey flows',
-                        'alt' => 'Mobile app UI/UX key user journey flows by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Responsive Design'],
+                    'pin' => [],
                 ],
             ],
             [
                 'slug' => 'saas-product-design',
                 'name' => 'SaaS Product Design',
                 'short' => 'Complex products, made clear.',
-                'description' => 'Dashboards, workflows and data-dense SaaS interfaces designed for clarity — plus scalable component systems your team can build on.',
+                'description' => 'Dashboards, workflows and data-dense SaaS interfaces designed for clarity, plus scalable component systems your team can build on.',
                 'deliverables' => ['Workflow & IA maps', 'Product UI screens', 'Component library', 'Data-viz patterns'],
                 // Previously '/images/work/un-point.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Engineering consulting firm visual identity cover',
                 'accent' => '#1BE2EB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Dashboard interface',
-                        'alt' => 'SaaS product design dashboard interface by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Data & settings screens',
-                        'alt' => 'SaaS product design data and settings screens by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Product UI/UX'],
+                    'pin' => [],
                 ],
             ],
             [
@@ -331,19 +258,11 @@ return [
                 'deliverables' => ['Research plan & scripts', 'Usability test reports', 'Journey maps', 'Prioritized roadmap'],
                 // Previously '/images/work/imperial-jute-seo.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
-                'imageAlt' => 'Research and analytics session — data boards under review',
+                'imageAlt' => 'Research and analytics session, data boards under review',
                 'accent' => '#891FFB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Findings & personas',
-                        'alt' => 'UX research findings and personas by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Journey map & insights',
-                        'alt' => 'UX research journey map and insights by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Wireframes', 'Moodboard'],
+                    'pin' => [],
                 ],
             ],
             [
@@ -354,42 +273,26 @@ return [
                 'deliverables' => ['Lo-fi wireframes', 'Clickable prototypes', 'Test & iterate cycles', 'Dev-ready specs'],
                 // Previously '/images/work/animateuix.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
-                'imageAlt' => 'AnimateUIX prototype in progress — screens wired end to end',
+                'imageAlt' => 'AnimateUIX prototype in progress, screens wired end to end',
                 'accent' => '#507AF4',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Low-fidelity wireframes',
-                        'alt' => 'Wireframing low-fidelity wireframe set by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Clickable prototype flow',
-                        'alt' => 'Prototyping clickable prototype flow by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Wireframes', 'Prototype'],
+                    'pin' => [],
                 ],
             ],
             [
                 'slug' => 'design-system',
                 'name' => 'Design System',
                 'short' => 'One language for product.',
-                'description' => 'Token-based design systems — foundations, components, patterns and documentation — that keep quality high and shipping fast as teams grow.',
+                'description' => 'Token-based design systems (foundations, components, patterns and documentation) that keep quality high and shipping fast as teams grow.',
                 'deliverables' => ['Design tokens', 'Component library', 'Usage documentation', 'Governance model'],
                 // Previously '/images/work/ecohub-essentials.jpg'. Upload target: 16:10, 1600x1000.
                 'image' => null,
                 'imageAlt' => 'Ecohub Essentials component library applied across a storefront',
                 'accent' => '#1BE2EB',
-                'work' => [
-                    [
-                        'src' => null,
-                        'title' => 'Component library',
-                        'alt' => 'Design system component library overview by Marketorr',
-                    ],
-                    [
-                        'src' => null,
-                        'title' => 'Tokens, states & docs',
-                        'alt' => 'Design system tokens, states and documentation by Marketorr',
-                    ],
+                'related_work' => [
+                    'match' => ['Design System', 'Style Guide', 'Components'],
+                    'pin' => [],
                 ],
             ],
         ],

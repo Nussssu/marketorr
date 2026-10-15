@@ -89,7 +89,7 @@ function SectionCard({ page, section, index, count, onMove, onDelete }) {
                 <form onSubmit={submit} className="border-t border-[var(--line)] p-5">
                     {section.dataDriven && (
                         <p className="mb-5 rounded-lg border border-[#507AF4]/30 bg-[#507AF4]/10 px-4 py-3 text-[12px] text-[var(--mute)]">
-                            This section draws its own content from the database — the fields below only set the
+                            This section draws its own content from the database, the fields below only set the
                             surrounding copy.
                         </p>
                     )}
@@ -189,9 +189,9 @@ export default function PageBuilder({ page, sections, palette }) {
 
     return (
         <>
-            <Head title={`${page.title} sections — Marketorr Admin`} />
+            <Head title={`${page.title} sections | Marketorr Admin`} />
             <PageHeader
-                title={`${page.title} — sections`}
+                title={`${page.title}: sections`}
                 subtitle="The order here is the order on the page."
             >
                 <Button as="link" href={`/admin/pages/${page.id}/edit`} variant="secondary">Page & SEO</Button>
@@ -201,7 +201,7 @@ export default function PageBuilder({ page, sections, palette }) {
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-4 lg:col-span-2">
                     {rows.length === 0 ? (
-                        <Panel><EmptyState>No sections yet — add the first one.</EmptyState></Panel>
+                        <Panel><EmptyState>No sections yet, add the first one.</EmptyState></Panel>
                     ) : (
                         rows.map((section, index) => (
                             <SectionCard

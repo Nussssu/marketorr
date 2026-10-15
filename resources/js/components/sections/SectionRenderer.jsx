@@ -11,9 +11,13 @@ import Features from './Features';
 import Hero from './Hero';
 import Marquee from './Marquee';
 import OurWork from './OurWork';
+import Process from './Process';
+import Recognition from './Recognition';
+import Results from './Results';
 import RichText from './RichText';
 import Services from './Services';
 import Testimonials from './Testimonials';
+import UiuxWork from './UiuxWork';
 
 /**
  * How each widget is wrapped for scroll animation. The three exceptions are
@@ -21,8 +25,8 @@ import Testimonials from './Testimonials';
  *
  * - `none` for Hero: it owns the opening frame and its own parallax, and a
  *   scene that animated in on load would fight both.
- * - `none` for Our Work: it drives a sticky scroll stage, and a transformed
- *   ancestor would move its supposedly fixed layer with the page.
+ * - `none` for Our Work, UI/UX Work and Process: each drives a sticky scroll stage, and a
+ *   transformed ancestor would move its supposedly fixed layer with the page.
  * - `flat` for Contact: the office map does not survive a 3D ancestor.
  */
 const SCENE = { None: 'none', Depth: 'depth', Flat: 'flat' };
@@ -38,7 +42,12 @@ const WIDGETS = {
     about: {
         scene: SCENE.Depth,
         render: (section, { standalone, compactTop }) => (
-            <About content={section.content} heroHeading={standalone} compactTop={compactTop} />
+            <About
+                content={section.content}
+                variant={standalone ? 'hero' : 'manifesto'}
+                heroHeading={standalone}
+                compactTop={compactTop}
+            />
         ),
     },
     services: {
@@ -53,6 +62,10 @@ const WIDGETS = {
             <OurWork glow={fx.barGlow} projects={props.featuredProjects ?? []} />
         ),
     },
+    uiux_work: {
+        scene: SCENE.None,
+        render: (section, { props }) => <UiuxWork projects={props.uiuxShowcase ?? []} />,
+    },
     contact: {
         scene: SCENE.Flat,
         render: (section, { standalone }) => <Contact heroHeading={standalone} />,
@@ -62,6 +75,9 @@ const WIDGETS = {
     testimonials: { scene: SCENE.Depth, render: (section) => <Testimonials content={section.content} /> },
     faq: { scene: SCENE.Depth, render: (section) => <Faq content={section.content} /> },
     cta: { scene: SCENE.Depth, render: (section) => <Cta content={section.content} /> },
+    process: { scene: SCENE.None, render: (section) => <Process content={section.content} /> },
+    results: { scene: SCENE.Depth, render: (section) => <Results content={section.content} /> },
+    recognition: { scene: SCENE.Depth, render: (section) => <Recognition content={section.content} /> },
 };
 
 /**

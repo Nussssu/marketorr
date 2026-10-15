@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from './ui';
+import BrandMark from '../ui/BrandMark';
 
 export function getFormattedDate() {
     return new Intl.DateTimeFormat('en-US', {
@@ -243,11 +244,7 @@ export default function EmailPreviewModal({ open, template, onClose }) {
                             {/* Header Agency Branding */}
                             <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
                                 <div className="flex items-center gap-2.5">
-                                    <span className="flex h-5 items-end gap-[2.5px]" aria-hidden="true">
-                                        <span className="h-2.5 w-[3.5px] rounded-[1.5px] bg-[#891FFB]" />
-                                        <span className="h-4 w-[3.5px] rounded-[1.5px] bg-[#507AF4]" />
-                                        <span className="h-5 w-[3.5px] rounded-[1.5px] bg-[#1BE2EB]" />
-                                    </span>
+                                    <BrandMark size="1.25rem" />
                                     <span className="font-display text-[15px] font-extrabold uppercase tracking-tight text-slate-900">
                                         {siteNameUpper}<span className="text-[#507AF4]">.</span>
                                     </span>

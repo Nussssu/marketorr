@@ -99,7 +99,7 @@ export default function ServicesTransition() {
 
             <div className="container-x relative flex flex-col items-center text-center">
                 <div className="flex justify-center">
-                    <SectionLabel index="03" name="WHERE TO NEXT" />
+                    <SectionLabel name="WHERE TO NEXT" />
                 </div>
 
                 <motion.div
@@ -127,7 +127,7 @@ export default function ServicesTransition() {
                     {...motionProps({ y: copyY })}
                 >
                     Two disciplines, two dedicated worlds. See how the strategy, the craft and the
-                    decisions behind each one actually come together — then bring us the thing you
+                    decisions behind each one actually come together, then bring us the thing you
                     are trying to build.
                 </motion.p>
 
@@ -138,10 +138,10 @@ export default function ServicesTransition() {
                     <div className="services-transition__cta relative">
                         <span className="services-transition__halo" aria-hidden />
                         <MagneticButton>
-                            <GradientButton href="/services/branding">Explore Branding</GradientButton>
+                            <GradientButton href="/services#branding">Explore Branding</GradientButton>
                         </MagneticButton>
                     </div>
-                    <GradientButton href="/services/ui-ux" variant="ghost">Explore UI/UX</GradientButton>
+                    <GradientButton href="/services#ui-ux" variant="ghost">Explore UI/UX</GradientButton>
                 </motion.div>
             </div>
         </section>

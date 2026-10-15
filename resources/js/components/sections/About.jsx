@@ -1,70 +1,143 @@
 import { Link, usePage } from '@inertiajs/react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
+import CountUp from '../motion/CountUp';
 import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
 import ScrollHeading from '../motion/ScrollHeading';
 import Stage from '../decor/Stage';
 
-/** Phones count up once; desktop keeps replaying on every viewport re-entry. */
-const COUNTER_ONCE_QUERY = '(max-width: 767px)';
-
-function Counter({ to, suffix = '', decimals = 0 }) {
-    const ref = useRef(null);
-    // Each frame of the count sets React state, so a replay re-renders four
-    // counters at 60fps for 1.6s. That is affordable once, but not every time
-    // a thumb scrolls the section back into view on a phone.
-    const [once] = useState(
-        () => typeof window !== 'undefined' && window.matchMedia(COUNTER_ONCE_QUERY).matches,
-    );
-    const inView = useInView(ref, { margin: '-15% 0px', once });
-    const reduce = useReducedMotion();
-    // Never render zero: the pre-animation state is the final value, and each
-    // replay counts up from a small non-zero floor instead of resetting.
-    const [val, setVal] = useState(to);
-
-    useEffect(() => {
-        // Leaving the viewport keeps the final value visible; entering replays.
-        if (!inView) return;
-        const floor = Math.min(to, Math.max(1, Math.floor(to * 0.08)));
-        if (reduce || floor >= to) {
-            // Intentional: jump straight to final value when motion is reduced
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setVal(to);
-            return;
-        }
-        let raf = 0;
-        const start = performance.now();
-        const dur = 1600;
-        const tick = (t) => {
-            const p = Math.min(1, (t - start) / dur);
-            const eased = 1 - Math.pow(2, -10 * p);
-            setVal(floor + (to - floor) * (p === 1 ? 1 : eased));
-            if (p < 1) raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(raf);
-    }, [inView, to, reduce]);
-
-    return (
-        <span ref={ref}>
-            {val.toFixed(decimals)}
-            {suffix}
-        </span>
-    );
-}
-
 /** Accent bar under each stat block, repeating if more metrics are configured. */
 const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
 
+function MetricsGrid({ metrics }) {
+    return (
+        <div className="mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--line)] lg:grid-cols-4">
+            {metrics.map((m, i) => (
+                <div key={m.label} className="bg-[var(--surface)] p-7 md:p-9">
+                    <p className="font-display text-4xl font-extrabold text-[var(--ink-strong)] md:text-5xl">
+                        <CountUp to={Number(m.value)} suffix={m.suffix ?? ''} />
+                    </p>
+                    <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{m.label}</p>
+                    <span
+                        className="mt-4 block h-[2px] w-10"
+                        style={{ background: METRIC_ACCENTS[i % METRIC_ACCENTS.length] }}
+                        aria-hidden
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+/** How many closing words of the manifesto take the brand gradient once lit. */
+const MANIFESTO_ACCENT_WORDS = 4;
+
 /**
- * @param {{ heroHeading?: boolean, compactTop?: boolean, content?: { text?: string, metrics?: Array<object> } }} props
- *   Content from the page's About section, falling back to Settings.
+ * One word of the manifesto. It owns its slice of the scroll range, so the
+ * statement lights up word by word as the reader moves through it rather than
+ * all at once.
  */
-export default function About({ heroHeading = false, compactTop = false, content }) {
+function ManifestoWord({ word, progress, start, end, accent }) {
+    const opacity = useTransform(progress, [start, end], [0.16, 1]);
+
+    return (
+        <motion.span style={{ opacity }} className={accent ? 'text-gradient' : undefined}>
+            {word}{' '}
+        </motion.span>
+    );
+}
+
+/**
+ * The landing page's About: the agency statement itself, set large and lit
+ * word by word on scroll. The About page opens with the headline version
+ * instead, so the two no longer repeat each other.
+ */
+function ManifestoAbout({ text, metrics, compactTop }) {
+    const ref = useRef(null);
+    const reduce = useReducedMotion();
+    const { scrollYProgress } = useScroll({ target: ref, offset: ['start 85%', 'end 45%'] });
+    const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+    const accentFrom = words.length - MANIFESTO_ACCENT_WORDS;
+
+    return (
+        <section
+            id="about"
+            className={`noise relative overflow-hidden bg-[var(--bg-soft)] ${compactTop ? 'pb-[clamp(5rem,9vw,9rem)] pt-16 sm:pt-[clamp(5rem,9vw,9rem)]' : 'section-pad'}`}
+        >
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+                <Stage variant="about" />
+            </div>
+
+            <div className="container-x relative">
+                <SectionLabel name="ABOUT" />
+                <h2 className="sr-only">About Marketorr</h2>
+
+                <p className="sr-only">{text}</p>
+                <p
+                    ref={ref}
+                    aria-hidden
+                    className="mt-10 max-w-[68rem] font-display text-[clamp(1.6rem,3.4vw,3.1rem)] font-bold leading-[1.14] tracking-[-0.025em] text-[var(--ink-strong)]"
+                >
+                    {words.map((word, i) =>
+                        reduce ? (
+                            <span key={i} className={i >= accentFrom ? 'text-gradient' : undefined}>
+                                {word}{' '}
+                            </span>
+                        ) : (
+                            <ManifestoWord
+                                key={i}
+                                word={word}
+                                progress={scrollYProgress}
+                                start={i / words.length}
+                                end={(i + 1) / words.length}
+                                accent={i >= accentFrom}
+                            />
+                        ),
+                    )}
+                </p>
+
+                <div className="mt-10 flex flex-wrap items-center justify-between gap-6">
+                    <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em]">
+                        <span className="text-[#891FFB]">Creative thinking. </span>
+                        <span className="text-[#507AF4]">Digital execution. </span>
+                        <span className="text-[#1BE2EB]">Measurable results.</span>
+                    </p>
+                    <div className="flex flex-wrap gap-8">
+                        <Link href="/about" data-cursor="explore" className="link-underline btn-press inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
+                            Our story →
+                        </Link>
+                        <Link href="/services" data-cursor="explore" className="link-underline btn-press inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
+                            Explore our services →
+                        </Link>
+                    </div>
+                </div>
+
+                <MetricsGrid metrics={metrics} />
+            </div>
+        </section>
+    );
+}
+
+/**
+ * @param {{
+ *   variant?: 'hero'|'manifesto',
+ *   heroHeading?: boolean,
+ *   compactTop?: boolean,
+ *   content?: { text?: string, metrics?: Array<object> },
+ * }} props
+ *   Content from the page's About section, falling back to Settings.
+ *   `manifesto` is the landing page's scroll-lit statement; `hero` is the
+ *   headline version the About page opens with.
+ */
+export default function About({ variant = 'hero', heroHeading = false, compactTop = false, content }) {
     const { settings } = usePage().props;
     const text = content?.text || settings.about.text;
     const metrics = content?.metrics?.length ? content.metrics : settings.about.metrics;
+
+    if (variant === 'manifesto') {
+        return <ManifestoAbout text={text} metrics={metrics} compactTop={compactTop} />;
+    }
 
     return (
         <section
@@ -80,15 +153,15 @@ export default function About({ heroHeading = false, compactTop = false, content
             </div>
 
             <div className="container-x relative">
-                <SectionLabel index="01" name="ABOUT" />
+                <SectionLabel name="ABOUT" />
                 <div className="mt-10 grid gap-12 lg:grid-cols-12">
                     <div className="lg:col-span-7">
                         <ScrollHeading enabled={heroHeading}>
                             <RevealText
                                 as="h2"
                                 className="display-lg uppercase text-[var(--ink-strong)]"
-                                lines={['We build brands', 'and digital', 'experiences', 'that move people.']}
-                                highlightedLines={[3]}
+                                lines={['We build brands', 'that move people.']}
+                                highlightedLines={[1]}
                             />
                         </ScrollHeading>
                         <motion.div
@@ -122,21 +195,7 @@ export default function About({ heroHeading = false, compactTop = false, content
                     </div>
                 </div>
 
-                <div className="mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--line)] lg:grid-cols-4">
-                    {metrics.map((m, i) => (
-                        <div key={m.label} className="bg-[var(--surface)] p-7 md:p-9">
-                            <p className="font-display text-4xl font-extrabold text-[var(--ink-strong)] md:text-5xl">
-                                <Counter to={Number(m.value)} suffix={m.suffix ?? ''} />
-                            </p>
-                            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{m.label}</p>
-                            <span
-                                className="mt-4 block h-[2px] w-10"
-                                style={{ background: METRIC_ACCENTS[i % METRIC_ACCENTS.length] }}
-                                aria-hidden
-                            />
-                        </div>
-                    ))}
-                </div>
+                <MetricsGrid metrics={metrics} />
             </div>
         </section>
     );

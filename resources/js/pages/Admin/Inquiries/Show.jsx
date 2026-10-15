@@ -16,7 +16,7 @@ function Detail({ label, children }) {
     return (
         <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{label}</p>
-            <p className="mt-1 break-words text-[14px] text-[var(--ink)]">{children ?? '—'}</p>
+            <p className="mt-1 break-words text-[14px] text-[var(--ink)]">{children ?? '-'}</p>
         </div>
     );
 }
@@ -43,11 +43,11 @@ export default function InquiryShow({ inquiry, statuses }) {
         });
     };
 
-    const mailto = `mailto:${inquiry.email}?subject=${encodeURIComponent(`Re: your project inquiry — ${inquiry.type}`)}`;
+    const mailto = `mailto:${inquiry.email}?subject=${encodeURIComponent(`Re: your project inquiry: ${inquiry.type}`)}`;
 
     return (
         <>
-            <Head title={`${inquiry.name} — Marketorr Admin`} />
+            <Head title={`${inquiry.name} | Marketorr Admin`} />
             <PageHeader title={inquiry.name} subtitle={`Received ${inquiry.createdAt}`}>
                 <Button as="link" href="/admin/inquiries" variant="secondary">← All inquiries</Button>
                 <Button as="a" href={mailto}>Reply by email ↗</Button>

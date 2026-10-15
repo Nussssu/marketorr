@@ -23,3 +23,32 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# ---------------------------------------------------------------------------
+# Performance: compression and browser caching (Apache / LiteSpeed). Each block
+# only applies when its module is available, so other hosts are unaffected;
+# on nginx, configure the equivalent in the server block.
+# ---------------------------------------------------------------------------
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml application/javascript text/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/javascript text/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Vite build output is content-hashed: a new build always gets new URLs.
+    # Asset URLs are built on APP_URL, so a visitor arriving on another host
+    # variant (www vs bare domain) loads these cross-origin; module scripts
+    # and fonts then need CORS, and these files are public anyway.
+    <If "%{REQUEST_URI} =~ m#^/build/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header set Access-Control-Allow-Origin "*"
+    </If>
+    # Images, fonts and video are not hashed, so they are cached for 30 days.
+    <If "%{REQUEST_URI} =~ m#\.(webp|avif|png|jpe?g|gif|svg|ico|woff2|mp4)$#i && %{REQUEST_URI} !~ m#^/build/#">
+        Header set Cache-Control "public, max-age=2592000"
+    </If>
+</IfModule>

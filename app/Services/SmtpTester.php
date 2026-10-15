@@ -40,7 +40,7 @@ class SmtpTester
 
             Mail::mailer('smtp')->raw(
                 "This is a test message from the {$siteName} admin panel. If you are reading it, your SMTP settings work.",
-                fn ($message) => $message->to($recipient)->subject("SMTP test — {$siteName}"),
+                fn ($message) => $message->to($recipient)->subject("SMTP test: {$siteName}"),
             );
 
             $result = ['ok' => true, 'message' => "Test email sent to {$recipient}."];

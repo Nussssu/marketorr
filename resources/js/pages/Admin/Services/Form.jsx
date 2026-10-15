@@ -53,7 +53,7 @@ export default function ServiceForm({ service, statuses }) {
 
     return (
         <>
-            <Head title={`${isEdit ? 'Edit' : 'New'} service — Marketorr Admin`} />
+            <Head title={`${isEdit ? 'Edit' : 'New'} service | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${service.name}` : 'New service'}
                 subtitle="Fields map one-to-one onto the public service page."
@@ -119,7 +119,7 @@ export default function ServiceForm({ service, statuses }) {
                         {errors.deliverables && <p className="mt-2 text-[12px] text-[#ff6b6b]">{errors.deliverables}</p>}
                     </Panel>
 
-                    <Panel title="Outcomes" description="Headline stat blocks — value and label.">
+                    <Panel title="Outcomes" description="Headline stat blocks, value and label.">
                         <RepeatableRows
                             values={data.outcomes}
                             onChange={(v) => setData('outcomes', v)}

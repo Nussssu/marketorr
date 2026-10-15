@@ -1,12 +1,9 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useThemeMotion } from '../../lib/theme';
+import { MARK, markBarStyle, markGap } from '../../lib/tokens';
 
-/** The three bars of the Marketorr mark: colour and height (px). */
-const BARS = [
-    ['#891FFB', 140],
-    ['#507AF4', 210],
-    ['#1BE2EB', 300],
-];
+/** Height of the tallest bar: the logo's proportions set the rest. */
+const MARK_SIZE = 'clamp(200px, 26vw, 300px)';
 
 /**
  * The Marketorr mark's three bars, rising from the bottom edge and drifting
@@ -23,14 +20,22 @@ export default function BrandBars({ className = '' }) {
     const fx = useThemeMotion();
 
     return (
-        <div className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center gap-6 opacity-30 ${className}`.trimEnd()} aria-hidden>
-            {BARS.map(([color, height], index) => (
+        <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center opacity-30 ${className}`.trimEnd()}
+            style={{ gap: markGap(MARK_SIZE) }}
+            aria-hidden
+        >
+            {MARK.colors.map((color, index) => (
                 <motion.span
                     key={color}
                     animate={reduce ? undefined : { y: [20 * fx.float, -10 * fx.float, 20 * fx.float] }}
                     transition={{ duration: 7 + index * 2, repeat: Infinity, ease: 'easeInOut' }}
-                    className="w-24 rounded-t-xl border md:w-36"
-                    style={{ height, background: `linear-gradient(180deg, ${color}44, transparent)`, borderColor: `${color}33` }}
+                    className="border"
+                    style={{
+                        ...markBarStyle(MARK_SIZE, index),
+                        background: `linear-gradient(180deg, ${color}44, transparent)`,
+                        borderColor: `${color}33`,
+                    }}
                 />
             ))}
         </div>

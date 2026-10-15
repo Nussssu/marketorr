@@ -1,5 +1,6 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 
 // Phones use the flat stage. Perspective, rotation and translateZ promote
 // whole sections to large GPU layers and are disproportionately expensive on
@@ -54,26 +55,13 @@ function ease(t) {
 }
 
 /**
- * True on tablet/desktop widths, read synchronously so the first painted frame
- * already uses the right stage rather than committing the heavy one on a phone.
+ * True on tablet/desktop widths. Starts false for the server render and
+ * hydration (see `useMediaQuery`), then switches to the rich stage on mount.
  *
  * @return {boolean}
  */
 function useRichStage() {
-    const [rich, setRich] = useState(
-        () => typeof window !== 'undefined' && window.matchMedia(RICH_QUERY).matches,
-    );
-
-    useEffect(() => {
-        const query = window.matchMedia(RICH_QUERY);
-        const update = () => setRich(query.matches);
-        update();
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    return rich;
+    return useMediaQuery(RICH_QUERY);
 }
 
 /**

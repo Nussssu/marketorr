@@ -68,8 +68,8 @@ class EmailTemplate extends Model
                     return $matches[0];
                 }
 
-                $value = (string) ($data[$matches[1]] ?? '—');
-                $value = $value === '' ? '—' : $value;
+                $value = (string) ($data[$matches[1]] ?? '-');
+                $value = $value === '' ? '-' : $value;
 
                 if (! $escape) {
                     return $value;

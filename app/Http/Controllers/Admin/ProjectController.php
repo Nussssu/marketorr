@@ -40,7 +40,7 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request): RedirectResponse
     {
-        $data = $request->safe()->except('image');
+        $data = $request->safe()->except('image', 'gallery_images');
         if ($request->hasFile('image')) {
             $data['image_path'] = $this->storeImage($request->file('image'));
         } elseif ($request->filled('image')) {
@@ -50,6 +50,7 @@ class ProjectController extends Controller
             $data['image_path'] = $val;
         }
         $data['sort_order'] = $data['sort_order'] ?? ((int) Project::query()->max('sort_order') + 1);
+        $data['case_study'] = $this->buildCaseStudy(null, $request->input('gallery_images'));
 
         Project::query()->create($data);
 
@@ -69,7 +70,7 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
-        $data = $request->safe()->except('image');
+        $data = $request->safe()->except('image', 'gallery_images');
 
         if ($request->hasFile('image')) {
             $this->deleteImage($project->image_path);
@@ -79,6 +80,12 @@ class ProjectController extends Controller
             $val = preg_replace('#^https?://[^/]+/storage/#', '', $val);
             $val = preg_replace('#^/storage/#', '', $val);
             $data['image_path'] = $val;
+        }
+
+        // Only touch the visual story when the gallery field was submitted,
+        // so older forms and API clients never wipe it by omission.
+        if ($request->exists('gallery_images')) {
+            $data['case_study'] = $this->buildCaseStudy($project->case_study, $request->input('gallery_images'));
         }
 
         $project->update($data);
@@ -131,6 +138,69 @@ class ProjectController extends Controller
     }
 
     /**
+     * Rebuild the ordered visual story from the admin's sequential gallery.
+     *
+     * Only the still-image section is rewritten, in the exact submitted order;
+     * embedded-film sections (Vimeo) are carried over untouched so reordering
+     * stills can never drop a film. A null gallery means "leave it alone" at
+     * the call site — an empty array clears the stills but keeps any films.
+     *
+     * @param  array<int, array<string, mixed>>|null  $existing
+     * @param  array<int, array{src?: string, alt?: string|null}>|null  $gallery
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function buildCaseStudy(?array $existing, ?array $gallery): ?array
+    {
+        $films = collect($existing ?? [])
+            ->filter(fn ($section): bool => collect($section['images'] ?? [])
+                ->contains(fn ($image): bool => filled($image['vimeo'] ?? null)))
+            ->values()
+            ->all();
+
+        $stills = collect($gallery ?? [])
+            ->filter(fn ($image): bool => filled($image['src'] ?? null))
+            ->map(fn (array $image): array => [
+                'src' => trim((string) $image['src']),
+                'alt' => trim((string) ($image['alt'] ?? '')),
+                'wide' => false,
+                'video' => str_ends_with(strtolower(parse_url(trim((string) $image['src']), PHP_URL_PATH) ?? ''), '.mp4'),
+            ])
+            ->values()
+            ->all();
+
+        $sections = [];
+
+        if ($stills !== []) {
+            $sections[] = ['label' => 'Project gallery', 'note' => null, 'images' => $stills];
+        }
+
+        foreach ($films as $section) {
+            $sections[] = $section;
+        }
+
+        return $sections === [] ? null : $sections;
+    }
+
+    /**
+     * The still images in display order, as the dedicated page renders them.
+     *
+     * @param  array<int, array<string, mixed>>|null  $caseStudy
+     * @return array<int, array{src: string, alt: string}>
+     */
+    private function galleryImages(?array $caseStudy): array
+    {
+        return collect($caseStudy ?? [])
+            ->flatMap(fn ($section) => $section['images'] ?? [])
+            ->filter(fn ($image): bool => filled($image['src'] ?? null) && blank($image['vimeo'] ?? null))
+            ->map(fn (array $image): array => [
+                'src' => (string) $image['src'],
+                'alt' => (string) ($image['alt'] ?? ''),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Remove a replaced cover, leaving legacy `public/` paths alone.
      */
     private function deleteImage(?string $path): void
@@ -158,7 +228,7 @@ class ProjectController extends Controller
                 ['id' => $parent->id, 'label' => $parent->name],
                 ...$categories
                     ->where('parent_id', $parent->id)
-                    ->map(fn (Category $child) => ['id' => $child->id, 'label' => '— '.$child->name])
+                    ->map(fn (Category $child) => ['id' => $child->id, 'label' => '- '.$child->name])
                     ->values()
                     ->all(),
             ])
@@ -190,6 +260,7 @@ class ProjectController extends Controller
             'featured' => $project->featured,
             'status' => $project->status->value,
             'sort_order' => $project->sort_order,
+            'gallery_images' => $this->galleryImages($project->case_study),
         ];
     }
 }

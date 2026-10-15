@@ -308,4 +308,5 @@ export function Toggle({ checked, onChange, label, hint }) {
 
 export { default as MediaPickerModal } from './MediaPickerModal';
 export { default as MediaPickerField } from './MediaPickerField';
+export { default as ProjectGalleryManager } from './ProjectGalleryManager';
 

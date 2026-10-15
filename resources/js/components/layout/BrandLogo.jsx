@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { assetUrl } from '../../lib/asset';
 
 /** Shipped lockups, used until an editor uploads their own in Settings. */
 const ON_LIGHT = '/images/logo/marketorr-logo-on-light.png';
@@ -26,18 +27,20 @@ const NATURAL_HEIGHT = 118;
  * been uploaded it is used for both themes, so a half-finished upload never
  * leaves one theme with no logo at all.
  *
- * @param {{ className?: string, height?: number }} props
+ * @param {{ className?: string, height?: number, draggable?: boolean }} props
  *   `height` is the rendered height in px; the width follows the artwork's
- *   own aspect ratio.
+ *   own aspect ratio. `priority` marks the header instance, which is often
+ *   the first image on screen, for an early high-priority fetch. `draggable`
+ *   false stops the browser lifting a ghost copy of the logo on drag.
  */
-export default function BrandLogo({ className = '', height = 26 }) {
+export default function BrandLogo({ className = '', height = 26, priority = false, draggable }) {
     const { settings } = usePage().props;
     const style = { height, width: 'auto' };
 
     const uploadedLight = settings?.logo ?? settings?.logoDark ?? null;
     const uploadedDark = settings?.logoDark ?? settings?.logo ?? null;
-    const onLight = uploadedLight ?? ON_LIGHT;
-    const onDark = uploadedDark ?? ON_DARK;
+    const onLight = uploadedLight ?? assetUrl(ON_LIGHT);
+    const onDark = uploadedDark ?? assetUrl(ON_DARK);
     const siteName = settings?.siteName ?? 'Marketorr';
 
     // An uploaded file has its own proportions, so the intrinsic size of the
@@ -54,7 +57,9 @@ export default function BrandLogo({ className = '', height = 26 }) {
                 {...intrinsic}
                 style={style}
                 className="brand-logo__img"
+                draggable={draggable}
                 data-variant="dark"
+                fetchPriority={priority ? 'high' : undefined}
                 aria-hidden
             />
             <img
@@ -63,7 +68,9 @@ export default function BrandLogo({ className = '', height = 26 }) {
                 {...intrinsic}
                 style={style}
                 className="brand-logo__img"
+                draggable={draggable}
                 data-variant="light"
+                fetchPriority={priority ? 'high' : undefined}
                 aria-hidden
             />
             <span className="sr-only">{siteName}</span>

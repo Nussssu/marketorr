@@ -11,23 +11,21 @@ const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
  */
 const FALLBACK_SITEMAP = [
     { label: 'About', url: '/about' },
-    { label: 'Services', url: '/services' },
     { label: 'Our Work', url: '/work' },
     { label: 'Contact', url: '/contact' },
 ];
 
 function ColumnHeading({ children }) {
     return (
-        <p className="flex items-center gap-3 font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
+        <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
             {children}
-            <span className="h-px flex-1 bg-[var(--line)] sm:max-w-[56px]" aria-hidden />
         </p>
     );
 }
 
 export default function Footer() {
     const reduce = useReducedMotion();
-    const { settings, menus } = usePage().props;
+    const { settings, menus, serviceCategories } = usePage().props;
     // Only the socials that have been filled in, in display order.
     const socials = [
         { label: 'LinkedIn', href: settings.socials.linkedin },
@@ -39,8 +37,17 @@ export default function Footer() {
         { label: 'YouTube', href: settings.socials.youtube },
     ].filter((s) => s.href);
 
-    const sitemap = menus?.footer_sitemap?.length ? menus.footer_sitemap : FALLBACK_SITEMAP;
-    const serviceLinks = menus?.footer_services ?? [];
+    // Services has its own column, so it is not repeated under Quick Links.
+    const sitemap = (menus?.footer_sitemap?.length ? menus.footer_sitemap : FALLBACK_SITEMAP)
+        .filter((link) => link.url !== '/services');
+    // Branding and UI/UX live as sections of the Services page, so a link to
+    // their old standalone page goes straight to that section instead.
+    const categorySlugs = (serviceCategories ?? []).map((category) => category.slug);
+    const serviceLinks = (menus?.footer_services ?? []).map((link) => {
+        const slug = link.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
+
+        return slug && categorySlugs.includes(slug) ? { ...link, url: `/services#${slug}` } : link;
+    });
     const legalLinks = menus?.footer_legal ?? [];
 
     const container = {
@@ -81,12 +88,12 @@ export default function Footer() {
                 initial={reduce ? false : 'hidden'}
                 whileInView="show"
                 viewport={{ once: true, margin: '-8% 0px' }}
-                className="container-x grid grid-cols-1 gap-x-10 gap-y-12 pt-14 pb-12 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-14 lg:pt-20 lg:pb-16"
+                className="container-x grid grid-cols-2 gap-x-6 gap-y-12 pt-14 pb-12 sm:gap-x-10 lg:grid-cols-12 lg:gap-x-14 lg:pt-20 lg:pb-16"
             >
                 {/* Brand + intro */}
-                <motion.div variants={item} className="sm:col-span-2 lg:col-span-4 lg:max-w-md">
+                <motion.div variants={item} className="col-span-2 lg:col-span-4 lg:max-w-md">
                     <div className="flex items-center">
-                        <BrandLogo height={28} />
+                        <BrandLogo height={28} draggable={false} />
                     </div>
                     {settings.footerIntro && (
                         <p className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]">
@@ -94,32 +101,27 @@ export default function Footer() {
                         </p>
                     )}
                     <div className="mt-7">
-                        <ColumnHeading>Follow</ColumnHeading>
-                        <div data-cursor="explore" className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold uppercase tracking-[0.16em]">
+                        <ColumnHeading>Follow us</ColumnHeading>
+                        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold tracking-[0.16em]">
                             {socials.map((s) => (
                                 <a
                                     key={s.label}
                                     href={s.href}
                                     target="_blank"
                                     rel="noreferrer"
-                                    data-cursor="explore"
                                     data-social-platform={s.label}
                                     className="footer-link"
                                 >
-                                    {s.label}
+                                    {s.label.charAt(0).toUpperCase() + s.label.slice(1).toLowerCase()}
                                 </a>
                             ))}
                         </div>
-                        <Link href="/work" data-cursor="cta" className="footer-explore btn-press mt-7 font-display">
-                            Explore
-                            <span aria-hidden className="footer-explore__arrow text-[12px] leading-none">↗</span>
-                        </Link>
                     </div>
                 </motion.div>
 
                 {/* Sitemap */}
                 <motion.nav variants={item} aria-label="Footer" className="lg:col-span-3 lg:col-start-6">
-                    <ColumnHeading>Sitemap</ColumnHeading>
+                    <ColumnHeading>Quick Links</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
                         {sitemap.map((item) => (
                             <li key={`${item.label}-${item.url}`}>
@@ -148,23 +150,23 @@ export default function Footer() {
                     initial={reduce ? false : 'hidden'}
                     whileInView="show"
                     viewport={{ once: true, margin: '-4% 0px' }}
-                    className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:flex-row md:items-center md:justify-between md:gap-8"
+                    className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-8"
                 >
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                        <span>{settings.copyright}</span>
+                    <span className="md:justify-self-start">{settings.copyright}</span>
+                    <p className="footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] md:justify-self-center">
+                        <span style={{ color: '#891FFB' }}>IDEA</span>
+                        <span aria-hidden className="bg-clip-text px-1.5 text-transparent sm:px-2.5" style={{ backgroundImage: BRAND_GRADIENT }}>→</span>
+                        <span style={{ color: '#507AF4' }}>EXPERIENCE</span>
+                        <span aria-hidden className="bg-clip-text px-1.5 text-transparent sm:px-2.5" style={{ backgroundImage: BRAND_GRADIENT }}>→</span>
+                        <span style={{ color: '#1BE2EB' }}>RESULT</span>
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 md:justify-self-end">
                         {legalLinks.map((item) => (
                             <Link key={`${item.label}-${item.url}`} href={item.url} className="footer-link footer-link--inline">
                                 {item.label}
                             </Link>
                         ))}
                     </div>
-                    <p className="footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em]">
-                        <span style={{ color: '#891FFB' }}>IDEA</span>
-                        <span aria-hidden className="px-1.5 sm:px-2.5">→</span>
-                        <span style={{ color: '#507AF4' }}>EXPERIENCE</span>
-                        <span aria-hidden className="px-1.5 sm:px-2.5">→</span>
-                        <span style={{ color: '#1BE2EB' }}>RESULT</span>
-                    </p>
                 </motion.div>
             </div>
         </footer>

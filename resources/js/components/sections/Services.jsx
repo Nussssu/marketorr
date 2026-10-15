@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { GradientTitle, SectionLabel } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ScrollHeading from '../motion/ScrollHeading';
@@ -10,6 +10,7 @@ import SubServiceTicker, { SubServiceCopy } from './SubServiceTicker';
 import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
 import { transitionTo } from '../motion/PageTransition';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
 
@@ -74,35 +75,21 @@ const COMPACT_QUERY = '(max-width: 767px)';
 
 /**
  * True on phone-width viewports, so the section can run a lighter version of
- * the same choreography. Read synchronously on first render — deferring it to
- * an effect would let the opening frame commit the full-size travel before the
- * lighter value ever arrived, so the first entrance on a phone was the heavy one.
+ * the same choreography. It settles straight after hydration (see
+ * `useMediaQuery`); the card grid is keyed on it, so the cards — still hidden
+ * at that point — remount with the phone's entrance pose before they play.
  *
  * @return {boolean}
  */
 function useCompactViewport() {
-    const [compact, setCompact] = useState(
-        () => typeof window !== 'undefined' && window.matchMedia(COMPACT_QUERY).matches,
-    );
-
-    useEffect(() => {
-        const query = window.matchMedia(COMPACT_QUERY);
-        const update = () => setCompact(query.matches);
-        update();
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    return compact;
+    return useMediaQuery(COMPACT_QUERY);
 }
 
-function CategoryGateway({ category, index, variants, solidHeadings = false }) {
+function CategoryGateway({ category, variants, solidHeadings = false }) {
     const cardTapIntent = useTapIntent();
     const arrowTapIntent = useTapIntent();
-    const ctaTapIntent = useTapIntent();
-    // Dedicated pages: Branding → /services/branding, UI/UX → /services/ui-ux.
-    const exploreHref = `/services/${category.slug}`;
+    // Sections on the Services page: Branding → /services#branding, UI/UX → /services#ui-ux.
+    const exploreHref = `/services#${category.slug}`;
 
     // The rail's clock owns the motion. It writes its continuous position — a
     // float in screens — into this value every frame, and the ticker below the
@@ -135,37 +122,25 @@ function CategoryGateway({ category, index, variants, solidHeadings = false }) {
                 className="absolute inset-0 z-0 rounded-3xl focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#507AF4]"
             />
             <div className="pointer-events-none relative z-0 flex h-full gap-4 sm:gap-7">
-                <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-16">
-                    <div className="flex items-center justify-between">
-                        <span className="whitespace-nowrap font-display text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] md:whitespace-normal md:text-[11px] md:tracking-[0.24em]">0{index + 1} / Category</span>
+                <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-8">
+                    <div className="flex items-start justify-between gap-4">
+                        <h2 className="font-display text-[calc(clamp(2.1rem,8.6vw,3.9rem)*var(--heading-scale,1))] font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2">
+                            {solidHeadings ? category.name : <GradientTitle text={category.name} />}
+                        </h2>
                         <Link
                             href={exploreHref}
                             prefetch
                             aria-label={`Explore ${category.name}`}
                             {...arrowTapIntent}
                             onClick={(event) => navigateWithCurtain(event, exploreHref, arrowTapIntent)}
-                            className="services-card__arrow pointer-events-auto relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
+                            className="services-card__arrow pointer-events-auto relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
                         >
                             ↗
                         </Link>
                     </div>
-                    <div>
-                        <h2 className="font-display text-[clamp(2.1rem,8.6vw,3.9rem)] font-extrabold uppercase leading-[.88] tracking-[-.05em] text-[var(--ink-strong)] transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-2">
-                            {solidHeadings ? category.name : <GradientTitle text={category.name} />}
-                        </h2>
-                        <SubServiceTicker category={category} position={reel} />
-                        <div className="mt-5 flex items-end justify-between gap-6">
-                            <SubServiceCopy category={category} position={reel} />
-                            <Link
-                                href={exploreHref}
-                                prefetch
-                                {...ctaTapIntent}
-                                onClick={(event) => navigateWithCurtain(event, exploreHref, ctaTapIntent)}
-                                className="hidden pointer-events-auto relative z-10 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)] transition-colors duration-300 hover:text-[var(--ink)] sm:block"
-                            >
-                                Explore {category.items.length} services
-                            </Link>
-                        </div>
+                    <SubServiceTicker category={category} position={reel} />
+                    <div className="flex">
+                        <SubServiceCopy category={category} position={reel} />
                     </div>
                 </div>
                 <ServiceShowcaseRail category={category} progress={reel} solidTitle={solidHeadings} />
@@ -212,30 +187,25 @@ export default function Services({
     return (
         <section id="services" className="relative overflow-x-clip bg-[var(--bg)] pt-24 lg:pt-32">
             <div className="container-x relative pb-20 lg:pb-28">
-                <SectionLabel index="02" name="SERVICES" />
+                <SectionLabel name="SERVICES" />
                 <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <ScrollHeading enabled={heroHeading || animate} intensity={heroHeading ? 1 : 0.85}>
                         <RevealText
                             as={heroHeading ? 'h1' : 'h2'}
                             className="display-lg uppercase text-[var(--ink-strong)]"
                             lines={['Two disciplines.', 'One clear outcome.']}
+                            lineClassName="whitespace-nowrap"
                             highlightedLines={solidHeadings ? undefined : [1]}
                             duration={animate ? 0.58 : undefined}
                             stagger={animate ? 0.13 : undefined}
                         />
                     </ScrollHeading>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7 }}
-                        className="max-w-md text-[15px] leading-relaxed text-[var(--mute)]"
-                    >
-                        We create brands and digital experiences that are clear, memorable, intuitive, and built for growth.
-                    </motion.p>
                 </div>
 
                 <motion.div
+                    // Remounts once the viewport is known after hydration, so the
+                    // still-hidden cards take the entrance pose for that viewport.
+                    key={compact ? 'compact' : 'wide'}
                     className="mt-14 grid w-full gap-5 lg:grid-cols-2"
                     style={animate && !compact ? { perspective: '1500px' } : undefined}
                     {...(animate
@@ -251,7 +221,6 @@ export default function Services({
                         <CategoryGateway
                             key={category.slug}
                             category={category}
-                            index={index}
                             variants={animate ? (index % 2 === 1 ? mirroredVariants : itemVariants) : undefined}
                             solidHeadings={solidHeadings}
                         />

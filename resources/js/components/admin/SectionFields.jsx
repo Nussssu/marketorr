@@ -117,7 +117,7 @@ export default function SectionFields({ fields, content, onChange, errors = {} }
                             key={field.name}
                             label={field.label}
                             error={error}
-                            hint={field.type === 'richtext' ? 'HTML is allowed — use <p>, <strong>, <a> and lists.' : undefined}
+                            hint={field.type === 'richtext' ? 'HTML is allowed: use <p>, <strong>, <a> and lists.' : undefined}
                         >
                             <Textarea
                                 rows={field.type === 'richtext' ? 8 : 4}

@@ -53,7 +53,7 @@ function TemplateEditor({ template, onPreview }) {
                     <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                         {template.placeholders.map((placeholder) => (
                             <li key={placeholder.token} className="text-[12px] text-[var(--mute)]">
-                                <code className="text-[var(--ink)]">{placeholder.token}</code> — {placeholder.hint}
+                                <code className="text-[var(--ink)]">{placeholder.token}</code>: {placeholder.hint}
                             </li>
                         ))}
                     </ul>
@@ -85,7 +85,7 @@ export default function EmailTemplatesIndex({ templates }) {
 
     return (
         <>
-            <Head title="Email templates — Marketorr Admin" />
+            <Head title="Email templates | Marketorr Admin" />
             <PageHeader
                 title="Email & SMTP"
                 subtitle="Transactional email templates triggered by new inquiries."

@@ -1,10 +1,8 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useEffect, useMemo } from 'react';
 import { GradientTitle, SectionLabel } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 import WorkShowcase from '../../components/sections/WorkShowcase';
-import { transitionTo } from '../../components/motion/PageTransition';
-import { useTapIntent } from '../../lib/tapIntent';
 import { projectHref } from '../../lib/uiuxShowcase';
 
 /** The UI/UX portfolio's accent: the brand purple, so its visuals carry a purple shade. */
@@ -54,7 +52,6 @@ function uiuxProjects(showcase) {
  * showcase projects, each opening its printer page.
  */
 export default function WorkPortfolio({ group, projects = [], showcase = null }) {
-    const tapIntent = useTapIntent();
     const { url } = usePage();
     const listed = useMemo(() => (showcase ? uiuxProjects(showcase) : projects), [showcase, projects]);
 
@@ -69,21 +66,12 @@ export default function WorkPortfolio({ group, projects = [], showcase = null })
         else window.scrollTo(0, top);
     }, [url]);
 
-    const goBack = (event) => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        if (event.button !== undefined && event.button !== 0) return;
-        tapIntent.onClick(event);
-        if (event.defaultPrevented) return;
-        event.preventDefault();
-        transitionTo('/work');
-    };
-
     return (
         <>
-            <Head title={`${group.heading} — Marketorr`} />
+            <Head title={`${group.heading} | Marketorr`} />
             <div className="bg-[var(--bg)] pb-16 pt-24 md:pb-24 md:pt-32">
                 <div className="container-x">
-                    <SectionLabel index="03" name="OUR WORK" />
+                    <SectionLabel name="OUR WORK" />
                     <ScrollHeading className="mt-8">
                         <h1 className="display-lg uppercase text-[var(--ink-strong)]">
                             <GradientTitle text={group.heading} />
@@ -91,19 +79,6 @@ export default function WorkPortfolio({ group, projects = [], showcase = null })
                     </ScrollHeading>
 
                     <WorkShowcase projects={listed} mobileOptimized={Boolean(showcase)} />
-
-                    <div className="mt-12 md:mt-16">
-                        <Link
-                            href="/work"
-                            data-cursor="explore"
-                            onPointerDown={tapIntent.onPointerDown}
-                            onPointerCancel={tapIntent.onPointerCancel}
-                            onClick={goBack}
-                            className="btn-press inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--field-line)] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink)] hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)] md:px-7 md:py-3.5 md:text-[13px] md:tracking-[0.16em]"
-                        >
-                            ← All work
-                        </Link>
-                    </div>
                 </div>
             </div>
         </>

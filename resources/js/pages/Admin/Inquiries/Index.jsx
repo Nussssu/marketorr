@@ -18,7 +18,7 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
 
     return (
         <>
-            <Head title="Inquiries — Marketorr Admin" />
+            <Head title="Inquiries | Marketorr Admin" />
             <PageHeader title="Leads" subtitle={`${inquiries.total} submission${inquiries.total === 1 ? '' : 's'} from the contact form.`}>
                 {/* Plain anchor, not a Link: the export is a file download, not
                     an Inertia visit. */}
@@ -74,8 +74,8 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                             {inquiry.company && <p className="text-[12px] text-[var(--ink-faint)]">{inquiry.company}</p>}
                                         </td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.type}</td>
-                                        <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.budget ?? '—'}</td>
-                                        <td className="py-3 pr-4 font-mono text-[12px] text-[var(--ink-faint)]">{inquiry.sourcePage ?? '—'}</td>
+                                        <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.budget ?? '-'}</td>
+                                        <td className="py-3 pr-4 font-mono text-[12px] text-[var(--ink-faint)]">{inquiry.sourcePage ?? '-'}</td>
                                         <td className="py-3 pr-4"><Badge tone={inquiry.status} /></td>
                                         <td className="py-3 pr-4 whitespace-nowrap text-[var(--mute)]">{inquiry.createdAt}</td>
                                         <td className="py-3 text-right">

@@ -40,7 +40,16 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // public/storage is kept as a real folder (not the symlink
+            // `php artisan storage:link` makes), so uploads are written straight
+            // into it and served from there. Only if it is missing or a symlink
+            // does the disk fall back to storage/app/public. PUBLIC_DISK_ROOT
+            // (relative to the project) overrides both.
+            'root' => env('PUBLIC_DISK_ROOT')
+                ? base_path(env('PUBLIC_DISK_ROOT'))
+                : (is_dir(public_path('storage')) && ! is_link(public_path('storage'))
+                    ? public_path('storage')
+                    : storage_path('app/public')),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,

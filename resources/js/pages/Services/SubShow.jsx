@@ -20,7 +20,7 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
 
     return (
         <>
-            <Head title={`${item.name} — Marketorr`} />
+            <Head title={`${item.name} | Marketorr`} />
             <article className="bg-[var(--bg)] pb-24">
                 <SubServiceHero item={item} parentHref={parentHref} />
 
@@ -43,7 +43,7 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
                             <div>
                                 <h2 className="font-display text-xl font-bold uppercase text-[var(--ink-strong)]">Part of {item.category.name}</h2>
                                 <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[var(--mute)]">
-                                    {item.short} Combined with the rest of the {item.category.name} practice, it ships as one coherent system — not a pile of deliverables.
+                                    {item.short} Combined with the rest of the {item.category.name} practice, it ships as one coherent system, not a pile of deliverables.
                                 </p>
                             </div>
                             <Link href="/contact" data-cursor="cta" className="btn-press mt-8 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>

@@ -112,13 +112,13 @@ class CmsPageRenderingTest extends TestCase
     {
         Page::factory()->create([
             'slug' => 'our-process',
-            'meta_title' => 'Process — custom',
+            'meta_title' => 'Process | custom',
             'meta_description' => 'A custom description.',
             'meta_robots' => 'noindex,follow',
         ]);
 
         $this->get('/our-process')->assertInertia(fn ($inertia) => $inertia
-            ->where('page.meta.title', 'Process — custom')
+            ->where('page.meta.title', 'Process | custom')
             ->where('page.meta.description', 'A custom description.')
             ->where('page.meta.robots', 'noindex,follow'));
     }

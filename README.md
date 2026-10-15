@@ -1,107 +1,58 @@
-<div align="center">
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-# Marketorr
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-**Animated agency website and custom CMS for Marketorr, a digital marketing agency in Bangladesh.**
+## About Laravel
 
-[![Live Site](https://img.shields.io/badge/Live-marketorr.com.bd-0A66C2?logo=googlechrome&logoColor=white)](https://www.marketorr.com.bd)
-![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![Inertia.js](https://img.shields.io/badge/Inertia.js-3-9553E9?logo=inertia&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-**[🌐 View live site →](https://www.marketorr.com.bd)**
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-</div>
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
----
+## Learning Laravel
 
-## Overview
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-This repository powers the public website of **Marketorr**: services, case studies, portfolio, and lead capture. It also includes a full admin CMS, so the marketing team can manage all content without touching code.
+In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-The frontend is React 19 rendered through Inertia.js, animated with GSAP, Framer Motion, and Lenis smooth scrolling. The backend is Laravel 13 and handles content, media, SEO (sitemap and robots.txt), and contact inquiries.
+You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
 
-## Features
+## Agentic Development
 
-**Public website**
-- Animated home, about, and contact pages with smooth scrolling and motion design
-- Service catalog with categories, service detail pages, and sub-service pages
-- "Our Work" section: case studies, grouped portfolios, and UI/UX project showcases
-- Contact form with lead notifications and an interactive Leaflet map
-- Dynamic CMS pages, privacy policy, and terms
-- SEO: dynamic `sitemap.xml`, `robots.txt`, and per-page meta
-
-**Admin CMS**
-- Dashboard with inquiries overview
-- Projects and services with drag-and-drop ordering and featured flags
-- Page builder with reusable page sections and global blocks
-- Centralized media library and media picker
-- Menus, categories, settings, and email templates
-- Mail settings and lead notification configuration
-- User management and audit logs
-
-## Tech Stack
-
-| Layer | Technologies |
-| --- | --- |
-| Backend | Laravel 13, PHP 8.3+, MySQL |
-| Frontend | React 19, Inertia.js 3, Tailwind CSS 4, Vite |
-| Motion & UI | GSAP, Framer Motion, Lenis, Leaflet |
-| Testing | PHPUnit (Feature & Unit) |
-
-## Screenshots
-
-> 📸 Screenshots coming soon. In the meantime, see the [live site](https://www.marketorr.com.bd).
-
-<!-- Add images to docs/screenshots/ and reference them here, for example:
-![Home page](docs/screenshots/home.png)
-![Admin CMS](docs/screenshots/admin.png)
--->
-
-## Getting Started
-
-### Prerequisites
-
-- PHP 8.3+ and Composer
-- Node.js 20+ and npm
-- MySQL
-
-### Installation
+Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
 
 ```bash
-git clone https://github.com/Nussssu/marketorr.git
-cd marketorr
+composer require laravel/boost --dev
 
-composer run setup   # installs dependencies, creates .env, generates key, migrates, builds assets
+php artisan boost:install
 ```
 
-Update the database and mail settings in `.env` before running migrations.
+Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
-### Run locally
+## Contributing
 
-```bash
-composer run dev
-```
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-### Run tests
+## Code of Conduct
 
-```bash
-php artisan test
-```
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-## Project Structure
+## Security Vulnerabilities
 
-```
-app/Models/                 # Page, PageSection, Project, Service, Media, Menu, ...
-resources/js/Pages/
-├── Home.jsx, About.jsx, ContactPage.jsx
-├── Services/               # Service listing, category, detail pages
-├── Work/                   # Case studies and portfolios
-└── Admin/                  # CMS (projects, services, pages, media, menus, users)
-routes/web.php              # Public site + /admin routes
-```
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-## Author
+## License
 
-**Nusrat Jahan Ankhi** · [GitHub](https://github.com/Nussssu)
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

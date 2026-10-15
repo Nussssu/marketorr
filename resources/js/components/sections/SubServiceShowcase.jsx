@@ -129,7 +129,7 @@ function DesktopScene({ category, item, index, count, reduce }) {
         <article
             ref={rowRef}
             className={`grid grid-cols-1 items-center gap-10 xl:gap-14 ${gridSides}`}
-            aria-label={`${item.name} — ${pad(index + 1)} of ${pad(count)}`}
+            aria-label={`${item.name}, ${pad(index + 1)} of ${pad(count)}`}
         >
             {/* Copy */}
             <motion.div
@@ -197,10 +197,12 @@ function DesktopScene({ category, item, index, count, reduce }) {
                     ) : (
                         <MediaPlaceholder label={`${item.name} - image placeholder`} />
                     )}
+                    {/* Darkens the lower part of the picture so the white text over it reads. */}
+                    <span aria-hidden className="media-scrim-bottom" />
                     <span className="absolute inset-x-0 top-0 flex items-center justify-between p-5 text-[10px] font-bold uppercase tracking-[0.24em] text-white/70" aria-hidden>
                         <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 backdrop-blur-sm">
                             <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: item.accent }} />
-                            {pad(index + 1)} — {category.name}
+                            {category.name}
                         </span>
                         <span className="hidden rounded-full border border-white/20 bg-black/35 px-4 py-2 backdrop-blur-sm sm:inline-block">
                             {pad(count)} scenes
@@ -256,7 +258,7 @@ function DesktopShowcase({ category }) {
 
             <div className="relative z-10 px-6 py-24 md:px-8 xl:px-12 xl:py-32 2xl:px-16">
                 <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--ink-faint)]">
-                    {category.name} — the practice
+                    {category.name} · the practice
                 </p>
 
                 <div className="mt-16 flex flex-col gap-28 xl:mt-20 xl:gap-36">
@@ -277,14 +279,15 @@ function DesktopShowcase({ category }) {
 }
 
 /**
- * One row on a small screen: the same scene, stacked.
+ * One card on a phone or tablet: the same scene, as a card in a two-column
+ * grid.
  *
- * The two columns become one and the card simply takes its place in the
- * flow — no pinning, no stacking, nothing overlapping. The motion is the
+ * The desktop's two columns become one card that simply takes its place in
+ * the grid — no pinning, no stacking, nothing overlapping. The motion is the
  * desktop scene at phone amplitude and driven the same way: one spring
  * smoothed progress feeding picture and copy together, so they still arrive
  * as a single move. Only the distances shrink; there is no sideways drift to
- * make in a single column, and the defocus is lighter because a phone is
+ * make in a grid of cards, and the defocus is lighter because a phone is
  * holding a smaller, denser frame.
  */
 function CompactScene({ category, item, index, count, reduce, innerRef }) {
@@ -312,8 +315,8 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
             if (typeof innerRef === 'function') innerRef(node, index);
         }} className="relative">
             <article
-                className="relative overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-3"
-                aria-label={`${item.name} — ${pad(index + 1)} of ${pad(count)}`}
+                className="relative h-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-2 sm:rounded-3xl sm:p-3"
+                aria-label={`${item.name}, ${pad(index + 1)} of ${pad(count)}`}
             >
                 <motion.a
                     href={href}
@@ -331,7 +334,7 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
                         y: mediaY,
                         clipPath: mediaClip,
                     }}
-                    className="relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-[#08080B]"
+                    className="relative block aspect-[16/10] w-full overflow-hidden rounded-xl bg-[#08080B] sm:rounded-2xl"
                 >
                     {item.image ? (
                         <img
@@ -345,16 +348,18 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
                     ) : (
                         <MediaPlaceholder label={`${item.name} - image placeholder`} />
                     )}
+                    {/* Darkens the lower part of the picture so the white text over it reads. */}
+                    <span aria-hidden className="media-scrim-bottom" />
                     <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: BRAND_GRADIENT }} />
-                    <h3 className="absolute inset-x-5 bottom-5 font-display text-[clamp(1.6rem,7.4vw,2.6rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white">
+                    <h3 className="absolute inset-x-3 bottom-3 font-display text-[clamp(0.95rem,4.2vw,1.6rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.02em] text-white sm:inset-x-4 sm:bottom-4">
                         {item.name}
                     </h3>
                 </motion.a>
 
-                <div className="px-3 pb-3 pt-5">
+                <div className="px-1 pb-1 pt-3 sm:px-3 sm:pb-3 sm:pt-5">
                     <motion.p
                         style={reduce ? undefined : { y: copyY, opacity: copyOpacity }}
-                        className="mt-3 max-w-prose text-[14px] leading-relaxed text-[var(--mute)]"
+                        className="max-w-prose text-[12px] leading-snug text-[var(--mute)] sm:mt-3 sm:text-[14px] sm:leading-relaxed"
                     >
                         {item.short}
                     </motion.p>
@@ -366,7 +371,7 @@ function CompactScene({ category, item, index, count, reduce, innerRef }) {
                         onPointerMove={tapIntent.onPointerMove}
                         onPointerCancel={tapIntent.onPointerCancel}
                         onClick={open}
-                        className="mt-5 inline-flex items-center gap-3 rounded-full border border-[var(--line)] px-5 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]"
+                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-3.5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--ink)] sm:mt-5 sm:gap-3 sm:px-5 sm:py-3 sm:text-[11px] sm:tracking-[0.18em]"
                     >
                         View service <span aria-hidden>→</span>
                     </motion.a>
@@ -389,7 +394,8 @@ function CompactShowcase({ category, always = false }) {
 
     return (
         <div className={`${always ? '' : 'lg:hidden'}`}>
-            <div className="container-x relative flex flex-col gap-10 py-16 sm:gap-14">
+            {/* Two cards per row on phones and tablets. */}
+            <div className="container-x relative grid grid-cols-2 gap-3 py-16 sm:gap-5 md:gap-6">
             {category.items.map((item, index) => (
                 <CompactScene
                     key={item.slug}
@@ -412,8 +418,8 @@ function CompactShowcase({ category, always = false }) {
  * Every row works the same way at every width: the picture is scrubbed open
  * by scroll — clip parting from the centre line, tilt unwinding, oversized
  * crop settling — while the copy beside it plays a short one-shot reveal as
- * the row comes into view. Two columns on desktop with a sticky picture, one
- * column below it. Clicking a row hands its visual to the transition layer,
+ * the row comes into view. Two columns on desktop with a sticky picture, and
+ * a two-column grid of cards below it. Clicking a row hands its visual to the transition layer,
  * which carries it into that sub-service's own page. This component mounts
  * only on the Branding and UI/UX category pages, so the sequence — and its
  * flight transition — never affects Home, About, Work or Contact.

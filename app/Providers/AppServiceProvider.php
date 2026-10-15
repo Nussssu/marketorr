@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\MailSetting;
 use App\Models\Setting;
+use App\Services\PublicAsset;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
@@ -28,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->applyStoredMailSettings();
         $this->shareRootViewSettings();
+        $this->useConfiguredAssetUrl();
+        $this->deprioritizeScriptLoading();
     }
 
     /**
@@ -49,6 +53,31 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->resolving('mail.manager', $apply);
         $this->app->resolving(Mailer::class, $apply);
+    }
+
+    /**
+     * Vite's build files (scripts, styles, fonts) use the same base as every
+     * other asset (see PublicAsset::base): the env base URL, never the host a
+     * request happened to arrive on.
+     */
+    private function useConfiguredAssetUrl(): void
+    {
+        Vite::createAssetPathsUsing(fn (string $path): string => PublicAsset::to($path));
+    }
+
+    /**
+     * Pages are server-rendered and their opening animations are CSS, so no
+     * JavaScript is needed to paint them. Script and module-preload tags are
+     * therefore fetched at low priority, leaving stylesheets, fonts and the
+     * first images to load first; the app still loads in parallel and hydrates
+     * as soon as it arrives.
+     */
+    private function deprioritizeScriptLoading(): void
+    {
+        Vite::useScriptTagAttributes(['fetchpriority' => 'low']);
+        Vite::usePreloadTagAttributes(fn (string $src, string $url): array => str_ends_with($url, '.js')
+            ? ['fetchpriority' => 'low']
+            : []);
     }
 
     /**

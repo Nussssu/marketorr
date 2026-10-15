@@ -1,6 +1,5 @@
 import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { useTheme } from '../../lib/theme';
+import { useEffect, useState } from 'react';
 
 function SocialIcon({ platform }) {
     const commonProps = {
@@ -59,295 +58,18 @@ function SocialIcon({ platform }) {
     );
 }
 
-/**
- * Trail palette, purple first.
- *
- * The purple is Marketorr's #891FFB eased toward white just far enough to stay
- * soft under additive blending - it still reads as the brand purple, which the
- * fully pastel version did not. Blue and cyan are pulled further still, so
- * they support the purple rather than competing with it.
- */
-const TRAIL_RGB = ['168,85,251', '150,180,250', '150,225,240'];
-
-/**
- * Which colour each successive mote takes, as indices into `TRAIL_RGB`.
- *
- * Purple is five of every eight, so it stays the colour of the trail whatever
- * speed the cursor moves at, while blue and cyan keep appearing often enough
- * to read as accents rather than as stray dots. A fixed pattern rather than a
- * weighted random: randomness clumps, and a clump of cyan would break it.
- */
-const TRAIL_SEQUENCE = [0, 0, 1, 0, 0, 2, 0, 1];
-
-/** How far each mote's core is lifted toward white, for an airy centre. */
-const CORE_WHITEN = 0.42;
-const TRAIL_MAX = 120;
-/**
- * Share of the gap between cursor and trail head closed per 60fps frame.
- *
- * High enough that the trail never feels like lag, low enough that it reads as
- * something following the cursor rather than glued to it.
- */
-const FOLLOW = 0.3;
 const DESKTOP_CURSOR_QUERY = '(min-width: 1024px) and (hover: hover) and (pointer: fine)';
 const TOUCH_POINTER_QUERY = '(any-pointer: coarse)';
 
 /**
- * Pre-rendered radial glow sprite — stamping these with drawImage is far
- * cheaper than shadowBlur per particle, so the trail stays at 60fps.
- *
- * The falloff carries a wide, faint outer shoulder as well as a bright core,
- * so each mote reads as a soft glow instead of a disc with a hard edge. That
- * shoulder is why the trail stays visible against both themes without any
- * shadow, filter or second pass.
- *
- * The core is mixed toward white before the hue takes over, which is what
- * gives the trail its soft white-blue centre rather than a dot of flat colour.
+ * The hover layer over the native pointer. The pointer itself is the logo
+ * mark (see `--cursor-default` in app.css) and nothing follows it around the
+ * page; this only appears over something interactive: a gradient ring on
+ * links and buttons, a larger one on calls to action, a VIEW disc on work
+ * cards, an EXPLORE pill, and the platform's icon on social links. While a
+ * labelled disc or pill is showing, the native pointer steps aside so it
+ * never sits on top of the label.
  */
-function makeGlowSprite(rgb) {
-    const size = 64;
-    const [r, g, b] = rgb.split(',').map(Number);
-    const toward = (channel) => Math.round(channel + (255 - channel) * CORE_WHITEN);
-    const core = `${toward(r)},${toward(g)},${toward(b)}`;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, `rgba(${core},0.98)`);
-    gradient.addColorStop(0.18, `rgba(${rgb},0.86)`);
-    gradient.addColorStop(0.42, `rgba(${rgb},0.54)`);
-    gradient.addColorStop(0.68, `rgba(${rgb},0.26)`);
-    gradient.addColorStop(1, `rgba(${rgb},0)`);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-
-    return canvas;
-}
-
-/**
- * Brand particle trail: a fixed, pointer-transparent canvas that releases
- * soft fading glow motes as the pointer travels - mostly brand purple, with
- * blue and cyan threaded through it. Additive blending in dark theme lets overlapping motes bloom
- * toward white; light theme composites normally and carries a little less
- * alpha, so the trail stays airy on pale surfaces rather than turning milky. One rAF loop, capped DPR and particle pool, paused when the tab
- * hides — scrolling, layout and existing animations are never touched.
- */
-function CursorTrail() {
-    const canvasRef = useRef(null);
-    const themeRef = useRef('dark');
-    const { theme } = useTheme();
-
-    useEffect(() => {
-        themeRef.current = theme;
-    }, [theme]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return undefined;
-        const ctx = canvas.getContext('2d');
-        const sprites = TRAIL_RGB.map(makeGlowSprite);
-        const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-        const particles = [];
-        let raf = 0;
-        let running = false;
-        let startTrail = () => {};
-        // `pending` is where the cursor actually is; `head` is where the trail
-        // is being drawn from, easing toward it a fraction of the gap each
-        // frame. That easing is what makes the ribbon follow the cursor rather
-        // than being stamped underneath it, and it absorbs the jitter of a
-        // high-polling mouse. `last` is the head a frame ago, so motes can be
-        // laid along the path travelled instead of at a single point.
-        let lastX = -1;
-        let lastY = -1;
-        let headX = -1;
-        let headY = -1;
-        let pendingX = -1;
-        let pendingY = -1;
-        let colorIndex = 0;
-
-        const resize = () => {
-            canvas.width = Math.round(window.innerWidth * dpr);
-            canvas.height = Math.round(window.innerHeight * dpr);
-            canvas.style.width = `${window.innerWidth}px`;
-            canvas.style.height = `${window.innerHeight}px`;
-        };
-        resize();
-        window.addEventListener('resize', resize);
-
-        const resetPointer = () => {
-            lastX = -1;
-            lastY = -1;
-            headX = -1;
-            headY = -1;
-            pendingX = -1;
-            pendingY = -1;
-        };
-        // The pointer reports far more often than the screen repaints, so the
-        // handler only records where the cursor is. Spawning happens once per
-        // frame, from the travel since the frame before — the trail looks the
-        // same and the input thread stays free.
-        const onMove = (event) => {
-            if (event.pointerType !== 'mouse') {
-                resetPointer();
-                particles.length = 0;
-
-                return;
-            }
-
-            pendingX = event.clientX;
-            pendingY = event.clientY;
-            startTrail();
-        };
-
-        const spawn = (dt) => {
-            if (pendingX < 0) return;
-
-            // First sight of the cursor: start the head under it, so the trail
-            // never sweeps in from wherever it was left.
-            if (headX < 0) {
-                headX = pendingX;
-                headY = pendingY;
-                lastX = headX;
-                lastY = headY;
-
-                return;
-            }
-
-            // Frame-rate independent easing: the same fraction of the gap is
-            // closed per unit of time whatever the refresh rate.
-            const ease = 1 - Math.pow(1 - FOLLOW, dt);
-            headX += (pendingX - headX) * ease;
-            headY += (pendingY - headY) * ease;
-
-            const x = headX;
-            const y = headY;
-
-            if (lastX >= 0) {
-                const dx = x - lastX;
-                const dy = y - lastY;
-                const travel = Math.hypot(dx, dy);
-                if (travel > 1.1) {
-                    // Spread spawns along the frame's travel segment so fast
-                    // flicks leave a continuous ribbon instead of dotted gaps.
-                    const count = travel > 30 ? 5 : travel > 12 ? 4 : 3;
-                    for (let i = 0; i < count && particles.length < TRAIL_MAX; i++) {
-                        colorIndex = (colorIndex + 1) % TRAIL_SEQUENCE.length;
-                        const t = (i + 1) / count;
-                        particles.push({
-                            x: lastX + dx * t + (Math.random() - 0.5) * 3,
-                            y: lastY + dy * t + (Math.random() - 0.5) * 3,
-                            vx: -dx * 0.03 + (Math.random() - 0.5) * 0.4,
-                            vy: -dy * 0.03 + (Math.random() - 0.5) * 0.4,
-                            life: 1,
-                            decay: 0.011 + Math.random() * 0.01,
-                            size: 16 + Math.random() * 17,
-                            sprite: sprites[TRAIL_SEQUENCE[colorIndex]],
-                        });
-                    }
-                }
-            }
-
-            lastX = x;
-            lastY = y;
-        };
-        const onPointerDown = (event) => {
-            if (event.pointerType === 'mouse') return;
-
-            resetPointer();
-            particles.length = 0;
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-        };
-        window.addEventListener('pointermove', onMove, { passive: true });
-        window.addEventListener('pointerdown', onPointerDown, { passive: true });
-        window.addEventListener('pointercancel', resetPointer, { passive: true });
-        document.documentElement.addEventListener('mouseleave', resetPointer);
-
-        let lastTime = performance.now();
-        let idleFrames = 0;
-        const frame = (time) => {
-            if (!running) return;
-            const dt = Math.min(50, time - lastTime) / 16.667;
-            lastTime = time;
-            spawn(dt);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            if (particles.length > 0) {
-                const dark = themeRef.current !== 'light';
-                ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.life -= p.decay * dt;
-                    if (p.life <= 0) {
-                        particles.splice(i, 1);
-                        continue;
-                    }
-                    p.x += p.vx * dt;
-                    p.y += p.vy * dt;
-                    p.vx *= 0.985;
-                    p.vy *= 0.985;
-                    const size = p.size * (0.42 + 0.58 * p.life);
-                    // Smoothstep rather than the raw life: the curve flattens
-                    // at both ends, so a mote eases in and, more importantly,
-                    // thins away to nothing instead of winking out.
-                    const fade = p.life * p.life * (3 - 2 * p.life);
-                    ctx.globalAlpha = fade * (dark ? 0.78 : 0.58);
-                    ctx.drawImage(p.sprite, p.x - size / 2, p.y - size / 2, size, size);
-                }
-                ctx.globalAlpha = 1;
-                ctx.globalCompositeOperation = 'source-over';
-            }
-            const settling = headX >= 0 && Math.hypot(pendingX - headX, pendingY - headY) > 0.5;
-
-            if (particles.length > 0 || settling) {
-                idleFrames = 0;
-                raf = requestAnimationFrame(frame);
-            } else if (idleFrames < 12) {
-                // Keep the loop alive briefly so the next move spawns on the
-                // very next frame instead of waiting for a restart.
-                idleFrames += 1;
-                raf = requestAnimationFrame(frame);
-            } else {
-                running = false;
-                canvas.style.visibility = 'hidden';
-            }
-        };
-        startTrail = () => {
-            idleFrames = 0;
-            canvas.style.visibility = '';
-            if (running || document.hidden) return;
-
-            running = true;
-            lastTime = performance.now();
-            raf = requestAnimationFrame(frame);
-        };
-        const onVisibility = () => {
-            if (document.hidden) {
-                running = false;
-                cancelAnimationFrame(raf);
-                particles.length = 0;
-                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            }
-        };
-        document.addEventListener('visibilitychange', onVisibility);
-
-        return () => {
-            running = false;
-            cancelAnimationFrame(raf);
-            window.removeEventListener('pointermove', onMove);
-            window.removeEventListener('pointerdown', onPointerDown);
-            window.removeEventListener('pointercancel', resetPointer);
-            document.documentElement.removeEventListener('mouseleave', resetPointer);
-            document.removeEventListener('visibilitychange', onVisibility);
-            window.removeEventListener('resize', resize);
-        };
-    }, []);
-
-    return (
-        <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-[10019]" aria-hidden />
-    );
-}
-
 export default function CustomCursor() {
     const reduce = useReducedMotion();
     const [enabled, setEnabled] = useState(false);
@@ -368,7 +90,7 @@ export default function CustomCursor() {
             setEnabled(shouldEnable);
 
             if (!shouldEnable) {
-                document.documentElement.classList.remove('cursor-none-desktop');
+                document.documentElement.classList.remove('has-hover-cursor', 'cursor-bubble');
                 x.set(-100);
                 y.set(-100);
                 setState('default');
@@ -382,14 +104,14 @@ export default function CustomCursor() {
         return () => {
             desktopCursor.removeEventListener('change', updateCapability);
             touchPointer.removeEventListener('change', updateCapability);
-            document.documentElement.classList.remove('cursor-none-desktop');
+            document.documentElement.classList.remove('has-hover-cursor', 'cursor-bubble');
         };
     }, [reduce, x, y]);
 
     useEffect(() => {
         if (!enabled) return undefined;
 
-        document.documentElement.classList.add('cursor-none-desktop');
+        document.documentElement.classList.add('has-hover-cursor');
 
         const hide = () => {
             x.set(-100);
@@ -433,7 +155,7 @@ export default function CustomCursor() {
             window.removeEventListener('blur', hide);
             document.documentElement.removeEventListener('mouseleave', hide);
             document.removeEventListener('visibilitychange', onVisibilityChange);
-            document.documentElement.classList.remove('cursor-none-desktop');
+            document.documentElement.classList.remove('has-hover-cursor', 'cursor-bubble');
             hide();
         };
     }, [enabled, x, y]);
@@ -452,11 +174,10 @@ export default function CustomCursor() {
             const marked = target.closest?.('[data-cursor]');
             if (marked) {
                 const kind = marked.dataset.cursor;
-                if (kind === 'view' || kind === 'cta' || kind === 'explore') return kind;
+                if (kind === 'view' || kind === 'explore') return kind;
             }
 
-            if (target.closest?.('a,button,[role=button]')) return 'hover';
-
+            // Plain links, buttons and calls to action get no ring.
             return 'default';
         };
 
@@ -481,14 +202,25 @@ export default function CustomCursor() {
         };
     }, [enabled]);
 
-    if (!enabled) return null;
-
     const isView = state === 'view';
     const isExplore = state === 'explore';
     const socialPlatform = state.startsWith('social:') ? state.slice(7) : null;
     const isSocial = Boolean(socialPlatform);
     const isLabel = isView || isExplore;
-    const auraOpacity = isLabel ? 0.32 : state === 'cta' ? 0.8 : state === 'hover' ? 0.65 : isSocial ? 0.4 : 0.45;
+    const active = state !== 'default';
+    const covering = isLabel || isSocial;
+
+    // The native pointer steps aside only while a label or icon fills the disc.
+    useEffect(() => {
+        if (!enabled) return undefined;
+        document.documentElement.classList.toggle('cursor-bubble', covering);
+
+        return () => document.documentElement.classList.remove('cursor-bubble');
+    }, [enabled, covering]);
+
+    if (!enabled) return null;
+
+    const auraOpacity = !active ? 0 : isLabel ? 0.32 : state === 'cta' ? 0.8 : state === 'hover' ? 0.65 : 0.4;
     const auraScale = isLabel ? 1.15 : state === 'cta' ? 1.4 : state === 'hover' ? 1.25 : isSocial ? 1.3 : 1.05;
 
     // EXPLORE is a compact gradient pill; every other state stays circular.
@@ -497,8 +229,7 @@ export default function CustomCursor() {
 
     return (
         <>
-            <CursorTrail />
-            {/* ambient aura — soft brand glow trailing the cursor */}
+            {/* soft brand glow behind the ring, only while hovering something */}
             <motion.div
                 className="pointer-events-none fixed left-0 top-0 z-[10018] h-28 w-28 rounded-full blur-2xl"
                 style={{
@@ -511,25 +242,12 @@ export default function CustomCursor() {
                 animate={{ opacity: auraOpacity, scale: auraScale }}
                 transition={{ duration: 0.25 }}
             />
-            {/* dot — gradient orb so the point itself carries the brand */}
-            <motion.div
-                className="pointer-events-none fixed left-0 top-0 z-[10021] h-2.5 w-2.5 rounded-full"
-                style={{
-                    x,
-                    y,
-                    translateX: '-50%',
-                    translateY: '-50%',
-                    background: 'linear-gradient(135deg,#891FFB,#507AF4 55%,#1BE2EB)',
-                    boxShadow: '0 0 14px rgba(137,31,251,0.95), 0 0 34px rgba(80,122,244,0.6), 0 0 60px rgba(27,226,235,0.35)',
-                }}
-                animate={{ opacity: isSocial ? 0 : 1 }}
-                transition={{ duration: 0.2 }}
-            />
             {/* ring */}
             <motion.div
                 className="pointer-events-none fixed left-0 top-0 z-[10020] flex items-center justify-center rounded-full"
                 style={{ x: rx, y: ry, translateX: '-50%', translateY: '-50%' }}
                 animate={{
+                    opacity: active ? 1 : 0,
                     width,
                     height,
                     backgroundColor: isView ? 'var(--ink)' : 'rgba(255,255,255,0)',

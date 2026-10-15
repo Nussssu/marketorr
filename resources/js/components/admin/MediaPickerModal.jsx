@@ -542,11 +542,11 @@ export default function MediaPickerModal({
                                         <dl className="grid grid-cols-2 gap-2 rounded-lg border border-slate-800/80 bg-slate-900/60 p-3 text-[11px]">
                                             <div>
                                                 <dt className="text-slate-500">File size</dt>
-                                                <dd className="font-semibold text-slate-300">{selectedAsset.size || '—'}</dd>
+                                                <dd className="font-semibold text-slate-300">{selectedAsset.size || '-'}</dd>
                                             </div>
                                             <div>
                                                 <dt className="text-slate-500">Dimensions</dt>
-                                                <dd className="font-semibold text-slate-300">{selectedAsset.dimensions || '—'}</dd>
+                                                <dd className="font-semibold text-slate-300">{selectedAsset.dimensions || '-'}</dd>
                                             </div>
                                             <div>
                                                 <dt className="text-slate-500">Type</dt>
@@ -556,7 +556,7 @@ export default function MediaPickerModal({
                                             </div>
                                             <div>
                                                 <dt className="text-slate-500">Uploaded</dt>
-                                                <dd className="font-semibold text-slate-300 truncate">{selectedAsset.created_at || '—'}</dd>
+                                                <dd className="font-semibold text-slate-300 truncate">{selectedAsset.created_at || '-'}</dd>
                                             </div>
                                         </dl>
 

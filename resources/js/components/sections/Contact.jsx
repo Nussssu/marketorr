@@ -1,12 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useForm, usePage } from '@inertiajs/react';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import FastCollapse from '../ui/FastCollapse';
 import { SectionLabel } from '../ui/primitives';
 import OfficeMap from '../ui/OfficeMap';
 import { useThemeMotion } from '../../lib/theme';
 import InkField from '../decor/InkField';
-import BrandBars from '../decor/BrandBars';
 
 /** Project types offered by the inquiry form. */
 const TYPES = ['Branding', 'UI/UX'];
@@ -97,7 +96,7 @@ const revealViewport = { once: true, amount: 0.15, margin: '0px 0px -5% 0px' };
 const FAQS = [
     {
         q: 'What does Marketorr do?',
-        a: 'Two practices. Branding — identities that demand attention. UI/UX — interfaces engineered to convert.',
+        a: 'Two practices. Branding: identities that demand attention. UI/UX: interfaces engineered to convert.',
     },
     {
         q: 'What sits under Branding?',
@@ -117,7 +116,7 @@ const FAQS = [
     },
     {
         q: 'Do you work with NDAs?',
-        a: 'Yes — inquiries are NDA-friendly, and we never pass your details on.',
+        a: 'Yes, inquiries are NDA-friendly, and we never pass your details on.',
     },
     {
         q: 'Where is the studio?',
@@ -142,7 +141,7 @@ function BlockChip({ children }) {
  * One question. The answer opens with a pure-CSS grid-rows transition, so
  * toggling never measures layout in JS and the motion stays smooth even
  * mid-scroll: the panel glides open while its text fades and drifts up a
- * few pixels, and the plus rotates into a cross. Only one answer is open
+ * few pixels, and the plus gives way to a cross. Only one answer is open
  * at a time; clicking the open row closes it.
  */
 const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
@@ -161,7 +160,6 @@ const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
                 onClick={() => onToggle(index)}
                 aria-expanded={open}
                 aria-controls={id}
-                data-cursor="explore"
                 className="group flex h-14 w-full items-center gap-5 px-5 text-left"
             >
                 <span
@@ -176,14 +174,18 @@ const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
                 </span>
                 <span
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--line)] transition-colors duration-100 group-hover:border-transparent"
-                    style={open ? { background: BRAND_GRADIENT, borderColor: 'transparent' } : undefined}
+                    style={open ? { background: BRAND_GRADIENT, backgroundOrigin: 'border-box', borderColor: 'transparent' } : undefined}
                     aria-hidden
                 >
-                    <span
-                        className={`text-[16px] font-light leading-none transition-transform duration-[120ms] ease-out motion-reduce:transition-none ${open ? 'rotate-45 text-white' : 'rotate-0 text-[var(--ink)]'}`}
-                    >
-                        +
-                    </span>
+                    {open ? (
+                        <svg viewBox="0 0 12 12" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                            <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+                        </svg>
+                    ) : (
+                        <svg viewBox="0 0 12 12" className="h-3 w-3 text-[var(--ink)]" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                            <path d="M6 1.5v9M1.5 6h9" />
+                        </svg>
+                    )}
                 </span>
             </button>
             <FastCollapse open={open} id={id}>
@@ -228,6 +230,141 @@ function FaqList({ reduce }) {
 }
 
 /** Live studio time. Seconds tick, so the strip reads as a signal, not a label. */
+/**
+ * The inquiry form's dropdown, drawn in the site theme instead of the
+ * browser's native list. The list floats over the form, so nothing around it
+ * shifts or jumps when it opens. It opens below the field, or above it when
+ * there is not room below for the whole list, so every option stays visible.
+ *
+ * @param {{ value: string, onChange: (value: string) => void, options: string[], placeholder: string, label: string }} props
+ */
+function ThemedSelect({ value, onChange, options, placeholder, label }) {
+    const [open, setOpen] = useState(false);
+    const [highlighted, setHighlighted] = useState(-1);
+    const [dropUp, setDropUp] = useState(false);
+    const rootRef = useRef(null);
+    const listRef = useRef(null);
+    const listId = useId();
+
+    // Measured before paint, so the list never flashes on the wrong side.
+    useLayoutEffect(() => {
+        if (!open || !rootRef.current || !listRef.current) return;
+
+        const field = rootRef.current.getBoundingClientRect();
+        const needed = listRef.current.offsetHeight + 12;
+        const below = window.innerHeight - field.bottom;
+        const above = field.top;
+        setDropUp(below < needed && above > below);
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const onPointerDown = (event) => {
+            if (!rootRef.current?.contains(event.target)) setOpen(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown);
+
+        return () => document.removeEventListener('pointerdown', onPointerDown);
+    }, [open]);
+
+    const openList = () => {
+        setHighlighted(Math.max(0, options.indexOf(value)));
+        setOpen(true);
+    };
+
+    const choose = (option) => {
+        onChange(option);
+        setOpen(false);
+    };
+
+    const onKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            setOpen(false);
+
+            return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (!open) {
+                openList();
+
+                return;
+            }
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            setHighlighted((current) => (current + step + options.length) % options.length);
+
+            return;
+        }
+
+        if ((event.key === 'Enter' || event.key === ' ') && open && highlighted >= 0) {
+            event.preventDefault();
+            choose(options[highlighted]);
+        }
+    };
+
+    return (
+        <div ref={rootRef} className="relative">
+            <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-controls={listId}
+                aria-label={`${label}: ${value || placeholder}`}
+                onClick={() => (open ? setOpen(false) : openList())}
+                onKeyDown={onKeyDown}
+                className={`field-box flex h-12 w-full items-center justify-between gap-3 rounded-xl px-4 text-left text-[14px] ${value ? '' : 'is-empty'}`.trimEnd()}
+                style={open ? { borderColor: 'transparent', boxShadow: '0 0 0 1px #507af4' } : undefined}
+            >
+                <span className="min-w-0 truncate">{value || placeholder}</span>
+                <svg
+                    viewBox="0 0 12 7"
+                    className={`h-[7px] w-3 shrink-0 text-[var(--ink-faint)] transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+                    fill="none"
+                    aria-hidden
+                >
+                    <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+
+            {open && (
+                <ul
+                    ref={listRef}
+                    id={listId}
+                    role="listbox"
+                    aria-label={label}
+                    className={`absolute inset-x-0 z-30 ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'} overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)]`}
+                >
+                    {options.map((option, index) => {
+                        const selected = option === value;
+                        const active = index === highlighted;
+
+                        return (
+                            <li
+                                key={option}
+                                role="option"
+                                aria-selected={selected}
+                                onPointerEnter={() => setHighlighted(index)}
+                                onClick={() => choose(option)}
+                                className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors duration-150 ${
+                                    active ? 'text-white' : 'text-[var(--ink)]'
+                                } ${selected ? 'font-semibold' : ''}`.trimEnd()}
+                                style={active ? { background: BRAND_GRADIENT } : undefined}
+                            >
+                                <span className="min-w-0 truncate">{option}</span>
+                                {selected && (
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: active ? '#fff' : BRAND_GRADIENT }} aria-hidden />
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </div>
+    );
+}
+
 function StudioClock() {
     const [now, setNow] = useState(() => new Date());
 
@@ -245,7 +382,9 @@ function StudioClock() {
         <span className="inline-flex items-center gap-2 font-display text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
             Local time
-            <span className="tabular-nums text-[var(--ink)]">{time}</span>
+            {/* Server and browser render different seconds; the browser's
+                value takes over on the next tick. */}
+            <span className="tabular-nums text-[var(--ink)]" suppressHydrationWarning>{time}</span>
         </span>
     );
 }
@@ -258,15 +397,7 @@ export default function Contact({ heroHeading = false }) {
         ? {}
         : { initial: 'hidden', whileInView: 'show', viewport: revealViewport };
     const { settings } = usePage().props;
-    const { contactEmail, contactPhone, locationText, socials, address, directionsUrl } = settings;
-    // Only the socials that have been filled in, in display order.
-    const socialLinks = [
-        { label: 'LinkedIn', href: socials.linkedin },
-        { label: 'Behance', href: socials.behance },
-        { label: 'Dribbble', href: socials.dribbble },
-        { label: 'Instagram', href: socials.instagram },
-        { label: 'Facebook', href: socials.facebook },
-    ].filter((s) => s.href);
+    const { contactEmail, contactPhone, socials, address, directionsUrl } = settings;
     const { data, setData, post, processing, errors, clearErrors } = useForm({ ...BLANK_INQUIRY });
 
     const submit = (e) => {
@@ -299,7 +430,6 @@ export default function Contact({ heroHeading = false }) {
                     style={{ background: 'radial-gradient(circle, rgba(27,226,235,0.10), transparent 65%)' }}
                 />
             </div>
-            <BrandBars />
 
             {/* The page keeps one consistent section rhythm and collapses to one
                 column below lg. */}
@@ -307,7 +437,7 @@ export default function Contact({ heroHeading = false }) {
                 {/* ---------- 1. Contact ---------- */}
                 <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_600px] lg:grid-rows-[auto_1fr_auto] lg:items-stretch lg:gap-x-10 lg:gap-y-0">
                     <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="lg:col-start-1 lg:row-start-1">
-                        <SectionLabel index="04" name="CONTACT" />
+                        <SectionLabel name="CONTACT" />
                     </motion.div>
 
                     <div className="flex flex-col lg:col-start-1 lg:row-start-2">
@@ -339,9 +469,9 @@ export default function Contact({ heroHeading = false }) {
                             Two practices: Branding, and UI/UX.
                         </motion.p>
 
-                        {/* Email / Location / Socials, each behind a tinted glyph tile. */}
+                        {/* Email / Phone / Location, each behind a tinted glyph tile. */}
                         <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-9 grid gap-6 sm:grid-cols-3">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-start gap-3">
                                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #891FFB 14%, transparent)' }} aria-hidden>
                                     <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#891FFB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
@@ -354,34 +484,30 @@ export default function Contact({ heroHeading = false }) {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #507AF4 14%, transparent)' }} aria-hidden>
-                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#507AF4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            {contactPhone && (
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #507AF4 14%, transparent)' }} aria-hidden>
+                                        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#507AF4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M5 3.5h3.2l1.6 4.3-2.1 1.4a11 11 0 0 0 5.1 5.1l1.4-2.1 4.3 1.6V17a2.5 2.5 0 0 1-2.7 2.5A15.5 15.5 0 0 1 2.5 6.2 2.5 2.5 0 0 1 5 3.5Z" />
+                                        </svg>
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Phone</span>
+                                        <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{contactPhone}</a>
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="flex items-start gap-3">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #1BE2EB 16%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#1BE2EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
                                         <circle cx="12" cy="10" r="2.6" />
                                     </svg>
                                 </span>
                                 <span className="min-w-0">
                                     <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Location</span>
-                                    <span className="mt-1 block text-[14px] font-semibold text-[var(--ink)]">{locationText}</span>
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #1BE2EB 16%, transparent)' }} aria-hidden>
-                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#1BE2EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="9" cy="9" r="3" />
-                                        <path d="M2.8 19a6.4 6.4 0 0 1 12.4 0" />
-                                        <path d="M16.5 7.2a3 3 0 0 1 0 5.6M18.4 19a6.3 6.3 0 0 0-2.1-4" />
-                                    </svg>
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Socials</span>
-                                    <span className="mt-1 flex gap-3 text-[14px] font-semibold text-[var(--ink)]">
-                                        {socialLinks.slice(0, 2).map((social) => (
-                                            <a key={social.label} href={social.href} target="_blank" rel="noreferrer" className="link-underline btn-press">{social.label}</a>
-                                        ))}
-                                    </span>
+                                    <a href={directionsUrl} target="_blank" rel="noreferrer" className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{address}</a>
                                 </span>
                             </div>
                         </motion.div>
@@ -399,13 +525,6 @@ export default function Contact({ heroHeading = false }) {
                         >
                             Open in Google Maps &rarr;
                         </a>
-                        {contactPhone && (
-                            <motion.p {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-3 text-[14px] font-semibold text-[var(--ink)] lg:hidden">
-                                <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press">
-                                    {contactPhone}
-                                </a>
-                            </motion.p>
-                        )}
                     </div>
 
                     <div className="hidden lg:col-start-1 lg:row-start-3 lg:block">
@@ -417,13 +536,6 @@ export default function Contact({ heroHeading = false }) {
                         >
                             Open in Google Maps &rarr;
                         </a>
-                        {contactPhone && (
-                            <motion.p {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-4 text-[14px] font-semibold text-[var(--ink)]">
-                                <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press">
-                                    {contactPhone}
-                                </a>
-                            </motion.p>
-                        )}
                     </div>
 
                     {/* ---- message card ---- */}
@@ -502,30 +614,28 @@ export default function Contact({ heroHeading = false }) {
                                     </label>
                                 ))}
 
-                                <label className="block">
+                                <div className="block">
                                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Budget range</span>
-                                    <select
+                                    <ThemedSelect
+                                        label="Budget range"
                                         value={data.budget}
-                                        onChange={(e) => setData('budget', e.target.value)}
-                                        className={`field-box h-12 w-full rounded-xl px-4 text-[14px] ${data.budget ? '' : 'is-empty'}`}
-                                    >
-                                        <option value="" disabled hidden>Select a budget</option>
-                                        {BUDGETS.map((b) => (<option key={b} value={b} className="bg-[var(--surface)]">{b}</option>))}
-                                    </select>
-                                </label>
+                                        onChange={(value) => setData('budget', value)}
+                                        options={BUDGETS}
+                                        placeholder="Select a budget"
+                                    />
+                                </div>
 
-                                <label className="block">
+                                <div className="block">
                                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Project type</span>
-                                    <select
+                                    <ThemedSelect
+                                        label="Project type"
                                         value={data.type}
-                                        onChange={(e) => setData('type', e.target.value)}
-                                        className={`field-box h-12 w-full rounded-xl px-4 text-[14px] ${data.type ? '' : 'is-empty'}`}
-                                    >
-                                        <option value="" disabled hidden>Select a project type</option>
-                                        {TYPES.map((t) => (<option key={t} value={t} className="bg-[var(--surface)]">{t}</option>))}
-                                    </select>
+                                        onChange={(value) => setData('type', value)}
+                                        options={TYPES}
+                                        placeholder="Select a project type"
+                                    />
                                     {errors.type && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors.type}</span>}
-                                </label>
+                                </div>
 
                                 <label className="flex flex-col sm:col-span-2 lg:min-h-0 lg:h-full">
                                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Message*</span>
@@ -647,25 +757,47 @@ export default function Contact({ heroHeading = false }) {
                             <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8 lg:mt-[44px]">
                                 <ul className="list-none border-b border-[var(--line)]">
                                     {[
-                                        { label: contactEmail, href: `mailto:${contactEmail}`, type: 'email', ext: false },
-                                        ...(socials.linkedin ? [{ label: 'LinkedIn', href: socials.linkedin, type: 'linkedin', ext: true }] : []),
-                                    ].map((row) => (
+                                        { label: 'LinkedIn', href: socials.linkedin },
+                                        { label: 'Behance', href: socials.behance },
+                                        { label: 'Dribbble', href: socials.dribbble },
+                                        { label: 'Instagram', href: socials.instagram },
+                                    ].filter((row) => row.href).map((row) => (
                                         <li key={row.label} className="border-b border-[var(--line)] last:border-b-0">
                                             <a
                                                 href={row.href}
-                                                {...(row.ext ? { target: '_blank', rel: 'noreferrer' } : {})}
-                                                data-cursor="explore"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                data-social-platform={row.label}
                                                 className="group flex items-center gap-4 py-4 text-[var(--ink)]"
                                             >
                                                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--line)] text-[var(--ink)]" aria-hidden>
-                                                    {row.type === 'linkedin' ? (
-                                                        <span className="font-display text-[11px] font-extrabold lowercase">in</span>
-                                                    ) : (
-                                                        <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                                                                <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
-                                                                <path d="m3 6.5 9 6 9-6" />
-                                                        </svg>
-                                                    )}
+                                                    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                                                        {row.label === 'LinkedIn' && (
+                                                            <>
+                                                                <rect x="3" y="3" width="18" height="18" rx="2.5" />
+                                                                <path d="M7.5 10v7M7.5 7.25v.1M11.5 17v-4a3 3 0 0 1 6 0v4M11.5 10v7" />
+                                                            </>
+                                                        )}
+                                                        {row.label === 'Behance' && (
+                                                            <>
+                                                                <path d="M3.5 6.5h5a3 3 0 0 1 0 6h-5zM3.5 12.5h5.75a3.25 3.25 0 0 1 0 6.5H3.5zM14.5 7h5" />
+                                                                <path d="M20.5 15.5h-7a3.5 3.5 0 1 0 6.35 2" />
+                                                            </>
+                                                        )}
+                                                        {row.label === 'Dribbble' && (
+                                                            <>
+                                                                <circle cx="12" cy="12" r="9" />
+                                                                <path d="M7.2 4.4c3.1 3.8 5.8 8.2 7.5 14.8M3.2 10.4c4.7.1 9.2-1.2 12.5-4.1M5.4 17.8c2.5-3.6 6.7-5.4 15.4-4.4" />
+                                                            </>
+                                                        )}
+                                                        {row.label === 'Instagram' && (
+                                                            <>
+                                                                <rect x="3" y="3" width="18" height="18" rx="5" />
+                                                                <circle cx="12" cy="12" r="4" />
+                                                                <circle cx="17.4" cy="6.7" r=".8" fill="currentColor" stroke="none" />
+                                                            </>
+                                                        )}
+                                                    </svg>
                                                 </span>
                                                 <span className="min-w-0 flex-1 truncate text-[15px]">{row.label}</span>
                                                 <span className="text-[13px] text-[var(--ink-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:text-[var(--ink)]" aria-hidden>&#8599;</span>
@@ -684,11 +816,11 @@ export default function Contact({ heroHeading = false }) {
                             </motion.div>
                         </div>
 
-                        {/* Location and studio time only: Marketorr publishes no
+                        {/* Reply time and studio time only: Marketorr publishes no
                             availability status, so none is claimed here. */}
                         <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-12 flex flex-col gap-4 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between lg:mt-14">
                             <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
-                                Marketorr &middot; <span className="text-gradient">{locationText}</span>
+                                Marketorr &middot; <span className="text-gradient">We reply within 24&ndash;48 hours</span>
                             </span>
                             <StudioClock />
                         </motion.div>

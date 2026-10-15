@@ -101,16 +101,13 @@ class SeoController extends Controller
             ->all();
 
         $subservices = collect(config('subservices'))
-            ->flatMap(fn (array $category) => [
-                ['loc' => route('services.show', $category['slug']), 'lastmod' => null],
-                ...array_map(
-                    fn (array $item) => [
-                        'loc' => route('services.subshow', [$category['slug'], $item['slug']]),
-                        'lastmod' => null,
-                    ],
-                    $category['items'] ?? [],
-                ),
-            ])
+            ->flatMap(fn (array $category) => array_map(
+                fn (array $item) => [
+                    'loc' => route('services.subshow', [$category['slug'], $item['slug']]),
+                    'lastmod' => null,
+                ],
+                $category['items'] ?? [],
+            ))
             ->all();
 
         return [...$services, ...$subservices];

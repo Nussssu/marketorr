@@ -9,6 +9,7 @@ import {
     MediaPickerField,
     PageHeader,
     Panel,
+    ProjectGalleryManager,
     RepeatableList,
     Select,
     Textarea,
@@ -40,6 +41,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
         featured: project?.featured ?? false,
         status: project?.status ?? 'published',
         sort_order: project?.sort_order ?? '',
+        gallery_images: project?.gallery_images ?? [],
     });
 
     const onTitleChange = (value) => {
@@ -72,7 +74,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
 
     return (
         <>
-            <Head title={`${isEdit ? 'Edit' : 'New'} project — Marketorr Admin`} />
+            <Head title={`${isEdit ? 'Edit' : 'New'} project | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${project.title}` : 'New project'}
                 subtitle="Fields map one-to-one onto the public case study page."
@@ -109,7 +111,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 label="Category"
                                 error={errors.category_id}
                                 required
-                                hint={categories.length === 0 ? 'No categories yet — create one first.' : undefined}
+                                hint={categories.length === 0 ? 'No categories yet, create one first.' : undefined}
                             >
                                 <Select value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
                                     <option value="">Select a category…</option>
@@ -130,7 +132,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                         </div>
                     </Panel>
 
-                    <Panel title="Headline metric" description="Optional — shown over the cover image and on the case study.">
+                    <Panel title="Headline metric" description="Optional: shown over the cover image and on the case study.">
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field label="Metric" error={errors.metric}>
                                 <Input value={data.metric ?? ''} onChange={(e) => setData('metric', e.target.value)} placeholder="2100%" />
@@ -141,7 +143,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                         </div>
                     </Panel>
 
-                    <Panel title="External case study" description="Optional — when the full write-up lives elsewhere (Behance, Dribbble, the client's own site), the project page links out to it instead of repeating it.">
+                    <Panel title="External case study" description="Optional: when the full write-up lives elsewhere (Behance, Dribbble, the client's own site), the project page links out to it instead of repeating it.">
                         <Field label="Case study URL" error={errors.external_url}>
                             <Input
                                 type="url"
@@ -167,6 +169,17 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 <Input value={data.image_alt} onChange={(e) => setData('image_alt', e.target.value)} />
                             </Field>
                         </div>
+                    </Panel>
+
+                    <Panel
+                        title="Project gallery"
+                        description="Dedicated-page images in exact display order, first row renders first. Add from the Media Library, reorder with ↑ ↓, or remove."
+                    >
+                        <ProjectGalleryManager
+                            values={data.gallery_images ?? []}
+                            onChange={(gallery_images) => setData('gallery_images', gallery_images)}
+                            error={errors.gallery_images}
+                        />
                     </Panel>
                 </div>
 

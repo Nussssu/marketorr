@@ -53,7 +53,7 @@ function useDesktopScrollStage() {
  */
 function ProjectCover({ p, glow, rich, progress }) {
     const reduce = useReducedMotion();
-    const cardMedia = projectCardMedia(p);
+    const cardMedia = projectCardMedia(p, '(max-width: 768px) 78vw, 50vw');
     const parallax = rich && !reduce;
     // Small, GPU-only drift: transform + opacity only, no blur, no layout work.
     const y = useTransform(progress, [0, 1], parallax ? ['-3%', '3%'] : ['0%', '0%']);
@@ -70,7 +70,7 @@ function ProjectCover({ p, glow, rich, progress }) {
                     viewport={{ once: true, margin: '-10% 0px' }}
                     transition={{ duration: 0.9, ease: [...EASE] }}
                 >
-                    <CharukothonCover image={p.image} />
+                    <CharukothonCover image={p.thumb || p.image} />
                 </motion.div>
             ) : (
             <motion.div
@@ -83,6 +83,8 @@ function ProjectCover({ p, glow, rich, progress }) {
             >
                 <img
                     src={cardMedia.src}
+                    srcSet={cardMedia.srcSet}
+                    sizes={cardMedia.sizes}
                     alt={cardMedia.alt}
                     loading="lazy"
                     decoding="async"
@@ -113,15 +115,6 @@ function ProjectCover({ p, glow, rich, progress }) {
                     aria-hidden
                 />
             )}
-
-            <div
-                className="absolute bottom-4 left-4 flex max-w-[calc(100%-5rem)] items-center gap-2 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 md:bottom-6 md:left-6 md:max-w-[calc(100%-6rem)]"
-                style={{ boxShadow: glow ? glow(p.accent, 26) : undefined }}
-                aria-hidden
-            >
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.accent }} />
-                <span className="truncate font-display text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">{p.category}</span>
-            </div>
 
             <div className="absolute bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl text-black transition-transform duration-200 group-hover:scale-105 md:bottom-6 md:right-6 md:h-14 md:w-14" aria-hidden>
                 <span data-arrow>↗</span>
@@ -231,7 +224,7 @@ function Card({ p, glow, className = '', ratio = CARD_RATIO, focus }) {
 function MobileCard({ p, focus }) {
     const reduce = useReducedMotion();
     const tapIntent = useTapIntent();
-    const cardMedia = projectCardMedia(p);
+    const cardMedia = projectCardMedia(p, '78vw');
 
     return (
         <motion.article
@@ -251,10 +244,12 @@ function MobileCard({ p, focus }) {
             >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#111116]" style={{ containerType: 'inline-size' }}>
                     {isCharukothon(p.slug) ? (
-                        <CharukothonCover image={p.image} />
+                        <CharukothonCover image={p.thumb || p.image} />
                     ) : (
                     <img
                         src={cardMedia.src}
+                        srcSet={cardMedia.srcSet}
+                        sizes={cardMedia.sizes}
                         alt={cardMedia.alt}
                         loading="lazy"
                         decoding="async"
@@ -292,19 +287,20 @@ function MobileCard({ p, focus }) {
     );
 }
 
-/** Image-free final slide linking the showcase to the complete work archive. */
+/** Image-free final slide linking the showcase to the full branding portfolio. */
 function SeeAllWorkCard({ focus }) {
     const tapIntent = useTapIntent();
 
     return (
         <motion.div className="w-full" style={focus ? { opacity: focus } : undefined}>
             <Link
-                href="/work"
+                href="/work/portfolio/branding"
                 prefetch
-                data-cursor="cta"
+                data-cursor="view"
+                data-see-all-work
                 {...tapIntent}
-                className="group relative flex h-[var(--mq-h)] w-full flex-col justify-between overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 transition-[transform,border-color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1 hover:border-[#507AF4]/50 focus-visible:-translate-y-1 sm:p-8"
-                aria-label="See all work"
+                className="group relative flex h-[var(--mq-h)] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 transition-[transform,border-color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1 hover:border-[#507AF4]/50 focus-visible:-translate-y-1 sm:p-8"
+                aria-label="See all branding work"
             >
                 <span
                     className="absolute inset-x-0 top-0 h-[2px] origin-left scale-x-[0.18] transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
@@ -314,7 +310,7 @@ function SeeAllWorkCard({ focus }) {
 
                 <span className="flex items-center justify-between">
                     <span className="font-display text-[9px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] sm:text-[11px]">
-                        Project archive
+                        Branding portfolio
                     </span>
                     <span className="flex gap-1.5" aria-hidden>
                         <span className="h-1.5 w-1.5 rounded-full bg-[#891FFB]" />
@@ -324,12 +320,12 @@ function SeeAllWorkCard({ focus }) {
                 </span>
 
                 <span className="max-w-[15rem] text-[10px] leading-relaxed text-[var(--mute)] sm:text-[13px]">
-                    Explore the complete collection of brands and digital products.
+                    Explore the complete collection of identities, logos and packaging.
                 </span>
 
                 <span className="flex items-end justify-between gap-5">
                     <span className="inline-flex items-center gap-2 font-display text-[12px] font-semibold uppercase tracking-[0.22em] text-[var(--ink-strong)] sm:text-[13px]">
-                        See all work
+                        See all branding
                         <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </span>
                     <span className="see-all-work__arrow flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-base text-[var(--ink)] transition-[opacity,transform,background-color,color,border-color] duration-300 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white group-focus-visible:border-transparent group-focus-visible:bg-[#507AF4] group-focus-visible:text-white sm:h-12 sm:w-12 sm:text-lg" aria-hidden>
@@ -545,6 +541,14 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
         if (!dragging.current) {
             if (event.pointerType !== 'mouse' || !rich) return;
 
+            // The See-all card stays in focus under the cursor, so every part
+            // of it remains clickable instead of steering the strip away.
+            if (event.target.closest?.('[data-see-all-work]')) {
+                steered.set(0);
+
+                return;
+            }
+
             // Measured once per hover rather than per move: reading a box
             // inside a pointer handler forces a layout flush, and the strip
             // does not change size while the cursor crosses it.
@@ -708,12 +712,12 @@ export default function OurWork({ glow, projects = [] }) {
     return (
         <section id="work" className="relative overflow-x-clip bg-[var(--bg-soft)] section-pad">
             <div className="container-x relative">
-                <SectionLabel index="03" name="OUR WORK" />
+                <SectionLabel name="BRANDING WORK" />
                 {/* intro */}
                 <div className="mt-10 md:mt-0 lg:py-6">
-                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Work that', 'creates impact.']} highlightedLines={[1]} />
+                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Brands that', 'create impact.']} highlightedLines={[1]} />
                     <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
-                        Selected work across branding, digital products, UI/UX, campaigns, and growth-focused experiences.
+                        Selected branding work: identities, logos, packaging and the campaigns that carry them.
                     </p>
                 </div>
             </div>

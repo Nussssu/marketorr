@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\PublicAsset;
 use Database\Seeders\ProjectSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -46,9 +47,9 @@ class ProjectCaseStudyTest extends TestCase
         $this->assertGreaterThan(0, $images->count());
 
         foreach ($images as $image) {
-            $this->assertStringStartsWith('/', $image['src']);
+            $this->assertStringStartsWith(PublicAsset::to('/'), $image['src']);
             $this->assertFileExists(
-                public_path(ltrim($image['src'], '/')),
+                public_path(substr($image['src'], strlen(PublicAsset::to('/')))),
                 "Case study image {$image['src']} is referenced but missing from public/.",
             );
             $this->assertNotSame('', $image['alt'], "Case study image {$image['src']} has no alt text.");
@@ -63,7 +64,7 @@ class ProjectCaseStudyTest extends TestCase
         $filenames = collect($project->publicCaseStudy())
             ->flatMap(fn (array $section) => $section['images'])
             ->pluck('src')
-            ->map(fn (string $src): string => basename($src))
+            ->map(fn (string $src): string => $this->originalName($src))
             ->all();
 
         $this->assertSame(
@@ -85,8 +86,43 @@ class ProjectCaseStudyTest extends TestCase
                 ->where('project.externalUrl', 'https://www.behance.net/gallery/256192295/Medica-Lifecare-PLC-Brand-Identity-Design')
                 ->has('project.caseStudy', 1)
                 ->has('project.caseStudy.0.images', 18)
-                ->where('project.caseStudy.0.images.0.src', '/images/work/gallery/medica-lifecare-brand-identity/01.webp')
-                ->where('project.caseStudy.0.images.17.src', '/images/work/gallery/medica-lifecare-brand-identity/18.webp')
+                ->where('project.caseStudy.0.images.0.src', PublicAsset::url('/images/work/gallery/medica-lifecare-brand-identity/01.webp'))
+                ->where('project.caseStudy.0.images.17.src', PublicAsset::url('/images/work/gallery/medica-lifecare-brand-identity/18.webp'))
+            );
+    }
+
+    public function test_dusty_vision_receives_the_complete_behance_image_sequence_without_duplicates(): void
+    {
+        $this->seed(ProjectSeeder::class);
+
+        $project = Project::query()->where('slug', 'dusty-vision')->sole();
+        $filenames = collect($project->publicCaseStudy())
+            ->flatMap(fn (array $section) => $section['images'])
+            ->pluck('src')
+            ->map(fn (string $src): string => $this->originalName($src))
+            ->all();
+
+        $this->assertSame([
+            '01.webp', '02.webp', '03.gif', '04.webp', '05.webp', '06.webp', '07.gif',
+            '08.webp', '09.webp', '10.webp', '11.webp', '12.webp', '13.webp', '14.webp',
+            '15.webp', '16.webp', '17.webp', '18.webp', '19.webp', '20.webp', '21.webp',
+        ], $filenames);
+    }
+
+    public function test_imperial_jute_receives_the_complete_branding_behance_image_sequence(): void
+    {
+        $this->seed(ProjectSeeder::class);
+
+        $this->get('/work/imperial-jute-b2b-seo')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Work/Show')
+                ->where('project.title', 'Imperial Jute')
+                ->where('project.externalUrl', 'https://www.behance.net/gallery/175626169/Jute-Company-Minimal-Logo-Brand-Design-Imperial-Jute')
+                ->has('project.caseStudy', 1)
+                ->has('project.caseStudy.0.images', 16)
+                ->where('project.caseStudy.0.images.0.src', PublicAsset::url('/images/work/gallery/imperial-jute-brand-design/01.gif'))
+                ->where('project.caseStudy.0.images.15.src', PublicAsset::url('/images/work/gallery/imperial-jute-brand-design/16.webp'))
             );
     }
 
@@ -174,5 +210,16 @@ class ProjectCaseStudyTest extends TestCase
                 'status' => 'published',
             ])
             ->assertSessionHasErrors('external_url');
+    }
+
+    /**
+     * The file name of the original behind a public URL: an optimized copy is
+     * named after its original plus `.webp` (`03.gif` becomes `03.gif.webp`).
+     */
+    private function originalName(string $src): string
+    {
+        $name = basename($src);
+
+        return str_contains($src, '/images/opt/') ? substr($name, 0, -strlen('.webp')) : $name;
     }
 }

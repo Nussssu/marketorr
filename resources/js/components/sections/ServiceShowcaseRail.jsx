@@ -2,6 +2,7 @@ import { motion, useMotionValue, useReducedMotion } from 'framer-motion';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 import { useEffect, useRef, useState } from 'react';
 import { GradientTitle } from '../ui/primitives';
+import { assetUrl } from '../../lib/asset';
 
 /** Tight gap between screens — the strip stays continuous with no air in it. */
 const GAP = 8;
@@ -9,6 +10,26 @@ const GAP = 8;
 /** Seconds for one screen to travel its own height — slow premium reel. */
 const SECONDS_PER_SCREEN = 4.5;
 const FRAME_INTERVAL = 1000 / 30;
+
+/**
+ * Real project visuals for the rail only, keyed by sub-service slug. Kept
+ * here rather than in the catalogue so the sub-service pages and the header
+ * menu are unaffected.
+ */
+const RAIL_IMAGES = {
+    'brand-strategy': '/images/work/sabdita/brand-positioning.jpg',
+    'brand-identity-design': '/images/work/sabdita/logo-presentation.jpg',
+    rebranding: '/images/work/sabdita/logo-backgrounds.jpg',
+    'packaging-design': '/images/work/sabdita/packaging.jpg',
+    'motion-branding': '/images/work/sabdita/logo-animation.webp',
+    'brand-guidelines': '/images/work/sabdita/logo-explainer.jpg',
+    'website-ui-ux-design': '/images/work/uiux/amco/thumbs/01-home.webp',
+    'mobile-app-ui-ux': '/images/work/uiux/city-online/thumbs/15-bill-pay.webp',
+    'saas-product-design': '/images/work/uiux/adlbl/thumbs/01-dashboard.webp',
+    'ux-research-strategy': '/images/work/uiux/microters/thumbs/07-case-study.webp',
+    'wireframing-prototyping': '/images/work/uiux/adlbl/thumbs/05-add-member-form.webp',
+    'design-system': '/images/work/uiux/adlbl/thumbs/13-setup-profile-branding.webp',
+};
 
 /**
  * One compact version of the real dedicated-page sub-service card. Its image,
@@ -20,6 +41,8 @@ const FRAME_INTERVAL = 1000 / 30;
  * the dedicated cards at a scale that stays readable inside the narrow rail.
  */
 function ShowcaseScreen({ item, solidTitle = false }) {
+    const image = item.image ?? assetUrl(RAIL_IMAGES[item.slug]);
+
     return (
         <figure className="m-0" data-screen>
             <div
@@ -27,9 +50,9 @@ function ShowcaseScreen({ item, solidTitle = false }) {
                 style={{ '--svc-accent': item.accent }}
             >
                 <div className="absolute inset-x-0 top-0 h-[48%] overflow-hidden bg-[#08080B]">
-                    {item.image ? (
+                    {image ? (
                         <img
-                            src={item.image}
+                            src={image}
                             alt=""
                             loading="lazy"
                             decoding="async"

@@ -1,10 +1,9 @@
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ScreenLightbox from '../ui/ScreenLightbox';
 import BrandLogo from '../layout/BrandLogo';
+import { transitionTo } from '../motion/PageTransition';
+import { loadGsap } from '../../lib/gsap';
 
-gsap.registerPlugin(ScrollTrigger);
 
 /** Sheets whose image is requested ahead of the one being printed. */
 const LOOKAHEAD = 3;
@@ -78,11 +77,16 @@ function measureStage(width, height) {
  * trackpad and touch alike, and the frame loop only runs while it is still
  * catching up.
  *
+ * A screen with an `href` prints as a link to that page instead of opening
+ * the larger view, which is how the landing page prints one cover per
+ * project. `hint` replaces the instruction under the stage.
+ *
  * @param {{
- *   project: { slug: string, name: string, discipline: string, screens: Array<{ src: string, thumb: string, width: number, height: number, alt: string, label: string }> },
+ *   project: { slug: string, name: string, discipline: string, screens: Array<{ src: string, thumb: string, width: number, height: number, alt: string, label: string, href?: string }> },
+ *   hint?: { desktop: string, mobile: string },
  * }} props
  */
-export default function UiuxPrinter({ project }) {
+export default function UiuxPrinter({ project, hint }) {
     const screens = useMemo(
         () =>
             project.screens.map((screen, index) => ({
@@ -146,6 +150,14 @@ export default function UiuxPrinter({ project }) {
 
     useEffect(() => {
         if (!geometry || total === 0) return undefined;
+
+        let cancelled = false;
+        let teardown = () => {};
+
+        // GSAP arrives on demand (see lib/gsap): the printer's scroll drive
+        // starts once it has loaded.
+        loadGsap().then(({ gsap, ScrollTrigger }) => {
+        if (cancelled) return;
 
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const compact = window.matchMedia('(max-width: 639px)').matches;
@@ -262,9 +274,15 @@ export default function UiuxPrinter({ project }) {
         render();
         setTarget(trigger.progress);
 
-        return () => {
+        teardown = () => {
             trigger.kill();
             gsap.ticker.remove(tick);
+        };
+        });
+
+        return () => {
+            cancelled = true;
+            teardown();
         };
     }, [geometry, total, screens]);
 
@@ -318,18 +336,32 @@ export default function UiuxPrinter({ project }) {
                             <div className="uiux-printer__rail" style={{ height: g.slotY }}>
                                 {screens.map((screen, index) => {
                                     const size = sheetHeights[index];
+                                    const Sheet = screen.href ? 'a' : 'button';
+                                    const behaviour = screen.href
+                                        ? {
+                                            href: screen.href,
+                                            onClick: (event) => {
+                                                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                                                event.preventDefault();
+                                                transitionTo(screen.href);
+                                            },
+                                            'aria-label': `Open project: ${screen.label}`,
+                                        }
+                                        : {
+                                            type: 'button',
+                                            onClick: (event) => setLightbox({ index, rect: event.currentTarget.getBoundingClientRect() }),
+                                            'aria-label': `Open larger view: ${screen.alt}`,
+                                        };
 
                                     return (
-                                        <button
+                                        <Sheet
                                             key={screen.src}
                                             ref={(el) => {
                                                 sheetRefs.current[index] = el;
                                             }}
-                                            type="button"
                                             tabIndex={-1}
                                             data-cursor="view"
-                                            onClick={(event) => setLightbox({ index, rect: event.currentTarget.getBoundingClientRect() })}
-                                            aria-label={`Open larger view: ${screen.alt}`}
+                                            {...behaviour}
                                             className="uiux-sheet"
                                             style={{
                                                 left: g.printerX - g.sheetWidth / 2,
@@ -359,7 +391,7 @@ export default function UiuxPrinter({ project }) {
                                                     {pad(screen.screenNumber)}/{pad(screen.screenTotal)}
                                                 </span>
                                             </span>
-                                        </button>
+                                        </Sheet>
                                     );
                                 })}
                             </div>
@@ -387,8 +419,8 @@ export default function UiuxPrinter({ project }) {
 
                     <p className="uiux-printer__hint container-x">
                         <span className="uiux-printer__hint-dot" aria-hidden />
-                        <span className="uiux-printer__hint-desktop">Click any page to view the full design</span>
-                        <span className="uiux-printer__hint-mobile">Tap any page to view the full design</span>
+                        <span className="uiux-printer__hint-desktop">{hint?.desktop ?? 'Click any page to view the full design'}</span>
+                        <span className="uiux-printer__hint-mobile">{hint?.mobile ?? 'Tap any page to view the full design'}</span>
                     </p>
                 </div>
             </section>

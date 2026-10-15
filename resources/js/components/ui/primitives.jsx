@@ -1,13 +1,14 @@
 import { Link } from '@inertiajs/react';
 
-export function SectionLabel({ index, name }) {
+/**
+ * A section's eyebrow: its name and a short brand rule. `data-section-label`
+ * is what the sticky header reads to show which section the reader is in.
+ */
+export function SectionLabel({ name }) {
     return (
-        <div className="flex items-center gap-4">
-            <span className="font-display text-[12px] font-bold tracking-[0.22em] text-[var(--ink-faint)]">
-                {index} / {name}
-            </span>
-            <span className="h-[2px] w-16 overflow-hidden rounded-full bg-[var(--line)]" aria-hidden>
-                <span className="block h-full w-full origin-left bg-brand" />
+        <div className="flex items-center gap-4" data-section-label={name}>
+            <span className="font-display text-[12px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
+                {name}
             </span>
         </div>
     );

@@ -1,3 +1,4 @@
+import { assetUrl } from './asset';
 /**
  * Projects whose dedicated page opens on something other than the flat cover.
  *
@@ -19,31 +20,35 @@
  * repository.
  *
  * @type {Record<string, (
- *   { kind: 'image', src: string, alt: string, fit?: 'cover'|'contain', background?: string }
+ *   { kind: 'image', src: string, alt: string, fit?: 'cover'|'contain', background?: string, card?: boolean, cardSrcSet?: string }
  *   | { kind: 'vimeo', id: string, title: string, ratio: number, background?: string }
  * )>}
  */
 export const PROJECT_HERO_MEDIA = {
     'imperial-jute-b2b-seo': {
         kind: 'image',
-        src: '/images/work/imperial-jute-logo.webp',
+        src: assetUrl('/images/work/imperial-jute-logo.webp'),
+        // Card-sized copies of the same animation (every frame, same timing).
+        cardSrcSet: `${assetUrl('/images/opt/thumbs-sm/work/imperial-jute-logo.webp.webp')} 480w, ${assetUrl('/images/opt/thumbs/work/imperial-jute-logo.webp.webp')} 900w, ${assetUrl('/images/work/imperial-jute-logo.webp')} 1400w`,
         alt: 'Imperial Jute 3D logo animation',
         fit: 'contain',
         background: '#000000',
     },
     'imperial-jute-brand-design': {
         kind: 'image',
-        src: '/images/work/imperial-jute-logo.webp',
+        src: assetUrl('/images/work/imperial-jute-logo.webp'),
+        // Card-sized copies of the same animation (every frame, same timing).
+        cardSrcSet: `${assetUrl('/images/opt/thumbs-sm/work/imperial-jute-logo.webp.webp')} 480w, ${assetUrl('/images/opt/thumbs/work/imperial-jute-logo.webp.webp')} 900w, ${assetUrl('/images/work/imperial-jute-logo.webp')} 1400w`,
         alt: 'Imperial Jute 3D logo animation',
         fit: 'contain',
         background: '#000000',
     },
     'city-online-brand-design': {
         kind: 'video',
-        src: '/videos/city-online-hero.mp4',
+        src: assetUrl('/videos/city-online-hero.mp4'),
         // The brand film's own first frame, so the stage is never empty while
         // the file buffers and reduced-motion readers still see the piece.
-        poster: '/images/work/city-online-hero-poster.jpg',
+        poster: assetUrl('/images/opt/work/city-online-hero-poster.jpg.webp'),
         background: '#191919',
     },
     'microters-web': {
@@ -57,7 +62,7 @@ export const PROJECT_HERO_MEDIA = {
     },
     'un-point-brand-design': {
         kind: 'image',
-        src: '/images/work/un-point-logo.webp',
+        src: assetUrl('/images/work/un-point-logo.webp'),
         alt: 'Un Point 5 logo animation',
         fit: 'cover',
         background: '#0b0b0e',
@@ -66,7 +71,7 @@ export const PROJECT_HERO_MEDIA = {
     },
     'shuddhomart-branding': {
         kind: 'image',
-        src: '/images/work/shuddhomart-hero.webp',
+        src: assetUrl('/images/work/shuddhomart-hero.webp'),
         alt: 'ShuddhoMart brand identity',
         fit: 'cover',
         background: '#0b0b0e',
@@ -97,7 +102,7 @@ export const PROJECT_HERO_MEDIA = {
     },
     'smilez-logo-design': {
         kind: 'image',
-        src: '/images/work/gallery/smilez-logo-design/03.webp',
+        src: assetUrl('/images/work/gallery/smilez-logo-design/03.webp'),
         alt: 'Smilez silver foil emboss on dark paper',
         fit: 'cover',
         background: '#0b0b0e',
@@ -106,7 +111,7 @@ export const PROJECT_HERO_MEDIA = {
     },
     'tapmad-media-ads': {
         kind: 'image',
-        src: '/images/work/gallery/tapmad-media-ads/02.webp',
+        src: assetUrl('/images/work/gallery/tapmad-media-ads/02.webp'),
         alt: 'Tapmad All in 1 press ad on newspaper',
         fit: 'cover',
         background: '#0b0b0e',
@@ -127,22 +132,34 @@ export function projectHeroMedia(slug) {
  * Use an image-based hero as the matching card cover. Video heroes retain the
  * project's still cover so cards never embed or autoplay a remote player.
  *
- * @param {{ slug?: string, image?: string, imageAlt?: string }|undefined} project
- * @return {{ src: string|undefined, alt: string, fit: 'cover'|'contain' }}
+ * @param {{ slug?: string, image?: string, thumb?: string, thumbSmall?: string, imageAlt?: string }|undefined} project
+ * @param {string} [sizes] The card's rendered width, as an `<img sizes>` value.
+ * @return {{ src: string|undefined, srcSet?: string, sizes?: string, alt: string, fit: 'cover'|'contain' }}
  */
-export function projectCardMedia(project) {
+export function projectCardMedia(project, sizes = '(max-width: 768px) 92vw, 50vw') {
     const heroMedia = projectHeroMedia(project?.slug);
 
     if (heroMedia?.kind === 'image' && heroMedia.card !== false) {
         return {
             src: heroMedia.src,
+            srcSet: heroMedia.cardSrcSet,
+            sizes: heroMedia.cardSrcSet ? sizes : undefined,
             alt: heroMedia.alt,
             fit: heroMedia.fit ?? 'cover',
         };
     }
 
+    const thumb = project?.thumb && project.thumb !== project?.image ? project.thumb : null;
+    const small = thumb && project?.thumbSmall && project.thumbSmall !== thumb ? project.thumbSmall : null;
+
     return {
-        src: project?.image,
+        // Grid copies (480px and 900px) when the server has them, with the full
+        // cover offered for slots and screens that need more pixels. `sizes`
+        // is the card's rendered width, so the browser picks the smallest
+        // copy that stays sharp.
+        src: thumb ?? project?.image,
+        srcSet: thumb ? [small && `${small} 480w`, `${thumb} 900w`, `${project.image} 1800w`].filter(Boolean).join(', ') : undefined,
+        sizes: thumb ? sizes : undefined,
         alt: project?.imageAlt ?? '',
         fit: 'cover',
     };

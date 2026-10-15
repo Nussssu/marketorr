@@ -80,7 +80,7 @@ function BlockEditor({ block }) {
 export default function BlocksIndex({ blocks }) {
     return (
         <>
-            <Head title="Global blocks — Marketorr Admin" />
+            <Head title="Global blocks | Marketorr Admin" />
             <PageHeader title="Global blocks" subtitle="Reusable content shown across the whole site." />
             <div className="space-y-6">
                 {blocks.map((block) => (

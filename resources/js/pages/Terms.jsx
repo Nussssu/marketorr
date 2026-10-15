@@ -4,7 +4,7 @@ import PageMeta from '../components/PageMeta';
 export default function TermsPage({ page }) {
     return (
         <>
-            <PageMeta page={page} fallbackTitle="Terms — Marketorr" />
+            <PageMeta page={page} fallbackTitle="Terms | Marketorr" />
             <SectionRenderer sections={page?.sections ?? []} />
         </>
     );

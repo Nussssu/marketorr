@@ -67,7 +67,7 @@ class AdminAccountCommand extends Command
         );
 
         $this->newLine();
-        $this->info($existing ? 'Password reset — save these now, they are not shown again:' : 'Admin created — save these now, they are not shown again:');
+        $this->info($existing ? 'Password reset: save these now, they are not shown again:' : 'Admin created: save these now, they are not shown again:');
         $this->table(['Email', 'Password', 'Role'], [[$user->email, $password, $user->role->value]]);
 
         return self::SUCCESS;

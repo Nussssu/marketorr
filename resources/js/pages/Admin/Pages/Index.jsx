@@ -15,7 +15,7 @@ export default function PagesIndex({ pages }) {
 
     return (
         <>
-            <Head title="Pages — Marketorr Admin" />
+            <Head title="Pages | Marketorr Admin" />
             <PageHeader
                 title="Pages"
                 subtitle="Every page on the site. Build each one from sections, and override its SEO."
@@ -25,7 +25,7 @@ export default function PagesIndex({ pages }) {
 
             <Panel className="overflow-hidden">
                 {pages.length === 0 ? (
-                    <EmptyState>No pages yet — create the first one.</EmptyState>
+                    <EmptyState>No pages yet, create the first one.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[780px] text-left text-[13px]">

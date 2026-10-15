@@ -10,9 +10,9 @@ const STOPS = [
 /**
  * The brand gradient's colour at `t` (0–1).
  *
- * Each letter bounces on its own, so the gradient is sampled per letter rather
+ * Each letter moves on its own, so the gradient is sampled per letter rather
  * than clipped across the word — a clipped gradient would not follow letters
- * that are mid-bounce.
+ * that are mid-animation.
  *
  * @param {number} t
  */
@@ -27,7 +27,8 @@ function brandColor(t) {
 }
 
 /**
- * A page title whose letters drop in one by one and bounce into place.
+ * A page title that slides down smoothly into place as one piece, every
+ * letter together, with no bounce or overshoot.
  *
  * The leading words keep the surrounding text colour, so they follow the
  * theme; the last `highlightWords` words run through the brand's purple, blue
@@ -35,7 +36,7 @@ function brandColor(t) {
  * `highlightWords={0}` keeps every word in the text colour.
  *
  * With `onScroll` the letters wait until the title scrolls into view, then
- * bounce in once; otherwise they bounce in as the page opens.
+ * appear once; otherwise they appear as the page opens.
  *
  * @param {{ text: string, highlightWords?: number, delay?: number, uppercase?: boolean, onScroll?: boolean }} props
  */
@@ -51,13 +52,15 @@ export default function BounceTitle({ text, highlightWords = 1, delay = 0.3, upp
     let charIndex = 0;
     let highlightIndex = 0;
 
-    const settled = { y: 0, opacity: 1, scaleY: 1 };
+    const settled = { y: 0, opacity: 1 };
     const trigger = onScroll
         ? { whileInView: settled, viewport: { once: true, amount: 0.6 } }
         : { animate: settled };
 
     return (
-        <span aria-label={text}>
+        <span>
+            {/* Read as one phrase; the per-letter spans below are presentational. */}
+            <span className="sr-only">{text}</span>
             {words.map((word, w) => (
                 <span key={w} aria-hidden className="mr-[0.24em] inline-block whitespace-nowrap last:mr-0">
                     {word.split('').map((char) => {
@@ -72,16 +75,12 @@ export default function BounceTitle({ text, highlightWords = 1, delay = 0.3, upp
                                 key={i}
                                 className="inline-block will-change-transform"
                                 style={color ? { color } : undefined}
-                                initial={reduce ? false : { y: '-0.9em', opacity: 0, scaleY: 1.15 }}
+                                initial={reduce ? false : { y: '-0.4em', opacity: 0 }}
                                 {...trigger}
                                 transition={
                                     reduce
                                         ? { duration: 0 }
-                                        : {
-                                              y: { type: 'spring', stiffness: 520, damping: 11, mass: 0.8, delay: delay + Math.min(i, 18) * 0.045 },
-                                              scaleY: { type: 'spring', stiffness: 520, damping: 14, delay: delay + Math.min(i, 18) * 0.045 },
-                                              opacity: { duration: 0.2, delay: delay + Math.min(i, 18) * 0.045 },
-                                          }
+                                        : { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay }
                                 }
                             >
                                 {char}

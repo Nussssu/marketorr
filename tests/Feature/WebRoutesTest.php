@@ -136,6 +136,17 @@ class WebRoutesTest extends TestCase
                 ]));
     }
 
+    public function test_the_home_carousel_only_shows_featured_branding_projects(): void
+    {
+        $uiuxProject = Project::query()->where('slug', 'animateuix-brand-design')->sole();
+        $uiuxProject->update(['work_group' => 'uiux']);
+
+        $this->get('/')
+            ->assertInertia(fn ($page) => $page
+                ->has('featuredProjects', 6)
+                ->where('featuredProjects', fn ($projects) => ! $projects->pluck('slug')->contains('animateuix-brand-design')));
+    }
+
     public function test_the_branding_portfolio_uses_the_curated_project_order(): void
     {
         $this->get('/work/portfolio/branding')

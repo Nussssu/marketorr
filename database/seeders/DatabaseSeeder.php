@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
         $email = 'admin@marketorr.com';
 
         if (User::query()->where('email', $email)->exists()) {
-            $this->command?->warn("Admin {$email} already exists — password unchanged.");
+            $this->command?->warn("Admin {$email} already exists, password unchanged.");
 
             return;
         }
@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command?->newLine();
-        $this->command?->info('Admin account created — save these credentials now, they are not shown again:');
+        $this->command?->info('Admin account created: save these credentials now, they are not shown again:');
         $this->command?->table(['Email', 'Password'], [[$email, $password]]);
     }
 }

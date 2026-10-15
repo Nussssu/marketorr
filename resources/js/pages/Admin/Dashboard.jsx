@@ -15,7 +15,7 @@ function Stat({ label, value, accent }) {
 export default function Dashboard({ stats, recentInquiries }) {
     return (
         <>
-            <Head title="Dashboard — Marketorr Admin" />
+            <Head title="Dashboard | Marketorr Admin" />
             <PageHeader title="Dashboard" subtitle="What's live and what needs a reply." />
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

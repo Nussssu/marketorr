@@ -57,7 +57,7 @@ class PageController extends Controller
 
         return redirect()
             ->route('admin.pages.builder', $page)
-            ->with('success', 'Page created — add its sections below.');
+            ->with('success', 'Page created. Add its sections below.');
     }
 
     public function edit(Page $page): Response
@@ -125,7 +125,7 @@ class PageController extends Controller
     public function destroy(Page $page): RedirectResponse
     {
         if ($page->is_system) {
-            return back()->with('success', 'System pages cannot be deleted — unpublish it instead.');
+            return back()->with('success', 'System pages cannot be deleted. Unpublish it instead.');
         }
 
         $page->delete();

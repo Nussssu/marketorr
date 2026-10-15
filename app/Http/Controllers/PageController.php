@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Service;
+use App\Services\UiuxShowcase;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,17 +17,20 @@ use Inertia\Response;
  */
 class PageController extends Controller
 {
-    public function home(): Response
+    public function home(UiuxShowcase $showcase): Response
     {
         return Inertia::render('Home', [
             'page' => Page::forSlug('home')?->toPublicArray(),
             'featuredProjects' => Project::query()
                 ->published()
                 ->featured()
+                ->with('category.parent')
                 ->orderBy('sort_order')
                 ->get()
+                ->filter(fn (Project $project): bool => $project->workGroup() === 'branding')
                 ->map(fn (Project $project) => $project->toPublicArray())
                 ->values(),
+            'uiuxShowcase' => $this->uiuxShowcaseCovers($showcase),
             'services' => Service::query()
                 ->published()
                 ->get()
@@ -34,6 +38,28 @@ class PageController extends Controller
                 ->values(),
             'subservices' => config('subservices'),
         ]);
+    }
+
+    /**
+     * The UI/UX section's printed sheets: one per showcase project, showing the
+     * first page its own page prints (falling back to the cover when it has no
+     * pages yet), so the sheet matches what opens on the project's page.
+     *
+     * @return array<int, array{slug: string, name: string, discipline: string, href: string, cover: array<string, mixed>}>
+     */
+    private function uiuxShowcaseCovers(UiuxShowcase $showcase): array
+    {
+        return collect($showcase->projects())
+            ->filter(fn (array $project): bool => $project['cover'] !== null)
+            ->map(fn (array $project): array => [
+                'slug' => $project['slug'],
+                'name' => $project['name'],
+                'discipline' => $project['discipline'],
+                'href' => route('work.uiux-project', $project['slug'], false),
+                'cover' => $project['screens'][0] ?? $project['cover'],
+            ])
+            ->values()
+            ->all();
     }
 
     public function about(): Response

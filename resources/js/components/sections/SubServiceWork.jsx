@@ -1,104 +1,108 @@
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { useRef } from 'react';
-import MediaPlaceholder from '../media/MediaPlaceholder';
-
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+import { Link } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { transitionTo } from '../motion/PageTransition';
+import { EASE } from '../../lib/motion';
+import { useTapIntent } from '../../lib/tapIntent';
 
 /**
- * One project slot.
- *
- * Empty, it shows the standard placeholder plate, so the slot is visibly
- * waiting for a file rather than looking like an intentional blank panel.
- * Nothing inside it has to be deleted later - dropping a `src` into the
- * sub-service's `work` entry replaces the plate outright.
- *
- * Filled, the same frame renders the photograph and gives it a quiet
- * cinematic arrival: it opens from a soft clip, resolves out of a shallow
- * defocus and settles from a slightly oversized crop, all scrubbed by scroll
- * and smoothed through a spring. The frame, its ratio and its position on the
- * page are identical either way, so dropping an image in shifts nothing.
- *
- * @param {{ slot: { src: string|null, alt: string, title?: string } }} props
+ * One piece of related work: its cover, name and discipline, linking to the
+ * project (a Branding project page, or the UI/UX portfolio opened on it).
  */
-function WorkSlot({ slot }) {
-    const ref = useRef(null);
-    const reduce = useReducedMotion();
-    const filled = Boolean(slot.src);
-
-    const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 62%'] });
-    const p = useSpring(scrollYProgress, { stiffness: 60, damping: 26, mass: 0.6 });
-    const opacity = useTransform(p, [0, 0.5], [0, 1]);
-    const blurPx = useTransform(p, [0, 0.82], [9, 0]);
-    // `none` rather than `blur(0px)`, so a settled image stops paying for its
-    // own composited layer.
-    const filter = useTransform(blurPx, (v) => (v < 0.15 ? 'none' : `blur(${v.toFixed(2)}px)`));
-    const scale = useTransform(p, [0, 1], [1.07, 1]);
-    const inset = useTransform(p, [0, 0.78], [12, 0]);
-    const clipPath = useTransform(inset, (v) => `inset(${v.toFixed(2)}% round 16px)`);
-
+function WorkCard({ work, index, reduce, onOpen, tapIntent }) {
     return (
-        <figure
-            ref={ref}
-            className="relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]"
-                    >
-            <div className="relative aspect-video w-full overflow-hidden">
-                {filled ? (
-                    <>
-                        <motion.img
-                            src={slot.src}
-                            alt={slot.alt}
-                            loading="lazy"
-                            decoding="async"
-                            draggable={false}
-                            style={reduce ? undefined : { opacity, filter, scale, clipPath }}
-                            className="absolute inset-0 h-full w-full object-cover"
-                        />
-                        <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: BRAND_GRADIENT }} />
-                    </>
-                ) : (
-                    <MediaPlaceholder label={`${slot.title ?? 'Project'} - image placeholder`} />
-                )}
-            </div>
-        </figure>
+        <motion.li
+            initial={reduce ? false : { opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-10% 0px' }}
+            transition={{ duration: reduce ? 0 : 0.7, delay: reduce ? 0 : index * 0.08, ease: [...EASE] }}
+        >
+            <Link
+                href={work.href}
+                data-cursor="view"
+                onPointerDown={tapIntent.onPointerDown}
+                onPointerCancel={tapIntent.onPointerCancel}
+                onClick={(event) => onOpen(event, work.href)}
+                className="group block"
+            >
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--bg-soft)]">
+                    <img
+                        src={work.image}
+                        alt={work.imageAlt}
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease)] group-hover:scale-[1.04]"
+                    />
+                </div>
+                <div className="mt-2.5 flex items-start justify-between gap-2 sm:mt-4 sm:gap-3">
+                    <div className="min-w-0">
+                        <h3 className="font-display text-[12px] font-bold uppercase leading-tight tracking-[0.03em] text-[var(--ink-strong)] sm:text-[15px] sm:leading-normal sm:tracking-[0.04em]">{work.title}</h3>
+                        {work.meta && (
+                            <p className="mt-1 text-[8.5px] font-bold uppercase tracking-[0.12em] text-[var(--ink-faint)] sm:text-[11px] sm:tracking-[0.16em]">{work.meta}</p>
+                        )}
+                    </div>
+                    <span className="mt-0.5 text-[12px] text-[var(--ink-faint)] transition-transform sm:text-base duration-300 group-hover:translate-x-1 group-hover:text-[var(--ink)]" aria-hidden>→</span>
+                </div>
+            </Link>
+        </motion.li>
     );
 }
 
 /**
- * The two real-project slots on a sub-service page.
+ * Real Marketorr work related to this sub-service, picked on the server by
+ * `App\Services\SubServiceRelatedWork` from the portfolio that presents the
+ * discipline — Branding projects for Branding services, the UI/UX showcase
+ * for UI/UX services. Each card opens the project.
  *
- * Each sub-service reserves its own pair in `config/subservices.php`, so a
- * Packaging Design page can only ever show packaging work and a UX Research
- * page can only ever show research work — there is no shared pool of generic
- * covers to fall back to. A small side-by-side pair from the `sm` breakpoint
- * up, stacked below it, and capped well short of the container so it stays a
- * pair of plates under the hero rather than a full-width gallery.
- *
- * @param {{ item: { name: string, accent: string, work?: Array<{src: string|null, alt: string}> } }} props
+ * @param {{ item: { name: string, category: { slug: string, name: string }, relatedWork?: Array<{ slug: string, title: string, meta: string, image: string, imageAlt: string, href: string }> } }} props
  */
 export default function SubServiceWork({ item }) {
-    const slots = item.work ?? [];
+    const reduce = useReducedMotion();
+    const tapIntent = useTapIntent();
+    const work = item.relatedWork ?? [];
 
-    if (slots.length === 0) {
+    if (work.length === 0) {
         return null;
     }
 
-    return (
-        <section className="mt-10" aria-label={`${item.name} work`}>
-            {/* A small label rather than a section heading: it names what the
-                pair below is without competing with the hero title above it,
-                and uses the same eyebrow treatment as the rest of the site. */}
-            <h2 className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
-                Selected {item.name} work
-            </h2>
+    const portfolioHref = `/work/portfolio/${item.category.slug === 'ui-ux' ? 'uiux' : 'branding'}`;
 
-            {/* A standard 16:9 pair: wide enough to read as real work under
-                the hero, still capped short of the container so it never
-                becomes a full-width gallery. */}
-            <div className="mt-4 grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2">
-                {slots.map((slot, index) => (
-                    <WorkSlot key={slot.alt ?? index} slot={slot} />
-                ))}
+    const open = (event, href) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (event.button !== undefined && event.button !== 0) return;
+        tapIntent.onClick(event);
+        if (event.defaultPrevented) return;
+        event.preventDefault();
+        transitionTo(href);
+    };
+
+    return (
+        <section className="mt-14" aria-labelledby="related-work-heading">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">Related work</p>
+                    <h2 id="related-work-heading" className="mt-3 font-display text-2xl font-bold uppercase text-[var(--ink-strong)] md:text-3xl">
+                        {item.name} in practice
+                    </h2>
+                </div>
+                <Link
+                    href={portfolioHref}
+                    data-cursor="explore"
+                    onPointerDown={tapIntent.onPointerDown}
+                    onPointerCancel={tapIntent.onPointerCancel}
+                    onClick={(event) => open(event, portfolioHref)}
+                    className="btn-press inline-flex items-center gap-2 rounded-full border border-[var(--field-line)] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]"
+                >
+                    Full {item.category.name} portfolio →
+                </Link>
             </div>
+
+            {/* Two cards per row on phones and tablets, four on desktop. */}
+            <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
+                {work.map((entry, index) => (
+                    <WorkCard key={entry.slug} work={entry} index={index} reduce={reduce} onOpen={open} tapIntent={tapIntent} />
+                ))}
+            </ul>
         </section>
     );
 }

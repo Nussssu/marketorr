@@ -19,10 +19,10 @@ export default function UiuxProject({ project }) {
 
     return (
         <>
-            <Head title={`${project.name} — Marketorr`} />
+            <Head title={`${project.name} | Marketorr`} />
             <div className="bg-[var(--bg)] pb-16 pt-24 md:pb-24 md:pt-32">
                 <div className="container-x">
-                    <SectionLabel index="03" name="UI/UX PORTFOLIO" />
+                    <SectionLabel name="UI/UX PORTFOLIO" />
                     <ScrollHeading className="mt-6 md:mt-8">
                         <h1 className="display-lg uppercase text-[var(--ink-strong)]">
                             <BounceTitle text={project.name} />

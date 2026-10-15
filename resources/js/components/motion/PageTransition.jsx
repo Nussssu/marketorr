@@ -103,6 +103,8 @@ export default function PageTransition({ children }) {
      * prefetch can never reach the cover or the scroll reset.
      */
     const navigating = useRef(new WeakSet());
+    /** How many of those visits are still in flight. */
+    const inFlight = useRef(0);
 
     /**
      * Raise the cover. `restart` replays it from the top even if one is already
@@ -193,6 +195,7 @@ export default function PageTransition({ children }) {
             if (prefersReducedMotion()) return;
 
             navigating.current.add(visit);
+            inFlight.current += 1;
             clear();
             showCover();
             // Re-arm the backstop: `clear()` above wiped the one from
@@ -208,6 +211,7 @@ export default function PageTransition({ children }) {
             if (!navigating.current.has(visit)) return;
 
             navigating.current.delete(visit);
+            inFlight.current = Math.max(0, inFlight.current - 1);
 
             if (!visit.completed || visit.cancelled || visit.interrupted) {
                 clear();
@@ -226,10 +230,27 @@ export default function PageTransition({ children }) {
             }
         });
 
+        // A visit answered from the prefetch cache (a mega menu link that was
+        // hovered first) swaps the page without the start/finish pair above, so
+        // without this the curtain would wait for its 6s backstop. When the page
+        // changes under a raised curtain and no tracked visit is in flight, the
+        // swap itself reveals.
+        const offNavigate = router.on('navigate', () => {
+            if (!coverRef.current || inFlight.current > 0) return;
+
+            clear();
+            try {
+                scrollAfterNav();
+            } finally {
+                revealCover();
+            }
+        });
+
         return () => {
             offBefore();
             offStart();
             offFinish();
+            offNavigate();
             clear();
         };
     }, []);

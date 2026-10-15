@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PublicAsset;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -67,13 +68,13 @@ class Setting extends Model
             'logo_dark_path' => null,
             'favicon_path' => null,
             'contact_email' => 'hello@marketorr.com',
-            'contact_phone' => null,
+            'contact_phone' => '+8801332850355',
             'location_text' => 'Remote-first · Worldwide',
             'address' => 'Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230',
             'directions_url' => 'https://www.google.com/maps/search/?api=1&query=Natore+Tower+Uttara+Dhaka+1230+Bangladesh',
             'copyright_text' => '© {year} {site}. All rights reserved.',
             'footer_intro' => 'Independent creative & digital agency. We turn ideas into experiences, and experiences into measurable results.',
-            'social_linkedin' => 'https://www.linkedin.com/company/marketorr',
+            'social_linkedin' => 'https://www.linkedin.com/company/marketorr360',
             'social_facebook' => null,
             'social_behance' => 'https://www.behance.net/marketorr',
             'social_dribbble' => 'https://dribbble.com/marketorr',
@@ -83,14 +84,14 @@ class Setting extends Model
             'hero_eyebrow' => 'Independent creative & digital agency',
             'hero_heading_lines' => ['We turn', 'attention', 'into results.'],
             'hero_subtext' => 'Marketorr builds brands, digital products, and experiences designed to create measurable growth.',
-            'about_text' => 'Marketorr is a creative and digital agency focused on helping ambitious brands build stronger identities, better digital experiences, and measurable business growth. We combine strategy, branding, UI/UX, technology, content, and performance thinking to create work that looks exceptional and performs even better.',
+            'about_text' => 'Marketorr is a creative and digital agency helping ambitious brands grow through strategy, branding, UI/UX and technology, creating work that looks exceptional and performs even better.',
             'about_metrics' => [
                 ['value' => 120, 'suffix' => '+', 'label' => 'Projects delivered'],
                 ['value' => 48, 'suffix' => '', 'label' => 'Brands transformed'],
                 ['value' => 12, 'suffix' => '', 'label' => 'Industries served'],
                 ['value' => 6, 'suffix' => 'yrs', 'label' => 'Avg. team experience'],
             ],
-            'meta_default_title' => 'Marketorr — We Turn Attention Into Results',
+            'meta_default_title' => 'Marketorr | We Turn Attention Into Results',
             'meta_default_description' => 'Marketorr is an independent creative & digital agency building brands, digital products and experiences designed for measurable growth.',
             'meta_default_og_image' => null,
             'head_scripts' => null,
@@ -105,8 +106,9 @@ class Setting extends Model
     }
 
     /**
-     * Public URL for an uploaded asset path, or null when it is unset. Paths
-     * that are already absolute or root-relative are passed through as-is.
+     * Public URL for an uploaded asset path, or null when it is unset. Absolute
+     * URLs pass through; root-relative and uploaded paths resolve against the
+     * configured asset URL.
      */
     public function assetUrl(?string $path): ?string
     {
@@ -114,11 +116,7 @@ class Setting extends Model
             return null;
         }
 
-        if (str_starts_with($path, '/') || str_starts_with($path, 'http')) {
-            return $path;
-        }
-
-        return Project::publicDiskUrl($path);
+        return PublicAsset::url($path);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\GlobalBlock;
 use App\Models\Menu;
 use App\Models\Project;
 use App\Models\Setting;
+use App\Services\PublicAsset;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,6 +45,12 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
+            // Base for files under public/ (see PublicAsset::base), so front-end
+            // asset paths resolve exactly as the server's do.
+            'assetBase' => PublicAsset::base(),
+            // The visitor's saved theme (cookie written by the theme script), so
+            // server-rendered markup and hydration both start from it.
+            'theme' => $request->cookie('theme') === 'dark' ? 'dark' : 'light',
             'settings' => fn () => Setting::current()->toPublicArray(),
             // Header and footer navigation, keyed by location.
             'menus' => fn () => Menu::publicTree(),

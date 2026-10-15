@@ -1,5 +1,5 @@
-import { gsap } from 'gsap';
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { loadGsap, loadedGsap } from '../../lib/gsap';
 
 /** Horizontal travel (px) that turns a touch drag into previous/next. */
 const SWIPE_DISTANCE = 56;
@@ -90,7 +90,8 @@ export default function ScreenLightbox({ screens, index, originRect, onChange, o
         const root = rootRef.current;
         const panel = panelRef.current;
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!root || reduce) {
+        const gsap = loadedGsap();
+        if (!root || reduce || !gsap) {
             onClose();
 
             return;
@@ -100,6 +101,11 @@ export default function ScreenLightbox({ screens, index, originRect, onChange, o
         timeline.to(panel, { y: 4, scale: 0.99, duration: 0.16, ease: 'power2.in' }, 0);
         timeline.to(root, { autoAlpha: 0, duration: 0.16, ease: 'power2.in' }, 0);
     };
+
+    // Normally already loaded by the printer; makes sure it is on its way.
+    useEffect(() => {
+        loadGsap();
+    }, []);
 
     useEffect(() => {
         if (!open) return undefined;
@@ -168,6 +174,9 @@ export default function ScreenLightbox({ screens, index, originRect, onChange, o
     useLayoutEffect(() => {
         if (!open || !rootRef.current) return undefined;
 
+        const gsap = loadedGsap();
+        if (!gsap) return undefined;
+
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const panel = panelRef.current;
         const tweens = [gsap.fromTo(rootRef.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: reduce ? 0 : 0.25, ease: 'power2.out' })];
@@ -200,7 +209,8 @@ export default function ScreenLightbox({ screens, index, originRect, onChange, o
         scroller?.classList.remove('is-zoomed', 'is-loaded');
         scroller?.scrollTo({ top: 0, left: 0 });
         if (zoomLabelRef.current) zoomLabelRef.current.textContent = '100%';
-        if (!scroller) return undefined;
+        const gsap = loadedGsap();
+        if (!scroller || !gsap) return undefined;
 
         const tween = gsap.fromTo(scroller, { autoAlpha: 0.72, y: 5 }, { autoAlpha: 1, y: 0, duration: 0.18, ease: 'power2.out' });
 

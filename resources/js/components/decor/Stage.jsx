@@ -1,4 +1,5 @@
 import { useThemeMotion } from '../../lib/theme';
+import { MARK, markBarStyle, markGap } from '../../lib/tokens';
 
 /**
  * Reusable cinematic background stage.
@@ -45,19 +46,17 @@ const VARIANTS = {
     },
 };
 
+/** Height of the background motif's tallest bar. */
+const MOTIF_SIZE = '96px';
+
 function Motif({ cls = '' }) {
-    const bars = [
-        { c: '#891FFB', h: 44 },
-        { c: '#507AF4', h: 68 },
-        { c: '#1BE2EB', h: 96 },
-    ];
     return (
-        <div className={`absolute hidden items-end gap-2 opacity-50 sm:flex ${cls}`} aria-hidden>
-            {bars.map((b) => (
+        <div className={`absolute hidden items-end opacity-50 sm:flex ${cls}`} style={{ gap: markGap(MOTIF_SIZE) }} aria-hidden>
+            {MARK.colors.map((color, index) => (
                 <span
-                    key={b.c}
-                    className="motif-bar w-5"
-                    style={{ height: b.h, background: `linear-gradient(180deg, ${b.c}59, transparent)` }}
+                    key={color}
+                    className="motif-bar"
+                    style={{ ...markBarStyle(MOTIF_SIZE, index), background: `linear-gradient(180deg, ${color}59, transparent)` }}
                 />
             ))}
         </div>
@@ -77,11 +76,13 @@ export default function Stage({ variant = 'about', atmo = null, atmoKey = 'base'
                     style={{ background: 'radial-gradient(ellipse, var(--glow-purple), transparent 70%)', opacity: fx.orb }}
                 />
             )}
+            {/* The glow is sized to the orb's own box (`closest-side`), so it has
+                faded out by every edge — a wide orb no longer cuts off flat. */}
             {(v.orbs ?? []).map((o, i) => (
                 <div
                     key={i}
                     className={`absolute rounded-full ${o.cls}`}
-                    style={{ background: `radial-gradient(circle, ${o.color}, transparent 70%)`, opacity: fx.orb }}
+                    style={{ background: `radial-gradient(closest-side, ${o.color}, transparent)`, opacity: fx.orb }}
                 />
             ))}
             {v.atmosphere && atmo && (

@@ -99,7 +99,7 @@ class AdminEmailTemplateTest extends TestCase
         $template = EmailTemplate::forKey(EmailTemplateKey::LeadAutoResponder);
         $template->update(['body_html' => '<p>{{ phone }}</p>']);
 
-        $this->assertSame('<p>—</p>', $template->renderBody(['phone' => null]));
+        $this->assertSame('<p>-</p>', $template->renderBody(['phone' => null]));
     }
 
     public function test_disabling_a_template_stops_that_email_only(): void

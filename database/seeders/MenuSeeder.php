@@ -45,17 +45,15 @@ class MenuSeeder extends Seeder
                 ['About', '/about'],
                 ['Services', '/services'],
                 ['Our Work', '/work'],
-                ['Contact', '/contact'],
             ]],
             [MenuLocation::FooterSitemap, [
                 ['About', '/about'],
-                ['Services', '/services'],
                 ['Our Work', '/work'],
                 ['Contact', '/contact'],
             ]],
             [MenuLocation::FooterServices, [
-                ['Branding', '/services/branding'],
-                ['UI/UX Design', '/services/ui-ux'],
+                ['Branding', '/services#branding'],
+                ['UI/UX Design', '/services#ui-ux'],
             ]],
             [MenuLocation::FooterLegal, [
                 ['Privacy', '/privacy'],

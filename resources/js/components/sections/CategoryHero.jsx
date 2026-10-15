@@ -1,246 +1,141 @@
 import { Link } from '@inertiajs/react';
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { EASE, heroMediaEntrance } from '../../lib/motion';
-import MediaPlaceholder from '../media/MediaPlaceholder';
-
-
-/** Full-screen cinematic hero per discipline — dark photographic work, never SVG. */
-/**
- * Background clip for the discipline heroes - one file per discipline.
- *
- * Both are null while the real discipline films are being produced, so each
- * hero renders the video placeholder plate instead. Point a slug at an .mp4
- * and that hero plays it; nothing else has to change.
- *
- * Upload target: 16:9, 1920x1080, H.264 .mp4, muted, seamless loop.
- */
-const HERO_VIDEO = {
-    branding: null,
-    'ui-ux': null,
-};
+import { useReducedMotion } from 'framer-motion';
+import { transitionTo } from '../motion/PageTransition';
+import { enter } from '../../lib/motion';
+import { useTapIntent } from '../../lib/tapIntent';
+import ServiceScene from '../decor/ServiceScene';
 
 /**
- * The poster frame for each clip, and what a phone shows in its place.
- *
- * Null for the same reason: a poster taken from a film that does not exist
- * yet would only be a stand-in for a stand-in. Upload target: 16:9, 1920x1080.
- *
- * Previously '/images/work/imperial-jute-brand.jpg' (branding) and
- * '/images/work/city-online-web.jpg' (ui-ux).
+ * Column spans of the six tiles on the desktop bento: two rows of twelve,
+ * with the wide tile moving from the left of the first row to the middle of
+ * the second so the grid never reads as a plain table.
  */
-const HERO_IMAGE = {
-    branding: null,
-    'ui-ux': null,
-};
+const SPANS = ['lg:col-span-5', 'lg:col-span-4', 'lg:col-span-3', 'lg:col-span-3', 'lg:col-span-5', 'lg:col-span-4'];
 
-const HERO_ALT = {
-    branding: 'Imperial Jute minimal logo and brand cover artwork',
-    'ui-ux': 'City Online website UI design case study cover',
-};
-
-/** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
-function useRichScene() {
-    const [rich, setRich] = useState(false);
-
-    useEffect(() => {
-        const query = window.matchMedia('(min-width: 768px) and (pointer: fine)');
-        const update = () => setRich(query.matches);
-        update();
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    return rich;
+/**
+ * One service in the bento: its live scene above, its number and name below,
+ * and the whole tile a link to that service's page.
+ */
+function ServiceTile({ item, index, href, span, reduce, onOpen, tapIntent }) {
+    return (
+        <li {...enter('fade-up', { dur: 0.8, delay: 0.45 + index * 0.08, y: 36, className: span })}>
+            <Link
+                href={href}
+                data-cursor="explore"
+                onPointerDown={tapIntent.onPointerDown}
+                onPointerCancel={tapIntent.onPointerCancel}
+                onClick={(event) => onOpen(event, href)}
+                className="category-tile group flex h-full flex-col overflow-hidden rounded-[22px] border border-[var(--line)] bg-[var(--bg-soft)] transition-colors duration-300"
+                style={{ '--tile-accent': item.accent }}
+            >
+                <div className="relative min-h-0 flex-1">
+                    <div className="grid-bg pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+                    <div className="absolute inset-y-0 left-1/2 aspect-square h-full -translate-x-1/2 transition-transform duration-500 ease-[var(--ease)] group-hover:scale-[1.04]">
+                        <ServiceScene slug={item.slug} still={Boolean(reduce)} className="absolute inset-0" />
+                    </div>
+                </div>
+                <div className="flex min-h-[52px] items-center gap-3 border-t border-[var(--line)] px-3.5 py-2.5 sm:px-5 sm:py-4">
+                    <span className="hidden text-[10px] font-bold tracking-[0.2em] text-[var(--ink-faint)] sm:inline">
+                        {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="line-clamp-2 min-w-0 flex-1 font-display text-[11px] font-bold uppercase leading-tight tracking-[0.06em] text-[var(--ink)] sm:text-[14px] sm:tracking-[0.08em]">
+                        {item.name}
+                    </span>
+                    <span className="text-[var(--ink-faint)] transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[var(--ink)]" aria-hidden>→</span>
+                </div>
+            </Link>
+        </li>
+    );
 }
 
 /**
- * Cinematic 3D hero for the Branding and UI/UX discipline pages.
+ * Hero for the Branding and UI/UX discipline pages: the discipline at a
+ * glance.
  *
- * One large background clip with oversized type layered over it — muted,
- * looping and purely decorative, with the still used as its poster and as the
- * small-screen substitute.
+ * The name and tagline open the page, and beneath them a bento of the
+ * discipline's services — each tile playing a small version of that service's
+ * own animated scene (`ServiceScene`, the same one its page opens with) and
+ * linking straight to it. The detailed showcase follows below.
  *
- * The clip keeps `preload="auto"` on purpose. With `metadata` the browser
- * asks for the head of the file and then asks again in order to play it, and
- * a server without byte-range support answers both with the whole clip — two
- * full downloads instead of one, which measured as 8.0 MB on this page rather
- * than 4.6 MB. Depth comes
- * from three separated planes (visual / title / foreground chrome): each
- * drifts on the pointer at its own rate inside a perspective stage, and each
- * travels on scroll at its own speed while the whole scene compresses (scale)
- * and hands off to the next section.
+ * Nothing moves on scroll and nothing lies over the scenes; the only motion is
+ * the entrance and the scenes' own loops, each parked while off screen.
+ * Reduced motion renders it all settled.
  *
- * Motion is transform/opacity/scale only — no blur, no layout animation, and
- * no layer of any kind above the clip itself.
+ * `blendTop` fades the accent glow in from the section's top edge, so a hero
+ * stacked under another one joins it without a visible seam.
  *
- * The title remains the single sharp primary layer. Behind it runs
- * a continuously rising column of this discipline's sub-service names, outlined
- * rather than filled so it reads as depth in the clip instead of as a second
- * headline. This is the one place duplicated background type is wanted — it
- * supersedes the earlier "no translucent background type" rule, which predates
- * the rising-typography treatment.
- *
- * Nothing in this hero reacts to the pointer. The visual never did, and the
- * stage tilt and per-plane drift are gone, so the title and chrome cannot
- * shake or follow the cursor. Depth is now scroll-driven only.
- *
- * @param {{ category: { slug: string, name: string, tagline: string, accent: string, items: Array<object> } }} props
+ * @param {{ category: { slug: string, name: string, tagline: string, accent: string, items: Array<{ slug: string, name: string, accent: string }> }, blendTop?: boolean }} props
  */
-export default function CategoryHero({ category }) {
-    const wrapRef = useRef(null);
+export default function CategoryHero({ category, blendTop = false }) {
     const reduce = useReducedMotion();
-    const rich = useRichScene();
-    const full = rich && !reduce;
-
-    /**
-     * The clip plays on pointer-fine screens that have not asked for reduced
-     * motion. A phone gets the poster frame instead: same hero, same crop,
-     * same bare visual, none of the download or decode cost, which is what
-     * "optimised treatment" has to mean on a metered connection.
-     */
-    const video = rich && !reduce ? HERO_VIDEO[category.slug] : null;
-    const image = HERO_IMAGE[category.slug];
-    const alt = HERO_ALT[category.slug] ?? `${category.name} featured work`;
+    const tapIntent = useTapIntent();
     const title = category.name.toUpperCase();
-    const chars = title.split('');
+    const items = category.items ?? [];
 
-    // Scroll journey across the tall wrapper; the stage is sticky.
-    const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
+    const open = (event, href) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (event.button !== undefined && event.button !== 0) return;
+        tapIntent.onClick(event);
+        if (event.defaultPrevented) return;
+        event.preventDefault();
+        transitionTo(href);
+    };
 
-    // Scroll journey: the image pushes in slowly and stays fully visible for
-    // the whole sticky pass; title and chrome exit at staggered speeds for
-    // the layered hand-off into the next section. Transform + opacity only.
-    const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
-    const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);
-    const bgShiftY = useTransform(scrollYProgress, [0, 1], ['0%', '10%']);
-    const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-56%' : '-24%']);
-    const titleScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.88 : 0.95]);
-    const titleFade = useTransform(scrollYProgress, [0.3, 0.68], [1, 0]);
-    const foreShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-70%' : '-30%']);
-    const foreFade = useTransform(scrollYProgress, [0.2, 0.55], [1, 0]);
-
-    // The rising column travels more slowly than the title and fades sooner, so
-    // it stays read as the layer behind it through the whole scroll hand-off.
-
-    // The column cycles this discipline's own sub-service names — the same
-    // content the showcase below the hero lists — falling back to the
-    // discipline name when a category has no sub-services yet.
-
+    // A hero stacked under another (`blendTop`) needs no header clearance, so
+    // on phones it keeps just a standard section gap above it.
     return (
-        <div ref={wrapRef} className="relative" style={{ height: full ? '165svh' : '125svh' }}>
-            <div className="sticky top-0 h-svh overflow-hidden bg-[#06060a]">
-                {/* compress on scroll */}
-                <motion.div style={reduce ? undefined : { scale: stageScale }} className="absolute inset-0">
-                    {/* PLANE 1 — background clip (pushes in, then dissolves away).
-                        The clip is background only: `pointer-events-none`
-                        means it cannot take a wheel, drag or touch, so the
-                        page keeps the only scroll on the page. No controls,
-                        so it has no scrollable or draggable UI of its own.
-                        The poster is the frame it starts on, so the hero is
-                        never empty while the first frames decode. */}
-                    <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale }} className="absolute inset-0">
-                            {video ? (
-                                <motion.video
-                                    key={video}
-                                    src={video}
-                                    poster={image}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    preload="auto"
-                                    aria-hidden
-                                    tabIndex={-1}
-                                    disablePictureInPicture
-                                    controlsList="nodownload noplaybackrate"
-                                    draggable={false}
-                                    {...heroMediaEntrance(reduce)}
-                                    className="pointer-events-none h-full w-full select-none object-cover"
-                                />
-                            ) : image ? (
-                                <motion.img
-                                    src={image}
-                                    alt={alt}
-                                    fetchPriority="high"
-                                    decoding="async"
-                                    draggable={false}
-                                    {...heroMediaEntrance(reduce)}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <MediaPlaceholder kind="video" label={`${category.name} - hero video placeholder`} />
-                            )}
-                    </motion.div>
+        <section className={`relative overflow-hidden bg-[var(--bg)] pb-12 md:pt-32 lg:pb-16 ${blendTop ? 'pt-8' : 'pt-28'}`}>
+            <div
+                className="pointer-events-none absolute left-1/2 top-[-260px] h-[560px] w-[min(1100px,140vw)] -translate-x-1/2 rounded-full"
+                style={{
+                    background: `radial-gradient(closest-side, ${category.accent}2e, transparent)`,
+                    ...(blendTop ? { maskImage: 'linear-gradient(to bottom, transparent 46%, black 78%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 46%, black 78%)' } : {}),
+                }}
+                aria-hidden
+            />
 
-                    {/* Theme-aware scrim: sits over the media, under the type. */}
-                    <div className="hero-scrim" aria-hidden />
+            <div className="container-x relative">
+                <nav
+                    {...enter('fade-up', { dur: 0.7, delay: 0.1, y: -10, className: 'flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]' })}
+                    aria-label="Breadcrumb"
+                >
+                    <Link href="/services" className="tap-area transition-colors duration-200 hover:text-[var(--ink)]">Services</Link>
+                    <span aria-hidden>/</span>
+                    <span className="text-[var(--ink)]">{category.name}</span>
+                </nav>
 
-                    {/* Depth stage. It keeps its perspective — the planes' z
-                        values are what set their scale — but no longer tilts,
-                        because a tilt rotates every plane, type included. */}
-                    <motion.div
-                        style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}
-                        className="absolute inset-0"
+                <div className="mt-8 flex flex-col gap-6 md:mt-10 lg:flex-row lg:items-end lg:justify-between">
+                    <h1
+                        className="heading-hero-size font-display font-extrabold uppercase leading-[0.85] tracking-[-0.04em] text-[var(--ink-strong)]"
+                        aria-label={category.name}
                     >
-                        {/* PLANE 2 — oversized title (single sharp primary layer) */}
-                        <motion.div
-                            style={reduce ? undefined : { y: titleShiftY, scale: titleScale, opacity: titleFade }}
-                            className="absolute inset-0 flex items-center"
-                        >
-                            <motion.div style={full ? { z: 90 } : undefined} className="container-x w-full">
-                                <h1 className="font-display font-extrabold uppercase leading-[0.85] tracking-[-0.04em] text-white" style={{ fontSize: 'clamp(3.4rem, 15.5vw, 12rem)' }} aria-label={category.name}>
-                                    {chars.map((char, i) => (
-                                        <span key={i} className="inline-block overflow-hidden pb-[0.06em] align-bottom" aria-hidden={i > 0}>
-                                            <motion.span
-                                                className="inline-block will-change-transform"
-                                                initial={reduce ? false : { y: '115%' }}
-                                                animate={{ y: '0%' }}
-                                                transition={{ duration: reduce ? 0 : 1, delay: 0.35 + i * 0.05, ease: [...EASE] }}
-                                            >
-                                                {char}
-                                            </motion.span>
-                                        </span>
-                                    ))}
-                                </h1>
-                            </motion.div>
-                        </motion.div>
+                        {title.split('').map((char, i) => (
+                            <span key={i} className="inline-block overflow-hidden pb-[0.06em] align-bottom" aria-hidden>
+                                <span {...enter('mask-up', { dur: 1, delay: 0.2 + i * 0.05, y: '115%', className: 'inline-block will-change-transform' })}>
+                                    {char}
+                                </span>
+                            </span>
+                        ))}
+                    </h1>
+                </div>
 
-                        {/* PLANE 3 — foreground chrome */}
-                        <motion.div
-                            style={reduce ? undefined : { y: foreShiftY, opacity: foreFade }}
-                            className="absolute inset-0"
-                        >
-                            <motion.div style={full ? { z: 150 } : undefined} className="absolute inset-0">
-                                <motion.nav
-                                    initial={reduce ? false : { opacity: 0, y: -12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: reduce ? 0 : 0.7, delay: 0.9, ease: [...EASE] }}
-                                    className="container-x absolute inset-x-0 top-0 flex items-center pt-24 text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 md:pt-28"
-                                    aria-label="Breadcrumb"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Link href="/services" className="tap-area transition-colors duration-200 hover:text-white">Services</Link>
-                                        <span aria-hidden>/</span>
-                                        <span className="text-white">{category.name}</span>
-                                    </div>
-                                </motion.nav>
-
-                                <motion.div
-                                    initial={reduce ? false : { opacity: 0, y: 18 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: reduce ? 0 : 0.8, delay: 1.1, ease: [...EASE] }}
-                                    className="container-x absolute inset-x-0 bottom-0 flex items-end pb-10 md:pb-12"
-                                >
-                                    <p className="max-w-md text-[15px] leading-relaxed text-white/75 md:text-base">{category.tagline}</p>
-                                </motion.div>
-                            </motion.div>
-                        </motion.div>
-
-                    </motion.div>
-                </motion.div>
+                {items.length > 0 && (
+                    <ul className="mt-10 grid auto-rows-[200px] grid-cols-2 gap-3 sm:auto-rows-[240px] sm:gap-4 lg:mt-12 lg:auto-rows-[clamp(230px,30svh,320px)] lg:grid-cols-12">
+                        {items.map((item, index) => (
+                            <ServiceTile
+                                key={item.slug}
+                                item={item}
+                                index={index}
+                                href={`/services/${category.slug}/${item.slug}`}
+                                span={SPANS[index % SPANS.length]}
+                                reduce={reduce}
+                                onOpen={open}
+                                tapIntent={tapIntent}
+                            />
+                        ))}
+                    </ul>
+                )}
             </div>
-        </div>
+        </section>
     );
 }

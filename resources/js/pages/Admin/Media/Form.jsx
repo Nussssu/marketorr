@@ -28,7 +28,7 @@ export default function MediaForm({ medium }) {
 
     return (
         <>
-            <Head title={`${isEdit ? 'Edit' : 'Upload'} media — Marketorr Admin`} />
+            <Head title={`${isEdit ? 'Edit' : 'Upload'} media | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${medium.filename}` : 'Upload media'}
                 subtitle={isEdit ? 'Replace the file or tidy up its catalogue entry.' : 'Files land in the shared library with their catalogue entry.'}
@@ -44,7 +44,7 @@ export default function MediaForm({ medium }) {
                                 label="Image file"
                                 error={errors.file}
                                 required={!isEdit}
-                                hint={isEdit ? 'Leave empty to keep the current file — choosing one replaces it.' : 'JPG, PNG, WebP or GIF, up to 12 MB.'}
+                                hint={isEdit ? 'Leave empty to keep the current file: choosing one replaces it.' : 'JPG, PNG, WebP or GIF, up to 12 MB.'}
                                 className="sm:col-span-2"
                             >
                                 <input
@@ -87,11 +87,11 @@ export default function MediaForm({ medium }) {
                                 </div>
                                 <div className="flex justify-between gap-4">
                                     <dt className="text-[var(--ink-faint)]">Size</dt>
-                                    <dd className="text-[var(--ink)]">{[medium.dimensions, medium.size].filter(Boolean).join(' · ') || '—'}</dd>
+                                    <dd className="text-[var(--ink)]">{[medium.dimensions, medium.size].filter(Boolean).join(' · ') || '-'}</dd>
                                 </div>
                                 <div className="flex justify-between gap-4">
                                     <dt className="text-[var(--ink-faint)]">Uploaded</dt>
-                                    <dd className="text-[var(--ink)]">{medium.created_at ?? '—'}</dd>
+                                    <dd className="text-[var(--ink)]">{medium.created_at ?? '-'}</dd>
                                 </div>
                             </dl>
                         </Panel>

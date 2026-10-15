@@ -1,29 +1,71 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { GradientTitle, SectionLabel } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 import { transitionTo } from '../../components/motion/PageTransition';
 import { useTapIntent } from '../../lib/tapIntent';
-import { EASE } from '../../lib/motion';
+import { EASE, enter } from '../../lib/motion';
 
 /**
  * The All Work landing page.
  *
  * Two doors, nothing else: the practices are the choice here, and the projects
  * themselves live one level down inside whichever portfolio the reader picks.
- * Each door previews its own work as covers rather than describing it, so the
- * page stays visual and the reader knows what is behind it before clicking.
+ * Each door is a full-width panel that pins while the next one slides over it,
+ * and previews its own work as a drifting cover mosaic rather than describing
+ * it, so the reader knows what is behind it before clicking.
  */
 
-/** One full pass of a door's strip, in seconds; matched to the header menu. */
-const STRIP_SECONDS = 42;
+/** How many covers a door's mosaic shows, split across its two columns. */
+const MOSAIC_COVERS = 8;
 
-function PortfolioDoor({ group, index, reduce }) {
+/** Stacked doors pin below the header, each a step lower than the last. */
+const PIN_TOP_PX = 104;
+const PIN_STEP_PX = 20;
+
+function MosaicColumn({ items, y, offset = false }) {
+    return (
+        <motion.div style={{ y }} className={`flex flex-col gap-3 md:gap-4 ${offset ? 'pt-16' : ''}`.trimEnd()}>
+            {/* listed twice so the column still fills its frame at either end of the drift */}
+            {[...items, ...items].map((item, i) => (
+                <span
+                    key={`${item.slug}-${i}`}
+                    className="block aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl border border-[var(--line-soft)] bg-[var(--bg-soft)] md:rounded-2xl"
+                >
+                    <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/door:scale-[1.04]"
+                    />
+                </span>
+            ))}
+        </motion.div>
+    );
+}
+
+/**
+ * @param {{ progress: import('framer-motion').MotionValue<number> }} props
+ *   `progress` runs 0 -> 1 across the whole stack of doors. Each door owns an
+ *   equal slice of it: over that slice its mosaic drifts and, once the next
+ *   door starts sliding over it, it sinks back and dims underneath.
+ */
+function PortfolioDoor({ group, index, total, reduce, progress }) {
     const tapIntent = useTapIntent();
     const destinationPreloaded = useRef(false);
-    const previews = (group.items ?? []).filter((item) => item.image);
+    const previews = (group.items ?? []).filter((item) => item.image).slice(0, MOSAIC_COVERS);
     const count = (group.items ?? []).length;
+    const isLast = index === total - 1;
+
+    const sliceStart = index / total;
+    const sliceEnd = (index + 1) / total;
+    const columnUp = useTransform(progress, [sliceStart - 0.5 / total, sliceEnd], reduce ? [0, 0] : [60, -160]);
+    const columnDown = useTransform(progress, [sliceStart - 0.5 / total, sliceEnd], reduce ? [0, 0] : [-140, 40]);
+    const sink = useTransform(progress, [sliceStart, sliceEnd], reduce || isLast ? [1, 1] : [1, 0.92]);
+    const dim = useTransform(progress, [sliceStart, sliceEnd], reduce || isLast ? [0, 0] : [0, 0.6]);
 
     const preloadDestination = () => {
         if (destinationPreloaded.current) return;
@@ -45,12 +87,17 @@ function PortfolioDoor({ group, index, reduce }) {
         transitionTo(group.href);
     };
 
+    const left = previews.filter((_, i) => i % 2 === 0);
+    const right = previews.filter((_, i) => i % 2 === 1);
+
     return (
         <motion.div
-            initial={reduce ? false : { opacity: 0, y: 28 }}
+            className="lg:sticky"
+            style={{ top: PIN_TOP_PX + index * PIN_STEP_PX, scale: sink, transformOrigin: '50% 0%' }}
+            initial={reduce ? false : { opacity: 0, y: 48 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-12% 0px' }}
-            transition={{ duration: reduce ? 0 : 0.7, delay: reduce ? 0 : index * 0.1, ease: [...EASE] }}
+            viewport={{ once: true, margin: '-10% 0px' }}
+            transition={{ duration: reduce ? 0 : 0.8, ease: [...EASE] }}
         >
             <Link
                 href={group.href}
@@ -64,90 +111,119 @@ function PortfolioDoor({ group, index, reduce }) {
                 onPointerCancel={tapIntent.onPointerCancel}
                 onClick={go}
                 aria-label={`${group.name}, ${count} projects`}
-                className="group/door block overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] p-7 transition-colors duration-500 hover:border-[var(--field-line)] focus-visible:outline-none md:p-10"
+                className="group/door relative grid overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] transition-colors duration-500 hover:border-[var(--field-line)] focus-visible:outline-none lg:h-[min(76svh,720px)] lg:grid-cols-12"
             >
-                <span className="flex items-center gap-3">
-                    <span className="font-display text-[11px] font-bold tracking-[0.22em] text-[var(--ink-faint)]" aria-hidden>
-                        0{index + 1}
-                    </span>
-                    <span
-                        className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/door:w-16"
-                        style={{ background: group.accent }}
-                        aria-hidden
-                    />
-                </span>
+                {/* the practice's own colour, pooled behind its title */}
+                <span
+                    aria-hidden
+                    className="pointer-events-none absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full opacity-25 blur-[120px] transition-opacity duration-700 group-hover/door:opacity-45"
+                    style={{ background: group.accent }}
+                />
 
-                <span className="mt-6 flex items-baseline gap-4">
-                    <span className="font-display text-[clamp(1.9rem,4vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.02em] text-[var(--ink-strong)]">
-                        <GradientTitle text={group.name} />
+                <span className="relative flex flex-col justify-between gap-10 p-8 md:p-12 lg:col-span-5">
+                    <span className="flex items-center gap-3">
+                        <span
+                            className="h-px w-8 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/door:w-16"
+                            style={{ background: group.accent }}
+                            aria-hidden
+                        />
                     </span>
-                    <span
-                        aria-hidden
-                        className="shrink-0 -translate-x-1 text-[16px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/door:translate-x-0 group-hover/door:opacity-100"
-                    >
-                        &#8599;
-                    </span>
-                </span>
 
-                <span className="mt-3 block text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
-                    {count} {count === 1 ? 'project' : 'projects'}
+                    <span className="block">
+                        <span className="block font-display text-[clamp(2.4rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.035em] text-[var(--ink-strong)]">
+                            <GradientTitle text={group.name} />
+                        </span>
+                        <span className="mt-5 block text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+                            {count} {count === 1 ? 'project' : 'projects'}
+                        </span>
+                    </span>
+
+                    <span className="inline-flex w-max items-center gap-3 rounded-full border border-[var(--field-line)] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink)] transition-colors duration-300 group-hover/door:border-transparent group-hover/door:bg-[var(--invert-btn-hover)] group-hover/door:text-[var(--bg)]">
+                        Open portfolio
+                        <span aria-hidden className="transition-transform duration-300 group-hover/door:-translate-y-0.5 group-hover/door:translate-x-0.5">
+                            &#8599;
+                        </span>
+                    </span>
                 </span>
 
                 {previews.length > 0 && (
-                    /* Same strip as the header menu: two identical halves travelling
-                       exactly one half-width, so the wrap is invisible. No edge fade —
-                       the covers run clean to both sides. */
-                    <span className="mt-8 block overflow-hidden" aria-hidden>
-                        <motion.span
-                            className="flex w-max"
-                            animate={reduce ? undefined : { x: ['0%', '-50%'] }}
-                            transition={reduce ? undefined : { duration: STRIP_SECONDS, ease: 'linear', repeat: Infinity }}
-                        >
-                            {[false, true].map((duplicate) => (
-                                <span key={duplicate ? 'duplicate' : 'primary'} className="flex shrink-0 gap-3 pr-3">
-                                    {previews.map((item) => (
-                                        <span
-                                            key={`${duplicate ? 'duplicate-' : ''}${item.slug}`}
-                                            className="block h-24 w-36 shrink-0 overflow-hidden rounded-xl border border-[var(--line-soft)] bg-[var(--bg-soft)]"
-                                        >
-                                            <img
-                                                src={item.image}
-                                                alt=""
-                                                loading="lazy"
-                                                decoding="async"
-                                                draggable={false}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </span>
-                                    ))}
-                                </span>
-                            ))}
-                        </motion.span>
+                    <span
+                        aria-hidden
+                        className="relative block h-[22rem] overflow-hidden border-t border-[var(--line-soft)] md:h-[28rem] lg:col-span-7 lg:h-auto lg:border-l lg:border-t-0"
+                    >
+                        <span className="absolute inset-x-5 -top-10 grid grid-cols-2 gap-3 md:inset-x-8 md:gap-4">
+                            <MosaicColumn items={left} y={columnUp} />
+                            <MosaicColumn items={right} y={columnDown} offset />
+                        </span>
+                        <span className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--surface)] to-transparent" />
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--surface)] to-transparent" />
                     </span>
                 )}
+
+                {/* darkens this door as the next one slides over it */}
+                <motion.span aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--bg)]" style={{ opacity: dim }} />
             </Link>
         </motion.div>
     );
 }
 
+/** The page title, set as one oversized word whose letters rise in turn. */
+function WorkTitle({ reduce }) {
+    const letters = ['W', 'o', 'r', 'k'];
+
+    return (
+        <h1 className="heading-hero-size mt-8 font-display font-extrabold uppercase leading-[0.8] tracking-[-0.055em] text-[var(--ink-strong)]">
+            <span className="sr-only">Our work</span>
+            <span aria-hidden className="flex overflow-hidden pb-[0.04em]">
+                {[...letters, '.'].map((letter, i) => (
+                    <span
+                        key={i}
+                        {...enter('mask-up', { dur: 1, delay: 0.12 + i * 0.07, y: '105%', className: `inline-block ${letter === '.' ? 'text-gradient' : ''}` })}
+                    >
+                        {letter}
+                    </span>
+                ))}
+            </span>
+        </h1>
+    );
+}
+
 export default function WorkIndex({ groups = [] }) {
     const reduce = useReducedMotion();
+    const stackRef = useRef(null);
+    const { scrollYProgress: stackProgress } = useScroll({ target: stackRef, offset: ['start start', 'end end'] });
+    const totalProjects = groups.reduce((sum, group) => sum + (group.items ?? []).length, 0);
 
     return (
         <>
-            <Head title="Our Work — Marketorr" />
+            <Head title="Our Work | Marketorr" />
             <div className="bg-[var(--bg)] pb-28 pt-32">
                 <div className="container-x">
-                    <SectionLabel index="03" name="OUR WORK" />
-                    <ScrollHeading className="mt-8">
-                        <h1 className="display-lg uppercase text-[var(--ink-strong)]">
-                            Work that <span className="text-gradient">creates impact.</span>
-                        </h1>
+                    <SectionLabel name="OUR WORK" />
+                    <ScrollHeading>
+                        <WorkTitle reduce={reduce} />
                     </ScrollHeading>
+                    <div {...enter('fade-up', { dur: 0.8, delay: 0.5, className: 'mt-8 flex flex-wrap items-end justify-between gap-6 border-t border-[var(--line)] pt-6' })}>
+                        <p className="max-w-md text-[16px] leading-relaxed text-[var(--mute)]">
+                            {totalProjects} projects across {groups.length} practices. Choose one to step inside.
+                        </p>
+                        <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
+                            Scroll ↓
+                        </p>
+                    </div>
 
-                    <div className="mt-14 grid gap-6 md:mt-20 md:gap-8 lg:grid-cols-2">
+                    {/* One shared parent, so every door stays pinned until the stack ends
+                        and each later door slides over the one before it. */}
+                    <div ref={stackRef} className="relative mt-16 flex flex-col gap-6 md:mt-24 lg:gap-[34svh]">
                         {groups.map((group, index) => (
-                            <PortfolioDoor key={group.slug} group={group} index={index} reduce={reduce} />
+                            <PortfolioDoor
+                                key={group.slug}
+                                group={group}
+                                index={index}
+                                total={groups.length}
+                                reduce={reduce}
+                                progress={stackProgress}
+                            />
                         ))}
                     </div>
                 </div>

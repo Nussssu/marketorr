@@ -39,7 +39,7 @@ class ContactFormTest extends TestCase
         $response = $this->from('/contact')->post('/contact', $this->validPayload());
 
         $response->assertRedirect('/contact');
-        $response->assertSessionHas('success', 'Thanks — we reply within 24–48h.');
+        $response->assertSessionHas('success', 'Thanks, we reply within 24–48h.');
 
         $this->assertDatabaseCount('contact_submissions', 1);
 

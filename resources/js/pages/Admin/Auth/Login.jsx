@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Button, Field, Input } from '../../../components/admin/ui';
+import BrandMark from '../../../components/ui/BrandMark';
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({
@@ -15,15 +16,11 @@ export default function Login() {
 
     return (
         <>
-            <Head title="Admin Login — Marketorr" />
+            <Head title="Admin Login | Marketorr" />
             <div className="flex min-h-svh items-center justify-center bg-[var(--bg)] px-4 py-12">
                 <div className="w-full max-w-sm">
                     <div className="flex items-center gap-2">
-                        <span className="flex h-8 items-end gap-[4px]" aria-hidden>
-                            <span className="h-4 w-[6px] rounded-[2px] bg-[#891FFB]" />
-                            <span className="h-6 w-[6px] rounded-[2px] bg-[#507AF4]" />
-                            <span className="h-8 w-[6px] rounded-[2px] bg-[#1BE2EB]" />
-                        </span>
+                        <BrandMark size="2rem" />
                         <span className="font-display text-xl font-extrabold tracking-tight text-[var(--ink-strong)]">
                             MARKETORR<span className="text-gradient">.</span>
                         </span>

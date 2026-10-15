@@ -66,6 +66,41 @@ function tileOptions(coarse) {
  *
  * @param {{address?: string, directionsHref?: string, className?: string}} props
  */
+/** Tile size Leaflet and Esri use, in px. */
+const TILE_PX = 256;
+
+/**
+ * The basemap tiles that cover the map box at its opening view, and where
+ * each sits relative to the box's centre — the same arithmetic Leaflet uses
+ * to lay out `MAP_CENTER` at `MAP_ZOOM`, so the preview lines up exactly with
+ * the live map that replaces it. `wide` tiles only show on wider boxes.
+ *
+ * @return {Array<{ x: number, y: number, left: number, top: number, wide: boolean }>}
+ */
+function previewTiles() {
+    const scale = TILE_PX * 2 ** MAP_ZOOM;
+    const [lat, lng] = MAP_CENTER;
+    const sin = Math.sin((lat * Math.PI) / 180);
+    const cx = ((lng + 180) / 360) * scale;
+    const cy = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
+    const half = { narrow: [210, 115], wide: [440, 145] };
+    const tiles = [];
+
+    for (let x = Math.floor((cx - half.wide[0]) / TILE_PX); x <= Math.floor((cx + half.wide[0]) / TILE_PX); x++) {
+        for (let y = Math.floor((cy - half.wide[1]) / TILE_PX); y <= Math.floor((cy + half.wide[1]) / TILE_PX); y++) {
+            const left = Math.round(x * TILE_PX - cx);
+            const top = Math.round(y * TILE_PX - cy);
+            const wide = left + TILE_PX < -half.narrow[0] || left > half.narrow[0]
+                || top + TILE_PX < -half.narrow[1] || top > half.narrow[1];
+            tiles.push({ x, y, left, top, wide });
+        }
+    }
+
+    return tiles;
+}
+
+const PREVIEW_TILES = previewTiles();
+
 export default function OfficeMap({ address = '', directionsHref = '#', className = '' }) {
     const { theme } = useTheme();
     const hostRef = useRef(null);
@@ -78,6 +113,8 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
 
     const [shouldLoad, setShouldLoad] = useState(false);
     const [ready, setReady] = useState(false);
+    // The tile preview stays up until the live map's first tiles have drawn.
+    const [tilesShown, setTilesShown] = useState(false);
     const [hint, setHint] = useState('');
 
     const showHint = useCallback((message) => {
@@ -184,27 +221,17 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
             const url = TILES[theme] ?? TILES.dark;
             tileUrlRef.current = url;
             tileRef.current = L.tileLayer(url, tileOptions(coarse)).addTo(map);
+            const reveal = () => setTilesShown(true);
+            tileRef.current.once('load', reveal);
+            const revealSafety = window.setTimeout(reveal, 2500);
+            cleanups.push(() => {
+                window.clearTimeout(revealSafety);
+                tileRef.current?.off('load', reveal);
+            });
 
             L.control
                 .zoom({ position: 'bottomright', zoomInTitle: 'Zoom in', zoomOutTitle: 'Zoom out' })
                 .addTo(map);
-
-            const Recenter = L.Control.extend({
-                onAdd() {
-                    const button = L.DomUtil.create('button', 'mk-map__recenter');
-                    button.type = 'button';
-                    button.title = 'Recentre on the studio';
-                    button.setAttribute('aria-label', 'Recentre on the studio');
-                    button.innerHTML = '<span aria-hidden="true">◎</span>';
-                    L.DomEvent.disableClickPropagation(button);
-                    L.DomEvent.on(button, 'click', (event) => {
-                        L.DomEvent.preventDefault(event);
-                        map.flyTo(MAP_CENTER, MAP_ZOOM, { duration: reduce ? 0 : 0.7 });
-                    });
-                    return button;
-                },
-            });
-            new Recenter({ position: 'bottomright' }).addTo(map);
 
             const marker = L.marker(MAP_CENTER, {
                 keyboard: true,
@@ -219,12 +246,35 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
             }).addTo(map);
 
             marker.bindPopup(
-                `<p class="mk-map__popup-label">Marketorr</p><p class="mk-map__popup-address">${address}</p><a class="mk-map__popup-link" href="${directionsHref}" target="_blank" rel="noreferrer">Get directions ↗</a>`,
-                { className: 'mk-map__popup', closeButton: true, maxWidth: 240, autoPanPadding: [18, 18] },
+                `<p class="mk-map__popup-label">Marketorr</p><p class="mk-map__popup-address">${String(address ?? '').replace(/\b(Plot|Road|Sector|House|Block|Level) /g, '$1\u00a0')}</p><a class="mk-map__popup-link" href="${directionsHref}" target="_blank" rel="noreferrer">Get directions ↗</a>`,
+                { className: 'mk-map__popup', closeButton: true, minWidth: 240, maxWidth: 260, autoPanPadding: [20, 20] },
             );
 
             // The popup is left closed: the address already sits beside the map,
             // and an open popup covers most of a 220–280px tall canvas.
+
+            // Shows the studio's address: jumps straight back to the studio, with
+            // the pin set low enough that the address box fits above it, so
+            // nothing flies, zooms or pans while it opens.
+            const Recenter = L.Control.extend({
+                onAdd() {
+                    const button = L.DomUtil.create('button', 'mk-map__recenter');
+                    button.type = 'button';
+                    button.title = 'Show the studio address';
+                    button.setAttribute('aria-label', 'Show the studio address');
+                    button.innerHTML = '<span aria-hidden="true">◎</span>';
+                    L.DomEvent.disableClickPropagation(button);
+                    L.DomEvent.on(button, 'click', (event) => {
+                        L.DomEvent.preventDefault(event);
+                        const lift = Math.min(90, map.getSize().y * 0.3);
+                        const target = map.unproject(map.project(MAP_CENTER, MAP_ZOOM).subtract([0, lift]), MAP_ZOOM);
+                        map.setView(target, MAP_ZOOM, { animate: false });
+                        marker.openPopup();
+                    });
+                    return button;
+                },
+            });
+            new Recenter({ position: 'bottomright' }).addTo(map);
 
             if (coarse) {
                 // Flag a one-finger drag so the two-finger rule is discoverable.
@@ -362,7 +412,27 @@ export default function OfficeMap({ address = '', directionsHref = '#', classNam
                 role="application"
                 aria-label="Map of the Marketorr studio in Uttara, Dhaka"
             />
-            {shouldLoad && !ready && <div className="mk-map__skeleton" aria-hidden />}
+            {!tilesShown && (
+                /* The opening view drawn straight from the basemap's own tiles,
+                   so the map is on screen from first paint (server-rendered)
+                   rather than after Leaflet has loaded. */
+                <div className="mk-map__preview" aria-hidden>
+                    {PREVIEW_TILES.map((tile) => (
+                        <img
+                            key={`${tile.x}-${tile.y}`}
+                            src={(TILES[theme] ?? TILES.dark).replace('{z}', MAP_ZOOM).replace('{y}', tile.y).replace('{x}', tile.x)}
+                            alt=""
+                            width={TILE_PX}
+                            height={TILE_PX}
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                            className={tile.wide ? 'mk-map__preview-tile mk-map__preview-tile--wide' : 'mk-map__preview-tile'}
+                            style={{ left: `calc(50% + ${tile.left}px)`, top: `calc(50% + ${tile.top}px)` }}
+                        />
+                    ))}
+                </div>
+            )}
             <p className="mk-map__hint" data-visible={hint ? 'true' : 'false'} aria-live="polite">
                 {hint}
             </p>

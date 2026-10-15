@@ -39,6 +39,9 @@ class StoreProjectRequest extends FormRequest
             'featured' => ['required', 'boolean'],
             'status' => ['required', Rule::enum(ContentStatus::class)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'gallery_images' => ['nullable', 'array', 'max:60'],
+            'gallery_images.*.src' => ['required_with:gallery_images', 'string', 'max:1000'],
+            'gallery_images.*.alt' => ['nullable', 'string', 'max:190'],
         ];
     }
 

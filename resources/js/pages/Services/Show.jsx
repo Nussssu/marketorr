@@ -1,16 +1,20 @@
 import { Head, Link } from '@inertiajs/react';
 import { SectionLabel, Tag } from '../../components/ui/primitives';
 import MagneticButton from '../../components/motion/MagneticButton';
+import { MARK, markBarStyle, markGap } from '../../lib/tokens';
+
+/** Height of the progression visual's tallest bar, in the logo's proportions. */
+const PROGRESSION_SIZE = 'clamp(190px, 20vw, 260px)';
 
 export default function ServicePage({ service: s, services }) {
     const grad = s.accentTo ? `linear-gradient(90deg, ${s.accent}, ${s.accentTo})` : s.accent;
 
     return (
         <>
-            <Head title={`${s.name} — Marketorr`} />
+            <Head title={`${s.name} | Marketorr`} />
             <article className="bg-[var(--bg)] pb-24 pt-32">
                 <div className="container-x">
-                    <SectionLabel index={s.index} name={s.name.toUpperCase()} />
+                    <SectionLabel name={s.name.toUpperCase()} />
                     <h1 className="display-lg mt-8 uppercase text-[var(--ink-strong)]">{s.name}</h1>
                     <p className="mt-6 max-w-2xl text-lg text-[var(--mute)]">{s.description}</p>
                     <div className="mt-8 flex flex-wrap gap-4">
@@ -25,9 +29,9 @@ export default function ServicePage({ service: s, services }) {
                     </div>
 
                     {/* progression visual */}
-                    <div className="mt-14 flex items-end gap-4" aria-hidden>
-                        {[s.accent, s.accentTo ?? '#507AF4', '#1BE2EB'].map((c, i) => (
-                            <span key={i} className="w-20 rounded-t-xl border md:w-28" style={{ height: 70 + i * 60, background: `linear-gradient(180deg, ${c}66, transparent)`, borderColor: `${c}44` }} />
+                    <div className="mt-14 flex items-end" style={{ gap: markGap(PROGRESSION_SIZE) }} aria-hidden>
+                        {MARK.colors.map((c, i) => (
+                            <span key={c} className="border" style={{ ...markBarStyle(PROGRESSION_SIZE, i), background: `linear-gradient(180deg, ${c}66, transparent)`, borderColor: `${c}44` }} />
                         ))}
                         <span className="mb-2 ml-2 h-[3px] flex-1" style={{ background: grad }} />
                     </div>

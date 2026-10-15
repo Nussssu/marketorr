@@ -34,14 +34,14 @@ export default function ServicesIndex({ services }) {
 
     return (
         <>
-            <Head title="Services — Marketorr Admin" />
+            <Head title="Services | Marketorr Admin" />
             <PageHeader title="Services" subtitle={`${rows.length} services. Order here is the order on the public site.`}>
                 <Button as="link" href="/admin/services/create">New service</Button>
             </PageHeader>
 
             <Panel className="overflow-hidden">
                 {rows.length === 0 ? (
-                    <EmptyState>No services yet — create the first one.</EmptyState>
+                    <EmptyState>No services yet, create the first one.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[720px] text-left text-[13px]">

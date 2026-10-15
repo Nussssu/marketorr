@@ -39,14 +39,14 @@ export default function ProjectsIndex({ projects }) {
 
     return (
         <>
-            <Head title="Projects — Marketorr Admin" />
+            <Head title="Projects | Marketorr Admin" />
             <PageHeader title="Projects" subtitle={`${rows.length} case studies. Order here is the order on the public site.`}>
                 <Button as="link" href="/admin/projects/create">New project</Button>
             </PageHeader>
 
             <Panel className="overflow-hidden">
                 {rows.length === 0 ? (
-                    <EmptyState>No projects yet — create the first one.</EmptyState>
+                    <EmptyState>No projects yet, create the first one.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[820px] text-left text-[13px]">

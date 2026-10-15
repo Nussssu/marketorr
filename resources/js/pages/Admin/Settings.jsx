@@ -203,7 +203,7 @@ export default function Settings({ settings }) {
 
     return (
         <>
-            <Head title="Settings — Marketorr Admin" />
+            <Head title="Settings | Marketorr Admin" />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
                 <PageHeader
                     title="Site settings"
@@ -601,7 +601,7 @@ export default function Settings({ settings }) {
                                 <Field label="Hero Eyebrow" error={errors.hero_eyebrow} required>
                                     <Input value={data.hero_eyebrow} onChange={(e) => setData('hero_eyebrow', e.target.value)} />
                                 </Field>
-                                <Field label="Heading Lines" error={errors.hero_heading_lines} required hint="One line per row — the last line gets the brand gradient.">
+                                <Field label="Heading Lines" error={errors.hero_heading_lines} required hint="One line per row, the last line gets the brand gradient.">
                                     <RepeatableList
                                         values={data.hero_heading_lines}
                                         onChange={(v) => setData('hero_heading_lines', v)}

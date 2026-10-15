@@ -1,25 +1,37 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
 import CharukothonCover, { isCharukothon } from '../media/CharukothonCover';
 import { projectHeroMedia } from '../../lib/projectHeroMedia';
-import MediaPlaceholder from '../media/MediaPlaceholder';
-import { EASE, heroMediaEntrance } from '../../lib/motion';
-import BounceTitle from '../motion/BounceTitle';
+import { EASE, enter, heroMediaEntrance } from '../../lib/motion';
 
-/** Rich scene only on pointer-fine tablet/desktop; phones get reduced travel. */
-function useRichScene() {
-    const [rich, setRich] = useState(false);
-
-    useEffect(() => {
-        const query = window.matchMedia('(min-width: 768px) and (pointer: fine)');
-        const update = () => setRich(query.matches);
-        update();
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    return rich;
+/**
+ * The frame's stand-in for a project whose visuals are not uploaded yet: a
+ * branded panel carrying the project's name, rather than the grey plate, so
+ * the first thing on the page still looks finished.
+ *
+ * @param {{ title: string }} props
+ */
+function AwaitingVisuals({ title }) {
+    return (
+        <div
+            className="absolute inset-0 overflow-hidden"
+            role="img"
+            aria-label={`${title} - visuals coming soon`}
+            style={{ background: 'radial-gradient(120% 90% at 85% 15%, rgba(80, 122, 244, 0.28), transparent 60%), radial-gradient(90% 80% at 10% 100%, rgba(137, 31, 251, 0.3), transparent 60%), var(--bg-soft)' }}
+        >
+            <div className="grid-bg absolute inset-0" aria-hidden />
+            <span
+                className="absolute inset-x-[6%] bottom-[8%] font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-transparent"
+                style={{ fontSize: '9cqw', WebkitTextStroke: '1px var(--field-line)' }}
+                aria-hidden
+            >
+                {title}
+            </span>
+            <span className="absolute left-[6%] top-[9%] rounded-full border border-[var(--field-line)] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]" aria-hidden>
+                Visuals coming soon
+            </span>
+        </div>
+    );
 }
 
 /**
@@ -86,8 +98,8 @@ function HeroMedia({ project, reduce }) {
                             className="absolute inset-0 h-full w-full object-cover"
                         />
                     )}
-                    {/* Scaled to cover the stage: the player keeps the film's own
-                        ratio, so it is sized off whichever viewport edge binds. */}
+                    {/* Scaled to cover the frame: the player keeps the film's own
+                        ratio, so it is sized off whichever frame edge binds. */}
                     <motion.iframe
                         src={`https://player.vimeo.com/video/${media.id}?background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1${media.hash ? `&h=${media.hash}` : ''}`}
                         title={media.title}
@@ -101,10 +113,10 @@ function HeroMedia({ project, reduce }) {
                         transition={{ duration: reduce ? 0 : 0.2, ease: [...EASE] }}
                         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                         style={{
-                            width: '100vw',
-                            height: `${100 / media.ratio}vw`,
-                            minHeight: '100svh',
-                            minWidth: `${100 * media.ratio}svh`,
+                            width: '100cqw',
+                            height: `${100 / media.ratio}cqw`,
+                            minHeight: '100cqh',
+                            minWidth: `${100 * media.ratio}cqh`,
                         }}
                     />
                 </motion.div>
@@ -131,7 +143,7 @@ function HeroMedia({ project, reduce }) {
     }
 
     if (!project.image) {
-        return <MediaPlaceholder label={`${project.title} - hero image placeholder`} />;
+        return <AwaitingVisuals title={project.title} />;
     }
 
     if (isCharukothon(project.slug)) {
@@ -151,9 +163,20 @@ function HeroMedia({ project, reduce }) {
         );
     }
 
+    // Grid copies are offered alongside the cover so a phone downloads one
+    // sized to the frame (about the full content width) rather than the
+    // full-resolution file.
+    const candidates = [
+        project.thumbSmall && project.thumbSmall !== project.image && `${project.thumbSmall} 480w`,
+        project.thumb && project.thumb !== project.image && `${project.thumb} 900w`,
+        project.thumb && project.thumb !== project.image && `${project.image} 1800w`,
+    ].filter(Boolean);
+
     return (
         <motion.img
             src={project.image}
+            srcSet={candidates.length ? candidates.join(', ') : undefined}
+            sizes={candidates.length ? '(max-width: 1520px) 94vw, 1430px' : undefined}
             alt={project.imageAlt}
             fetchPriority="high"
             loading="eager"
@@ -166,85 +189,69 @@ function HeroMedia({ project, reduce }) {
 }
 
 /**
- * Cinematic hero for every dedicated project page.
+ * Hero for every dedicated project page: a framed showcase.
  *
- * Deliberately the same scene as `SubServiceHero`: one large visual with an
- * oversized title layered over it, split across depth planes, each travelling
- * on scroll at its own speed while the stage compresses and hands off to the
- * section below. Timings, easing and plane transforms are matched to that
- * hero; the title's letters drop in and bounce, its last word in the brand
- * purple, blue and cyan.
+ * The project's name opens the page, and the work itself sits beneath it in a
+ * large rounded frame — shown clean, with nothing laid over it — rising into
+ * place like a board being presented. The client, category and year are left
+ * to the details column below, so the hero carries only the name.
  *
- * The one difference is what the hero carries: only the project name sits over
- * the visual — no breadcrumb, no standfirst, no metric — so the work reads
- * first and the page stays clean.
+ * Nothing moves on scroll; the only motion is the entrance (the title's
+ * per-character rise and the frame lifting in), and reduced motion renders it
+ * settled.
  *
- * Motion is transform/scale/opacity only, and nothing here reacts to the
- * pointer; depth is scroll-driven only.
- *
- * @param {{ project: { slug: string, title: string, image: string, imageAlt: string } }} props
+ * @param {{ project: { slug: string, title: string, image: string, imageAlt: string, workGroupHeading?: string } }} props
  */
 export default function WorkHero({ project }) {
-    const wrapRef = useRef(null);
     const reduce = useReducedMotion();
-    const rich = useRichScene();
-    const full = rich && !reduce;
 
-    const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] });
-
-    const stageScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.93 : 0.97]);
-    const bgScale = useTransform(scrollYProgress, [0, 1], [1, full ? 1.14 : 1.06]);
-    const bgShiftY = useTransform(scrollYProgress, [0, 1], ['0%', '10%']);
-    const titleShiftY = useTransform(scrollYProgress, [0, 1], ['0%', full ? '-38%' : '-16%']);
-    const titleScale = useTransform(scrollYProgress, [0, 1], [1, full ? 0.9 : 0.96]);
-    const titleFade = useTransform(scrollYProgress, [0.35, 0.8], [1, 0]);
+    const words = project.title.toUpperCase().split(' ');
+    let charIndex = 0;
 
     return (
-        <div ref={wrapRef} className="relative" style={{ height: full ? '175svh' : '150svh' }}>
-            <div className="sticky top-0 h-svh overflow-hidden bg-[#06060a]">
-                {/* compress on scroll */}
-                <motion.div style={reduce ? undefined : { scale: stageScale }} className="absolute inset-0">
-                    {/* PLANE 1 — the work itself */}
-                    <motion.div style={reduce ? undefined : { y: bgShiftY, scale: bgScale }} className="absolute inset-0">
-                        <HeroMedia key={project.slug} project={project} reduce={reduce} />
-                    </motion.div>
+        <section className="relative overflow-hidden bg-[var(--bg)] pt-28 md:pt-36">
+            <div className="grid-bg pointer-events-none absolute inset-x-0 top-0 h-[70svh]" aria-hidden />
 
-                    {/* Theme-aware scrim: sits over the media, under the type. */}
-                    <div className="hero-scrim" aria-hidden />
+            <div className="container-x relative">
+                {project.workGroupHeading && (
+                    <span {...enter('fade-up', { dur: 0.7, delay: 0.2, y: 10, className: 'mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.28em] text-[var(--ink-faint)]' })}>
+                        {project.workGroupHeading}
+                    </span>
+                )}
+                <h1
+                    className="heading-hero-size max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-[var(--ink-strong)]"
+                    aria-label={project.title}
+                >
+                    {words.map((word, wordIndex) => (
+                        <span key={wordIndex} className="mr-[0.24em] inline-block whitespace-nowrap last:mr-0" aria-hidden>
+                            {word.split('').map((char) => {
+                                const index = charIndex++;
 
-                    {/* Depth stage — keeps its perspective, never tilts. */}
-                    <motion.div
-                        style={full ? { transformStyle: 'preserve-3d', perspective: 1200 } : undefined}
-                        className="absolute inset-0"
-                    >
-                        {/* PLANE 2 — the work's name, and nothing else */}
-                        <motion.div
-                            style={reduce ? undefined : { y: titleShiftY, scale: titleScale, opacity: titleFade }}
-                            className="absolute inset-0 flex items-center"
-                        >
-                            <motion.div style={full ? { z: 90 } : undefined} className="container-x w-full">
-                                {project.workGroupHeading && (
-                                    <motion.span
-                                        initial={reduce ? false : { opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: reduce ? 0 : 0.7, delay: 0.25, ease: [...EASE] }}
-                                        className="mb-5 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.28em] text-white/70"
-                                    >
-                                        <span className="h-px w-8 bg-white/40" aria-hidden />
-                                        {project.workGroupHeading}
-                                    </motion.span>
-                                )}
-                                <h1
-                                    className="max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-white"
-                                    style={{ fontSize: 'clamp(2.6rem, 10vw, 8.5rem)' }}
-                                >
-                                    <BounceTitle text={project.title} uppercase delay={0.35} />
-                                </h1>
-                            </motion.div>
-                        </motion.div>
-                    </motion.div>
-                </motion.div>
+                                return (
+                                    <span key={index} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
+                                        <span {...enter('mask-up', { dur: 1, delay: 0.3 + Math.min(index, 14) * 0.045, y: '115%', className: 'inline-block will-change-transform' })}>
+                                            {char}
+                                        </span>
+                                    </span>
+                                );
+                            })}
+                        </span>
+                    ))}
+                </h1>
+
+                <div
+                    {...enter('lift', {
+                        dur: 1.1,
+                        delay: 0.55,
+                        y: 72,
+                        scale: 0.95,
+                        className: 'relative mt-10 aspect-[4/3] w-full overflow-hidden rounded-[22px] border border-[var(--line)] bg-[var(--bg-soft)] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.6)] sm:aspect-[16/9] md:mt-14 md:rounded-[32px]',
+                        style: { containerType: 'size' },
+                    })}
+                >
+                    <HeroMedia key={project.slug} project={project} reduce={reduce} />
+                </div>
             </div>
-        </div>
+        </section>
     );
 }

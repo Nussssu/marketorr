@@ -19,7 +19,7 @@ class NewProjectInquiry extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "New project inquiry — {$this->submission->name}",
+            subject: "New project inquiry: {$this->submission->name}",
             replyTo: [$this->submission->email],
         );
     }

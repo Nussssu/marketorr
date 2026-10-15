@@ -15,7 +15,7 @@ export default function Features({ content }) {
     return (
         <section className="bg-[var(--bg)] section-pad">
             <div className="container-x">
-                <SectionLabel index="§" name={content?.heading || 'Features'} />
+                <SectionLabel name={content?.heading || 'Features'} />
                 <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {items.map((item, index) => (
                         <motion.article

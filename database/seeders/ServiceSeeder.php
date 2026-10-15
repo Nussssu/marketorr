@@ -38,7 +38,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '01',
                 'name' => 'Branding',
                 'short' => 'Identities that demand attention.',
-                'description' => 'Strategy-led identities — positioning, naming, visual systems and guidelines that make ambitious brands impossible to ignore.',
+                'description' => 'Strategy-led identities: positioning, naming, visual systems and guidelines that make ambitious brands impossible to ignore.',
                 'accent' => '#891FFB',
                 'accent_to' => null,
                 'capabilities' => [
@@ -62,7 +62,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '02',
                 'name' => 'Web UI/UX',
                 'short' => 'Websites engineered to convert.',
-                'description' => 'High-converting marketing sites and web experiences — architecture, interface, motion and design systems built for growth.',
+                'description' => 'High-converting marketing sites and web experiences: architecture, interface, motion and design systems built for growth.',
                 'accent' => '#891FFB',
                 'accent_to' => '#507AF4',
                 'capabilities' => [
@@ -86,7 +86,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '03',
                 'name' => 'Software UI/UX',
                 'short' => 'Complex products, made clear.',
-                'description' => 'SaaS, dashboards and enterprise tools — workflows, data-viz and scalable systems that teams love to use.',
+                'description' => 'SaaS, dashboards and enterprise tools: workflows, data-viz and scalable systems that teams love to use.',
                 'accent' => '#507AF4',
                 'accent_to' => null,
                 'capabilities' => [
@@ -110,7 +110,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '04',
                 'name' => 'Mobile App UI/UX',
                 'short' => 'Apps people keep opening.',
-                'description' => 'Native-feel iOS and Android experiences — flows, micro-interactions and prototypes tuned for retention.',
+                'description' => 'Native-feel iOS and Android experiences: flows, micro-interactions and prototypes tuned for retention.',
                 'accent' => '#507AF4',
                 'accent_to' => '#1BE2EB',
                 'capabilities' => [
@@ -134,7 +134,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '05',
                 'name' => 'Website Design',
                 'short' => 'Marketing sites that earn the click.',
-                'description' => 'End-to-end website design — narrative, layout, responsive craft and CMS-ready components that keep the brand sharp on every screen.',
+                'description' => 'End-to-end website design: narrative, layout, responsive craft and CMS-ready components that keep the brand sharp on every screen.',
                 'accent' => '#891FFB',
                 'accent_to' => null,
                 'capabilities' => [
@@ -158,7 +158,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '06',
                 'name' => 'Mobile App Design',
                 'short' => 'Native experiences, end to end.',
-                'description' => 'Full mobile app design from onboarding to settings — screen systems, platform patterns and handoff-ready specs for iOS and Android.',
+                'description' => 'Full mobile app design from onboarding to settings: screen systems, platform patterns and handoff-ready specs for iOS and Android.',
                 'accent' => '#891FFB',
                 'accent_to' => '#507AF4',
                 'capabilities' => [
@@ -182,7 +182,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '07',
                 'name' => 'SaaS & Web App Design',
                 'short' => 'Products that scale with the roadmap.',
-                'description' => 'Interface design for SaaS platforms and web apps — onboarding, billing, permissions and dense data views that stay usable as the product grows.',
+                'description' => 'Interface design for SaaS platforms and web apps: onboarding, billing, permissions and dense data views that stay usable as the product grows.',
                 'accent' => '#507AF4',
                 'accent_to' => null,
                 'capabilities' => [
@@ -206,7 +206,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '08',
                 'name' => 'E-commerce Design',
                 'short' => 'Storefronts built to check out.',
-                'description' => 'Catalogue, product and checkout design tuned for conversion — merchandising, filters and a payment flow that removes every avoidable drop-off.',
+                'description' => 'Catalogue, product and checkout design tuned for conversion: merchandising, filters and a payment flow that removes every avoidable drop-off.',
                 'accent' => '#507AF4',
                 'accent_to' => '#1BE2EB',
                 'capabilities' => [
@@ -230,7 +230,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '09',
                 'name' => 'Product Design',
                 'short' => 'From problem to shipped product.',
-                'description' => 'Discovery-led product design — research, concept validation, MVP scoping and iteration cycles that keep design tied to real user outcomes.',
+                'description' => 'Discovery-led product design: research, concept validation, MVP scoping and iteration cycles that keep design tied to real user outcomes.',
                 'accent' => '#1BE2EB',
                 'accent_to' => null,
                 'capabilities' => [
@@ -254,7 +254,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '10',
                 'name' => 'UX Audit & Optimization',
                 'short' => 'Find the leaks. Fix the funnel.',
-                'description' => 'Heuristic review, analytics and session data combined into a prioritised fix list — then the redesigns and tests that prove the lift.',
+                'description' => 'Heuristic review, analytics and session data combined into a prioritised fix list, then the redesigns and tests that prove the lift.',
                 'accent' => '#891FFB',
                 'accent_to' => null,
                 'capabilities' => [
@@ -302,7 +302,7 @@ class ServiceSeeder extends Seeder
                 'index_label' => '12',
                 'name' => 'Design Systems',
                 'short' => 'One source of truth for every screen.',
-                'description' => 'Tokenised, documented component libraries that keep design and engineering in step — built to extend, version and hand over cleanly.',
+                'description' => 'Tokenised, documented component libraries that keep design and engineering in step: built to extend, version and hand over cleanly.',
                 'accent' => '#507AF4',
                 'accent_to' => '#1BE2EB',
                 'capabilities' => [

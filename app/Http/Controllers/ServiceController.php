@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Services\PublicAsset;
+use App\Services\SubServiceRelatedWork;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class ServiceController extends Controller
 {
@@ -17,14 +20,17 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function show(string $slug): Response
+    /**
+     * A published service page. Branding and UI/UX no longer have pages of
+     * their own: their sections live on the Services page, so old links land
+     * there at the matching section.
+     */
+    public function show(string $slug): Response|SymfonyResponse
     {
         $category = collect(config('subservices'))->firstWhere('slug', $slug);
 
         if ($category) {
-            return Inertia::render('Services/Category', [
-                'category' => $category,
-            ]);
+            return Inertia::location(route('services.index').'#'.$category['slug']);
         }
 
         $service = Service::query()
@@ -42,7 +48,7 @@ class ServiceController extends Controller
      * Dedicated page for one catalogue sub-service,
      * e.g. /services/branding/brand-strategy.
      */
-    public function subShow(string $service, string $sub): Response
+    public function subShow(string $service, string $sub, SubServiceRelatedWork $relatedWork): Response
     {
         $category = collect(config('subservices'))->firstWhere('slug', $service);
         abort_if(! $category, 404);
@@ -57,16 +63,17 @@ class ServiceController extends Controller
         $position = collect($category['items'])->search(fn (array $entry) => $entry['slug'] === $item['slug']) + 1;
 
         return Inertia::render('Services/SubShow', [
-            'item' => $withUrl($item) + [
+            'item' => $withUrl($this->withResolvedCaseStudyImages($item)) + [
                 'category' => ['slug' => $category['slug'], 'name' => $category['name']],
                 'position' => $position,
                 'total' => count($category['items']),
+                'relatedWork' => $relatedWork->for($category, $item),
             ],
             'siblings' => collect($category['items'])
                 ->reject(fn (array $entry) => $entry['slug'] === $item['slug'])
                 ->map($withUrl)
                 ->values(),
-            'parentHref' => route('services.show', $category['slug']),
+            'parentHref' => route('services.index').'#'.$category['slug'],
             'parentName' => $category['name'],
         ]);
     }
@@ -83,5 +90,31 @@ class ServiceController extends Controller
             ->get()
             ->map(fn (Service $service) => $service->toPublicArray())
             ->values();
+    }
+
+    /**
+     * A sub-service's case-study image paths as public URLs on the configured
+     * asset base, pointing at optimized copies where they exist.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function withResolvedCaseStudyImages(array $item): array
+    {
+        if (! isset($item['case_study']['sections'])) {
+            return $item;
+        }
+
+        $item['case_study']['sections'] = collect($item['case_study']['sections'])
+            ->map(function (array $section): array {
+                $section['images'] = collect($section['images'] ?? [])
+                    ->map(fn (array $image): array => [...$image, 'src' => PublicAsset::url($image['src'] ?? null)])
+                    ->all();
+
+                return $section;
+            })
+            ->all();
+
+        return $item;
     }
 }

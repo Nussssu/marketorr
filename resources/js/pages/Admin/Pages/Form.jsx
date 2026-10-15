@@ -63,7 +63,7 @@ export default function PageForm({ page, statuses }) {
 
     return (
         <>
-            <Head title={`${isEdit ? 'Edit' : 'New'} page — Marketorr Admin`} />
+            <Head title={`${isEdit ? 'Edit' : 'New'} page | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${page.title}` : 'New page'}
                 subtitle="Page details and the SEO that overrides the site defaults."

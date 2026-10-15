@@ -1,52 +1,65 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Full-width scroll-driven horizontal typography band.
+ * Full-width scroll-driven typography band under Our Work: what Marketorr
+ * designs, and who for.
  *
- * Replaces the old PROGRESSION block (Idea → Experience → Result + CTA card).
- * 3–4 oversized editorial rows of MarketoRR services/industries separated by
- * "—", each drifting horizontally with alternating base directions. Vertical
- * scroll velocity steers every row: fast scrolling speeds them up, slow
- * scrolling slows them down, and scrolling upward smoothly reverses them.
- * At rest the rows keep a slow cinematic drift — never a one-time marquee.
- * One word per row carries the purple-to-blue-to-cyan brand gradient;
- * everything else stays flat ink-strong for readability. A gentle
- * viewport-synced reveal (opacity, rise, scale on the wrapper) plays in the
- * same loop while the rows scroll horizontally.
+ * Two oversized rows set in the site's heavy display face - disciplines in
+ * solid ink, industries as a dim ghost of them - each with its own small caption, framed
+ * by hairlines and fading out at both edges. A small four-point star in
+ * the brand gradient separates the words. The rows drift slowly in opposite directions at a steady pace;
+ * scrolling the page does not move, speed up or reveal them. One word per
+ * row carries the brand gradient.
  *
  * Performance contract: a single requestAnimationFrame loop per mount,
- * transform: translate3d() writes only, no React state updates on scroll,
- * cached row widths (remeasured on resize + font load), IntersectionObserver
- * gating so the loop idles off-screen, and full cleanup on unmount.
- * Reduced-motion users get the same rows rendered statically.
+ * transform writes only, cached row widths (remeasured on resize and font
+ * load), IntersectionObserver gating so the loop idles off-screen, and full
+ * cleanup on unmount. Reduced-motion users get the same rows rendered
+ * statically.
  */
 
 const ROWS = [
-    ['Branding', 'UI/UX', 'Web Design', 'Mobile Apps'],
-    ['SaaS Product', 'Packaging', 'Motion', 'Design Systems'],
-    ['E-Commerce', 'Fintech', 'Healthcare', 'Real Estate'],
-    ['Fashion', 'Hospitality', 'Startups', 'Enterprise'],
+    {
+        caption: 'Disciplines',
+        items: ['Branding', 'UI/UX', 'Web Design', 'Mobile Apps', 'SaaS Product', 'Packaging', 'Motion', 'Design Systems'],
+        highlight: 'UI/UX',
+        ghost: false,
+    },
+    {
+        caption: 'Industries',
+        items: ['E-Commerce', 'Fintech', 'Healthcare', 'Real Estate', 'Fashion', 'Hospitality', 'Startups', 'Enterprise'],
+        highlight: 'Startups',
+        ghost: true,
+    },
 ];
 
-/** One gradient-highlighted word per row — everything else stays ink-strong. */
-const HIGHLIGHTS = ['UI/UX', 'Design Systems', 'Fintech', 'Startups'];
+/** Steady drift speed, in px per second. */
+const DRIFT_SPEED = 27;
 
-/** px/frame idle drift at 60fps; scroll velocity adds on top (clamped). */
-const BASE_DRIFT = 0.5;
-const VELOCITY_GAIN = 0.55;
-const MAX_VELOCITY = 60;
-const VELOCITY_SMOOTHING = 0.12;
+/** The separator between words: a four-point star in the brand gradient. */
+function Spark() {
+    return (
+        <svg viewBox="0 0 24 24" className="mx-[0.5em] h-[0.34em] w-[0.34em] shrink-0" aria-hidden>
+            <defs>
+                <linearGradient id="progression-spark" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#830DFD" />
+                    <stop offset="0.5" stopColor="#4A76F8" />
+                    <stop offset="1" stopColor="#10E2F1" />
+                </linearGradient>
+            </defs>
+            <path d="M12 0C12.9 7.6 16.4 11.1 24 12C16.4 12.9 12.9 16.4 12 24C11.1 16.4 7.6 12.9 0 12C7.6 11.1 11.1 7.6 12 0Z" fill="url(#progression-spark)" />
+        </svg>
+    );
+}
 
 function RowContent({ items, highlight }) {
     // One half of the seamless loop; the row renders it twice.
-    // Doubled again so a single half always exceeds the viewport width.
-    const half = [...items, ...items];
     return (
         <>
-            {half.map((word, i) => (
+            {items.map((word, i) => (
                 <span key={i} className="flex shrink-0 items-center">
                     <span className={word === highlight ? 'progression-highlight inline-block' : undefined}>{word}</span>
-                    <span aria-hidden className="mx-6 text-[var(--scroll-sep)] md:mx-10">—</span>
+                    <Spark />
                 </span>
             ))}
         </>
@@ -83,34 +96,22 @@ export default function ProgressionBands() {
 
         let rafId = 0;
         let running = false;
-        let lastY = window.scrollY;
-        let velocity = 0;
+        let lastTime = 0;
 
-        const frame = () => {
+        const frame = (time) => {
             if (!running) return;
-            const y = window.scrollY;
-            const target = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, y - lastY));
-            lastY = y;
-            velocity += (target - velocity) * VELOCITY_SMOOTHING;
+            // Time-based, so the pace is the same at any refresh rate; a long
+            // gap (a background tab) is capped rather than jumped across.
+            const seconds = lastTime ? Math.min(0.1, (time - lastTime) / 1000) : 0;
+            lastTime = time;
 
             for (let i = 0; i < count; i += 1) {
-                positions[i] += directions[i] * BASE_DRIFT + velocity * VELOCITY_GAIN;
+                positions[i] += directions[i] * DRIFT_SPEED * seconds;
                 const half = halves[i] || 1;
                 const wrapped = -((((positions[i] % half) + half) % half));
                 const el = rows[i];
                 if (el) el.style.transform = `translate3d(${wrapped.toFixed(2)}px,0,0)`;
             }
-
-            // Cinematic reveal, same scroll source: the band gently settles
-            // (opacity, rise, scale) as it travels through the viewport centre.
-            // Written on the wrapper only — never on the row movers above.
-            const rect = band.getBoundingClientRect();
-            const vh = window.innerHeight || 1;
-            const dist = Math.abs(rect.top + rect.height / 2 - vh / 2) / vh;
-            const vis = Math.max(0, Math.min(1, 1 - dist * 1.15));
-            const eased = vis * vis * (3 - 2 * vis);
-            band.style.opacity = (0.25 + 0.75 * eased).toFixed(3);
-            band.style.transform = `translate3d(0,${((1 - eased) * 28).toFixed(2)}px,0) scale(${(0.985 + 0.015 * eased).toFixed(4)})`;
 
             rafId = requestAnimationFrame(frame);
         };
@@ -118,7 +119,7 @@ export default function ProgressionBands() {
         const start = () => {
             if (running) return;
             running = true;
-            lastY = window.scrollY;
+            lastTime = 0;
             rafId = requestAnimationFrame(frame);
         };
         const stop = () => {
@@ -145,21 +146,28 @@ export default function ProgressionBands() {
     }, []);
 
     return (
-        <section aria-label="What MarketoRR designs" className="relative overflow-hidden pb-12 pt-6 md:pb-16 md:pt-8">
-            <div ref={bandRef} className="flex flex-col gap-3 md:gap-4" aria-hidden>
-                {ROWS.map((items, i) => (
-                    <div key={items[0]} className={`overflow-hidden ${i === ROWS.length - 1 ? 'hidden md:block' : ''}`}>
-                        <div
-                            ref={(node) => {
-                                rowRefs.current[i] = node;
-                            }}
-                            className="flex w-max whitespace-nowrap font-display text-[clamp(1.75rem,4.5vw,3.25rem)] font-light uppercase leading-[0.95] tracking-[-0.02em] text-[var(--scroll-ink)] will-change-transform"
-                        >
-                            <div className="flex shrink-0 items-center">
-                                <RowContent items={items} highlight={HIGHLIGHTS[i]} />
-                            </div>
-                            <div className="flex shrink-0 items-center">
-                                <RowContent items={items} highlight={HIGHLIGHTS[i]} />
+        <section aria-label="What Marketorr designs, and who for" className="relative overflow-hidden pb-12 pt-6 md:pb-16 md:pt-8">
+            <div ref={bandRef} className="border-y border-[var(--line)]" aria-hidden>
+                {ROWS.map((row, i) => (
+                    <div key={row.caption} className={i > 0 ? 'border-t border-[var(--line)]' : undefined}>
+                        <p className="container-x pt-5 font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)] md:pt-6">
+                            {row.caption}
+                        </p>
+                        <div className="progression-row overflow-hidden py-3 md:py-5">
+                            <div
+                                ref={(node) => {
+                                    rowRefs.current[i] = node;
+                                }}
+                                className={`flex w-max whitespace-nowrap font-display text-[clamp(2.4rem,7vw,6.25rem)] font-extrabold uppercase leading-[1] tracking-[-0.035em] will-change-transform ${
+                                    row.ghost ? 'progression-ghost' : 'text-[var(--ink-strong)]'
+                                }`}
+                            >
+                                <div className="flex shrink-0 items-center">
+                                    <RowContent items={row.items} highlight={row.highlight} />
+                                </div>
+                                <div className="flex shrink-0 items-center">
+                                    <RowContent items={row.items} highlight={row.highlight} />
+                                </div>
                             </div>
                         </div>
                     </div>

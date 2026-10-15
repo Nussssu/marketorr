@@ -32,7 +32,7 @@ export default function UsersIndex({ users, roles }) {
 
     return (
         <>
-            <Head title="Admins — Marketorr Admin" />
+            <Head title="Admins | Marketorr Admin" />
             <PageHeader title="Admins" subtitle="Editors manage content. Super admins also manage settings and other admins." />
 
             <div className="grid gap-6 lg:grid-cols-3">
