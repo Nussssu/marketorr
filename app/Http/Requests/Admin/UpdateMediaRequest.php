@@ -18,6 +18,7 @@ class UpdateMediaRequest extends FormRequest
     {
         return [
             'file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:12288'],
+            'filename' => ['sometimes', 'required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:120'],
             'usage_location' => ['nullable', 'string', 'max:190'],
             'alt_text' => ['nullable', 'string', 'max:190'],

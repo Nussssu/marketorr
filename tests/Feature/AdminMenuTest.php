@@ -126,6 +126,34 @@ class AdminMenuTest extends TestCase
             ->where('menus.header.0.label', 'Shown'));
     }
 
+    public function test_the_menu_editor_groups_locations_into_header_footer_and_mega_tabs(): void
+    {
+        $this->actingAs($this->admin)
+            ->get('/admin/menus')
+            ->assertInertia(fn ($page) => $page
+                ->has('menus', 6)
+                ->where('menus.0.group', 'header')
+                ->where('menus.1.group', 'footer')
+                ->where('menus.4.group', 'mega'));
+    }
+
+    public function test_a_mega_menu_tree_is_shared_with_the_public_site(): void
+    {
+        $this->actingAs($this->admin)->put('/admin/menus/mega_services', [
+            'items' => [
+                $this->item([
+                    'label' => 'Branding',
+                    'url' => '/services#branding',
+                    'children' => [$this->item(['label' => 'Brand Strategy', 'url' => '/services/branding/brand-strategy'])],
+                ]),
+            ],
+        ]);
+
+        $this->get('/')->assertInertia(fn ($page) => $page
+            ->where('menus.mega_services.0.label', 'Branding')
+            ->where('menus.mega_services.0.children.0.label', 'Brand Strategy'));
+    }
+
     public function test_guests_cannot_edit_menus(): void
     {
         $this->put('/admin/menus/header', ['items' => []])->assertRedirect('/admin/login');

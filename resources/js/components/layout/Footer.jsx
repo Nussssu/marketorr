@@ -23,6 +23,31 @@ function ColumnHeading({ children }) {
     );
 }
 
+function FooterMenuLink({ item, className = '' }) {
+    if (item.newTab) {
+        return <a href={item.url} target="_blank" rel="noreferrer" className={className}>{item.label}</a>;
+    }
+
+    return <Link href={item.url} className={className}>{item.label}</Link>;
+}
+
+function FooterMenuItems({ items }) {
+    return items.map((item) => (
+        <li key={`${item.label}-${item.url}`}>
+            <FooterMenuLink item={item} className="footer-link block" />
+            {item.children?.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-2 border-l border-[var(--line)] pl-3 text-[13px] font-medium text-[var(--mute)]">
+                    {item.children.map((child) => (
+                        <li key={`${child.label}-${child.url}`}>
+                            <FooterMenuLink item={child} className="footer-link block" />
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
+    ));
+}
+
 export default function Footer() {
     const reduce = useReducedMotion();
     const { settings, menus, serviceCategories } = usePage().props;
@@ -38,7 +63,9 @@ export default function Footer() {
     ].filter((s) => s.href);
 
     // Services has its own column, so it is not repeated under Quick Links.
-    const sitemap = (menus?.footer_sitemap?.length ? menus.footer_sitemap : FALLBACK_SITEMAP)
+    const sitemap = (Object.prototype.hasOwnProperty.call(menus ?? {}, 'footer_sitemap')
+        ? menus.footer_sitemap
+        : FALLBACK_SITEMAP)
         .filter((link) => link.url !== '/services');
     // Branding and UI/UX live as sections of the Services page, so a link to
     // their old standalone page goes straight to that section instead.
@@ -46,7 +73,16 @@ export default function Footer() {
     const serviceLinks = (menus?.footer_services ?? []).map((link) => {
         const slug = link.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
 
-        return slug && categorySlugs.includes(slug) ? { ...link, url: `/services#${slug}` } : link;
+        return {
+            ...(slug && categorySlugs.includes(slug) ? { ...link, url: `/services#${slug}` } : link),
+            children: (link.children ?? []).map((child) => {
+                const childSlug = child.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
+
+                return childSlug && categorySlugs.includes(childSlug)
+                    ? { ...child, url: `/services#${childSlug}` }
+                    : child;
+            }),
+        };
     });
     const legalLinks = menus?.footer_legal ?? [];
 
@@ -123,11 +159,7 @@ export default function Footer() {
                 <motion.nav variants={item} aria-label="Footer" className="lg:col-span-3 lg:col-start-6">
                     <ColumnHeading>Quick Links</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
-                        {sitemap.map((item) => (
-                            <li key={`${item.label}-${item.url}`}>
-                                <Link href={item.url} className="footer-link block">{item.label}</Link>
-                            </li>
-                        ))}
+                        <FooterMenuItems items={sitemap} />
                     </ul>
                 </motion.nav>
 
@@ -135,11 +167,7 @@ export default function Footer() {
                 <motion.div variants={item} className="lg:col-span-3 lg:col-start-10">
                     <ColumnHeading>Services</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
-                        {serviceLinks.map((item) => (
-                            <li key={`${item.label}-${item.url}`}>
-                                <Link href={item.url} className="footer-link block">{item.label}</Link>
-                            </li>
-                        ))}
+                        <FooterMenuItems items={serviceLinks} />
                     </ul>
                 </motion.div>
             </motion.div>
@@ -162,9 +190,7 @@ export default function Footer() {
                     </p>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 md:justify-self-end">
                         {legalLinks.map((item) => (
-                            <Link key={`${item.label}-${item.url}`} href={item.url} className="footer-link footer-link--inline">
-                                {item.label}
-                            </Link>
+                            <FooterMenuLink key={`${item.label}-${item.url}`} item={item} className="footer-link footer-link--inline" />
                         ))}
                     </div>
                 </motion.div>

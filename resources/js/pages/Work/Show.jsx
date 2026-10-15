@@ -101,7 +101,7 @@ function GalleryFigure({ image, index, reduce, alwaysPlay = false }) {
             className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--bg-soft)]"
         >
             {image.vimeo ? (
-                <div className="aspect-video w-full bg-black">
+                <div className="aspect-video w-full bg-[var(--bg-soft)]">
                     <iframe
                         src={`https://player.vimeo.com/video/${image.vimeo}?dnt=1${alwaysPlay ? '&background=1&autoplay=1&loop=1&muted=1&autopause=0' : ''}`}
                         title={image.alt || 'Project film'}

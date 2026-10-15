@@ -1,6 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
+import PageMeta from '../../components/PageMeta';
+import SectionRenderer from '../../components/sections/SectionRenderer';
 import { GradientTitle, SectionLabel } from '../../components/ui/primitives';
 import ScrollHeading from '../../components/motion/ScrollHeading';
 import { transitionTo } from '../../components/motion/PageTransition';
@@ -168,12 +170,12 @@ function PortfolioDoor({ group, index, total, reduce, progress }) {
 }
 
 /** The page title, set as one oversized word whose letters rise in turn. */
-function WorkTitle({ reduce }) {
-    const letters = ['W', 'o', 'r', 'k'];
+function WorkTitle({ reduce, text }) {
+    const letters = [...text];
 
     return (
         <h1 className="heading-hero-size mt-8 font-display font-extrabold uppercase leading-[0.8] tracking-[-0.055em] text-[var(--ink-strong)]">
-            <span className="sr-only">Our work</span>
+            <span className="sr-only">{text}</span>
             <span aria-hidden className="flex overflow-hidden pb-[0.04em]">
                 {[...letters, '.'].map((letter, i) => (
                     <span
@@ -188,28 +190,31 @@ function WorkTitle({ reduce }) {
     );
 }
 
-export default function WorkIndex({ groups = [] }) {
+function WorkDirectory({ groups = [], content = {} }) {
     const reduce = useReducedMotion();
     const stackRef = useRef(null);
     const { scrollYProgress: stackProgress } = useScroll({ target: stackRef, offset: ['start start', 'end end'] });
     const totalProjects = groups.reduce((sum, group) => sum + (group.items ?? []).length, 0);
+    const intro = String(content.intro ?? '')
+        .replaceAll('{projects}', String(totalProjects))
+        .replaceAll('{practices}', String(groups.length));
 
     return (
-        <>
-            <Head title="Our Work | Marketorr" />
-            <div className="bg-[var(--bg)] pb-28 pt-32">
+        <div className="bg-[var(--bg)] pb-28 pt-32">
                 <div className="container-x">
-                    <SectionLabel name="OUR WORK" />
+                    {content.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                     <ScrollHeading>
-                        <WorkTitle reduce={reduce} />
+                        <WorkTitle reduce={reduce} text={content.title || content.heading || ''} />
                     </ScrollHeading>
                     <div {...enter('fade-up', { dur: 0.8, delay: 0.5, className: 'mt-8 flex flex-wrap items-end justify-between gap-6 border-t border-[var(--line)] pt-6' })}>
                         <p className="max-w-md text-[16px] leading-relaxed text-[var(--mute)]">
-                            {totalProjects} projects across {groups.length} practices. Choose one to step inside.
+                            {intro}
                         </p>
-                        <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
-                            Scroll ↓
-                        </p>
+                        {content.scrollHint && (
+                            <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">
+                                {content.scrollHint}
+                            </p>
+                        )}
                     </div>
 
                     {/* One shared parent, so every door stays pinned until the stack ends
@@ -227,7 +232,21 @@ export default function WorkIndex({ groups = [] }) {
                         ))}
                     </div>
                 </div>
-            </div>
+        </div>
+    );
+}
+
+export default function WorkIndex({ groups = [], page }) {
+    return (
+        <>
+            <PageMeta page={page} fallbackTitle="Our Work | Marketorr" />
+            {(page?.sections ?? []).map((section) => (
+                section.type === 'work' ? (
+                    <WorkDirectory key={section.id} groups={groups} content={section.content} />
+                ) : (
+                    <SectionRenderer key={section.id} sections={[section]} />
+                )
+            ))}
         </>
     );
 }

@@ -11,6 +11,7 @@ import { useTapIntent } from '../../lib/tapIntent';
 import { EASE } from '../../lib/motion';
 import { transitionTo } from '../motion/PageTransition';
 import { useMediaQuery } from '../../lib/useMediaQuery';
+import { gradientLines } from '../../lib/headingLines';
 
 const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
 
@@ -169,6 +170,7 @@ function CategoryGateway({ category, variants, solidHeadings = false }) {
  *   (Services pages); elsewhere the key words carry the brand gradient.
  */
 export default function Services({
+    content = {},
     heroHeading = false,
     subservices = [],
     showTransition = true,
@@ -187,19 +189,22 @@ export default function Services({
     return (
         <section id="services" className="relative overflow-x-clip bg-[var(--bg)] pt-24 lg:pt-32">
             <div className="container-x relative pb-20 lg:pb-28">
-                <SectionLabel name="SERVICES" />
+                {content.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                 <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <ScrollHeading enabled={heroHeading || animate} intensity={heroHeading ? 1 : 0.85}>
                         <RevealText
                             as={heroHeading ? 'h1' : 'h2'}
                             className="display-lg uppercase text-[var(--ink-strong)]"
-                            lines={['Two disciplines.', 'One clear outcome.']}
+                            lines={content.titleLines ?? []}
                             lineClassName="whitespace-nowrap"
-                            highlightedLines={solidHeadings ? undefined : [1]}
+                            highlightedLines={solidHeadings ? undefined : gradientLines(content.titleLines, content.titleHighlight)}
                             duration={animate ? 0.58 : undefined}
                             stagger={animate ? 0.13 : undefined}
                         />
                     </ScrollHeading>
+                    {content.intro && (
+                        <p className="max-w-lg text-[15px] leading-relaxed text-[var(--mute)]">{content.intro}</p>
+                    )}
                 </div>
 
                 <motion.div

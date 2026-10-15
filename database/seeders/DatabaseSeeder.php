@@ -24,12 +24,13 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             MailSettingSeeder::class,
             EmailTemplateSeeder::class,
-            MenuSeeder::class,
             GlobalBlockSeeder::class,
             PageSeeder::class,
             CategorySeeder::class,
             ServiceSeeder::class,
+            SubServiceCatalogueSeeder::class,
             ProjectSeeder::class,
+            MenuSeeder::class,
             MediaSeeder::class,
         ]);
     }

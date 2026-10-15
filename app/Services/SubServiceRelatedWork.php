@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
  *
  * Each discipline draws from the portfolio that presents it: Branding
  * sub-services from the published Branding projects, UI/UX sub-services from
- * the UI/UX showcase. A sub-service's `related_work` rules in
- * `config/subservices.php` decide what counts as related — pinned slugs lead,
+ * the UI/UX showcase. A sub-service's `related_work` rules, maintained in the
+ * admin panel, decide what counts as related — pinned slugs lead,
  * then projects whose tags (or, for UI/UX, listed services and discipline)
  * match — and the rest of the same portfolio tops the list up, so the section
  * always shows real work and never an empty frame.

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
 import UiuxPrinter from './UiuxPrinter';
+import { gradientLines } from '../../lib/headingLines';
 
 const PORTFOLIO_HREF = '/work/portfolio/uiux';
 
@@ -15,7 +16,7 @@ const PORTFOLIO_HREF = '/work/portfolio/uiux';
  *   projects?: Array<{ slug: string, name: string, discipline: string, href: string, cover: { src: string, thumb: string, width: number, height: number, alt: string } }>,
  * }} props
  */
-export default function UiuxWork({ projects = [] }) {
+export default function UiuxWork({ content = {}, projects = [] }) {
     const printed = useMemo(
         () => ({
             slug: 'uiux-portfolio',
@@ -36,26 +37,30 @@ export default function UiuxWork({ projects = [] }) {
     return (
         <section id="uiux-work" className="relative bg-[var(--bg)] pt-[clamp(5rem,9vw,9rem)]">
             <div className="container-x">
-                <SectionLabel name="UI/UX WORK" />
+                {content.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                 <div className="mt-10 flex flex-wrap items-end justify-between gap-8">
                     <div>
                         <RevealText
                             as="h2"
                             className="display-lg uppercase text-[var(--ink-strong)]"
-                            lines={['Interfaces', 'that convert.']}
-                            highlightedLines={[1]}
+                            lines={content.titleLines ?? []}
+                            highlightedLines={gradientLines(content.titleLines, content.titleHighlight)}
                         />
-                        <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
-                            Websites, apps and SaaS products, printed one project at a time. Pick one to see every screen.
-                        </p>
+                        {content.intro && (
+                            <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
+                                {content.intro}
+                            </p>
+                        )}
                     </div>
-                    <Link
-                        href={PORTFOLIO_HREF}
-                        data-cursor="explore"
-                        className="link-underline btn-press text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]"
-                    >
-                        Full UI/UX portfolio →
-                    </Link>
+                    {content.linkLabel && (
+                        <Link
+                            href={PORTFOLIO_HREF}
+                            data-cursor="explore"
+                            className="link-underline btn-press text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]"
+                        >
+                            {content.linkLabel}
+                        </Link>
+                    )}
                 </div>
             </div>
 

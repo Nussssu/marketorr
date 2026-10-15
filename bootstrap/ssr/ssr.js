@@ -269,12 +269,13 @@ var NATURAL_HEIGHT = 118;
 * been uploaded it is used for both themes, so a half-finished upload never
 * leaves one theme with no logo at all.
 *
-* @param {{ className?: string, height?: number }} props
+* @param {{ className?: string, height?: number, draggable?: boolean }} props
 *   `height` is the rendered height in px; the width follows the artwork's
 *   own aspect ratio. `priority` marks the header instance, which is often
-*   the first image on screen, for an early high-priority fetch.
+*   the first image on screen, for an early high-priority fetch. `draggable`
+*   false stops the browser lifting a ghost copy of the logo on drag.
 */
-function BrandLogo({ className = "", height = 26, priority = false }) {
+function BrandLogo({ className = "", height = 26, priority = false, draggable }) {
 	const { settings } = usePage().props;
 	const style = {
 		height,
@@ -298,6 +299,7 @@ function BrandLogo({ className = "", height = 26, priority = false }) {
 				...intrinsic,
 				style,
 				className: "brand-logo__img",
+				draggable,
 				"data-variant": "dark",
 				fetchPriority: priority ? "high" : void 0,
 				"aria-hidden": true
@@ -308,6 +310,7 @@ function BrandLogo({ className = "", height = 26, priority = false }) {
 				...intrinsic,
 				style,
 				className: "brand-logo__img",
+				draggable,
 				"data-variant": "light",
 				fetchPriority: priority ? "high" : void 0,
 				"aria-hidden": true
@@ -927,12 +930,30 @@ var FALLBACK_LINKS = [
 	{
 		label: "Our Work",
 		href: "/work"
-	},
-	{
-		label: "Contact",
-		href: "/contact"
 	}
 ];
+function menuTreeToMegaGroups(items, fallbackGroups) {
+	return items.map((parent) => {
+		const fallback = fallbackGroups.find((group) => group.href === parent.url || `/services#${group.slug}` === parent.url || group.name === parent.label);
+		return {
+			...fallback,
+			slug: fallback?.slug ?? `menu-${parent.id}`,
+			name: parent.label,
+			href: parent.url,
+			newTab: parent.newTab,
+			items: (parent.children ?? []).map((child) => {
+				const fallbackItem = fallback?.items?.find((item) => item.href === child.url || `/services/${fallback.slug}/${item.slug}` === child.url || item.name === child.label);
+				return {
+					...fallbackItem,
+					slug: fallbackItem?.slug ?? `menu-${child.id}`,
+					name: child.label,
+					href: child.url,
+					newTab: child.newTab
+				};
+			})
+		};
+	});
+}
 function isActive(url, href) {
 	if (href === "/") return url === "/";
 	return url === href || url.startsWith(`${href}/`);
@@ -1241,11 +1262,13 @@ function MegaSubLink({ category, item, variants, onNavigate }) {
 		children: /* @__PURE__ */ jsxs(Link, {
 			href,
 			prefetch: true,
+			target: item.newTab ? "_blank" : void 0,
+			rel: item.newTab ? "noreferrer" : void 0,
 			"data-cursor": "explore",
 			...tapIntent,
 			onClick: (event) => {
 				tapIntent.onClick(event);
-				navigateWithCurtain(event, href, onNavigate);
+				if (!item.newTab) navigateWithCurtain(event, href, onNavigate);
 			},
 			className: "group/row flex items-center gap-4 py-3.5 focus-visible:outline-none",
 			children: [
@@ -1268,27 +1291,17 @@ function MegaSubLink({ category, item, variants, onNavigate }) {
 	});
 }
 /**
-* One discipline section: an oversized heading that links to the category
-* page, and every sub-service ruled out beneath it.
+* One discipline section: an oversized heading, which is a plain label rather
+* than a link, and every sub-service ruled out beneath it.
 */
 function MegaSection({ category, index, variants, onNavigate }) {
-	const tapIntent = useTapIntent();
-	const href = category.href ?? `/services/${category.slug}`;
 	const items = category.items ?? [];
 	return /* @__PURE__ */ jsxs("div", {
 		className: "min-w-0",
 		children: [/* @__PURE__ */ jsx(motion.div, {
 			variants: variants.item,
-			children: /* @__PURE__ */ jsxs(Link, {
-				href,
-				prefetch: true,
-				"data-cursor": "explore",
-				...tapIntent,
-				onClick: (event) => {
-					tapIntent.onClick(event);
-					navigateWithCurtain(event, href, onNavigate);
-				},
-				className: "group/head block focus-visible:outline-none",
+			children: /* @__PURE__ */ jsxs("div", {
+				className: "block",
 				children: [
 					/* @__PURE__ */ jsx("span", {
 						className: "flex items-center gap-3",
@@ -1298,16 +1311,12 @@ function MegaSection({ category, index, variants, onNavigate }) {
 							children: ["0", index + 1]
 						})
 					}),
-					/* @__PURE__ */ jsxs("span", {
+					/* @__PURE__ */ jsx("span", {
 						className: "mt-4 flex items-baseline gap-3",
-						children: [/* @__PURE__ */ jsx("span", {
+						children: /* @__PURE__ */ jsx("span", {
 							className: "min-w-0 font-display text-[clamp(1.5rem,2vw,2.15rem)] font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]",
 							children: category.name
-						}), /* @__PURE__ */ jsx("span", {
-							"aria-hidden": true,
-							className: "shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100",
-							children: "↗"
-						})]
+						})
 					}),
 					category.short && /* @__PURE__ */ jsx("span", {
 						className: "mt-2.5 block max-w-[30ch] text-[13px] leading-relaxed text-[var(--mute)]",
@@ -1339,7 +1348,7 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
 	const tapIntent = useTapIntent();
 	const reduce = useReducedMotion();
 	const href = category.href ?? "/work";
-	const items = (category.items ?? []).filter((item) => item.image);
+	const items = category.items ?? [];
 	return /* @__PURE__ */ jsxs("div", {
 		className: "min-w-0",
 		children: [/* @__PURE__ */ jsx(motion.div, {
@@ -1347,11 +1356,13 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
 			children: /* @__PURE__ */ jsxs(Link, {
 				href,
 				prefetch: true,
+				target: category.newTab ? "_blank" : void 0,
+				rel: category.newTab ? "noreferrer" : void 0,
 				"data-cursor": "explore",
 				...tapIntent,
 				onClick: (event) => {
 					tapIntent.onClick(event);
-					navigateWithCurtain(event, href, onNavigate);
+					if (!category.newTab) navigateWithCurtain(event, href, onNavigate);
 				},
 				className: `group/head block focus-visible:outline-none ${compact ? "!block" : ""}`.trimEnd(),
 				children: [
@@ -1401,22 +1412,27 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
 					children: items.map((item) => /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(Link, {
 						href: item.href,
 						prefetch: true,
+						target: item.newTab ? "_blank" : void 0,
+						rel: item.newTab ? "noreferrer" : void 0,
 						"data-cursor": "view",
 						tabIndex: duplicate ? -1 : void 0,
 						...tapIntent,
 						onClick: (event) => {
 							tapIntent.onClick(event);
-							navigateWithCurtain(event, item.href, onNavigate);
+							if (!item.newTab) navigateWithCurtain(event, item.href, onNavigate);
 						},
 						"aria-label": item.name,
 						className: "group/tile block overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-soft)] focus-visible:outline-none",
-						children: /* @__PURE__ */ jsx("img", {
+						children: item.image ? /* @__PURE__ */ jsx("img", {
 							src: item.image,
 							alt: "",
 							loading: "lazy",
 							decoding: "async",
 							draggable: false,
 							className: `${compact ? "h-16 w-24" : "h-20 w-32"} object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]`
+						}) : /* @__PURE__ */ jsx("span", {
+							className: `${compact ? "h-16 w-24" : "h-20 w-32"} flex items-center justify-center bg-[var(--chip)] px-3 text-center text-[11px] font-bold text-[var(--ink)]`,
+							children: item.name
 						})
 					}) }, `${duplicate ? "duplicate-" : ""}${item.slug}`))
 				}, duplicate ? "duplicate" : "primary"))
@@ -1560,46 +1576,54 @@ function AccordionChevron({ expanded }) {
 */
 function MobileServiceGroup({ category, index, onNavigate }) {
 	const items = category.items ?? [];
-	const groupHref = category.href ?? `/services/${category.slug}`;
+	const groupHref = category.href;
 	const itemHref = (item) => item.href ?? `/services/${category.slug}/${item.slug}`;
+	const heading = /* @__PURE__ */ jsxs(Fragment$1, { children: [
+		/* @__PURE__ */ jsx("span", {
+			className: "flex items-center gap-3",
+			children: /* @__PURE__ */ jsxs("span", {
+				className: "font-display text-[10px] font-bold tracking-[0.22em] text-[var(--ink-faint)]",
+				"aria-hidden": true,
+				children: ["0", index + 1]
+			})
+		}),
+		/* @__PURE__ */ jsxs("span", {
+			className: "mt-3 flex items-baseline gap-2.5",
+			children: [/* @__PURE__ */ jsx("span", {
+				className: "min-w-0 truncate font-display text-[1.5rem] font-bold leading-[1.1] tracking-[-0.01em] text-[var(--ink)]",
+				children: category.name
+			}), groupHref && /* @__PURE__ */ jsx("span", {
+				"aria-hidden": true,
+				className: "shrink-0 text-[13px] leading-none text-[var(--ink-faint)]",
+				children: "↗"
+			})]
+		}),
+		category.short && /* @__PURE__ */ jsx("span", {
+			className: "mt-2 block text-[12.5px] leading-relaxed text-[var(--mute)]",
+			children: category.short
+		})
+	] });
 	return /* @__PURE__ */ jsxs("div", {
 		className: "pb-7 pl-11 pr-2 pt-5",
-		children: [/* @__PURE__ */ jsxs(Link, {
+		children: [groupHref ? /* @__PURE__ */ jsx(Link, {
 			href: groupHref,
-			onClick: (event) => navigateWithCurtain(event, groupHref, onNavigate),
+			target: category.newTab ? "_blank" : void 0,
+			rel: category.newTab ? "noreferrer" : void 0,
+			onClick: category.newTab ? void 0 : (event) => navigateWithCurtain(event, groupHref, onNavigate),
 			className: "block",
-			children: [
-				/* @__PURE__ */ jsx("span", {
-					className: "flex items-center gap-3",
-					children: /* @__PURE__ */ jsxs("span", {
-						className: "font-display text-[10px] font-bold tracking-[0.22em] text-[var(--ink-faint)]",
-						"aria-hidden": true,
-						children: ["0", index + 1]
-					})
-				}),
-				/* @__PURE__ */ jsxs("span", {
-					className: "mt-3 flex items-baseline gap-2.5",
-					children: [/* @__PURE__ */ jsx("span", {
-						className: "min-w-0 truncate font-display text-[1.5rem] font-bold leading-[1.1] tracking-[-0.01em] text-[var(--ink)]",
-						children: category.name
-					}), /* @__PURE__ */ jsx("span", {
-						"aria-hidden": true,
-						className: "shrink-0 text-[13px] leading-none text-[var(--ink-faint)]",
-						children: "↗"
-					})]
-				}),
-				category.short && /* @__PURE__ */ jsx("span", {
-					className: "mt-2 block text-[12.5px] leading-relaxed text-[var(--mute)]",
-					children: category.short
-				})
-			]
+			children: heading
+		}) : /* @__PURE__ */ jsx("div", {
+			className: "block",
+			children: heading
 		}), /* @__PURE__ */ jsx("ul", {
 			className: "mt-5 list-none border-t border-[var(--line-soft)]",
 			children: items.map((item) => /* @__PURE__ */ jsx("li", {
 				className: "border-b border-[var(--line-soft)] last:border-b-0",
 				children: /* @__PURE__ */ jsxs(Link, {
 					href: itemHref(item),
-					onClick: (event) => navigateWithCurtain(event, itemHref(item), onNavigate),
+					target: item.newTab ? "_blank" : void 0,
+					rel: item.newTab ? "noreferrer" : void 0,
+					onClick: item.newTab ? void 0 : (event) => navigateWithCurtain(event, itemHref(item), onNavigate),
 					className: "flex items-center gap-3.5 py-3.5 active:opacity-70",
 					children: [
 						/* @__PURE__ */ jsx("span", {
@@ -1635,11 +1659,27 @@ function Header() {
 	const { url, props } = usePage();
 	const serviceCategories = props.serviceCategories ?? [];
 	const workGroups = props.workGroups ?? [];
-	const menuLinks = (props.menus?.header ?? []).map((item) => ({
+	const serviceMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "mega_services") ? menuTreeToMegaGroups(props.menus.mega_services, serviceCategories) : serviceCategories;
+	const workMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "mega_work") ? menuTreeToMegaGroups(props.menus.mega_work, workGroups) : workGroups;
+	const hasManagedHeader = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "header");
+	const managedHeaderItems = props.menus?.header ?? [];
+	const menuLinks = managedHeaderItems.filter((item) => item.url !== "/contact").map((item) => ({
 		label: item.label,
-		href: item.url
+		href: item.url,
+		newTab: item.newTab,
+		children: item.children ?? []
 	}));
-	const LINKS = menuLinks.length > 0 ? menuLinks : FALLBACK_LINKS;
+	const LINKS = hasManagedHeader ? menuLinks : FALLBACK_LINKS;
+	const managedContact = managedHeaderItems.find((item) => item.url === "/contact");
+	const MOBILE_LINKS = [...LINKS, ...managedContact ? [{
+		label: managedContact.label,
+		href: managedContact.url,
+		newTab: managedContact.newTab,
+		children: managedContact.children ?? []
+	}] : hasManagedHeader ? [] : [{
+		label: "Contact",
+		href: "/contact"
+	}]];
 	const settings = props.settings;
 	const isSticky = settings?.headerSticky !== false;
 	const ctaLink = settings?.headerCtaLink || "/contact";
@@ -1788,9 +1828,52 @@ function Header() {
 											})
 										}, l.href);
 									}
+									if (l.children?.length > 0) return /* @__PURE__ */ jsxs("div", {
+										className: "group/menu relative py-2",
+										children: [/* @__PURE__ */ jsx(Link, {
+											href: l.href,
+											target: l.newTab ? "_blank" : void 0,
+											rel: l.newTab ? "noreferrer" : void 0,
+											onClick: l.newTab ? void 0 : (event) => navigateWithCurtain(event, l.href),
+											className: linkClass,
+											children: /* @__PURE__ */ jsxs("span", {
+												className: "flex items-center gap-1.5",
+												children: [/* @__PURE__ */ jsx(NavLabel, { label: l.label }), /* @__PURE__ */ jsx("span", {
+													"aria-hidden": true,
+													className: "transition-transform duration-200 group-hover/menu:rotate-180",
+													children: /* @__PURE__ */ jsx("svg", {
+														width: "10",
+														height: "6",
+														viewBox: "0 0 10 6",
+														fill: "none",
+														className: "block",
+														children: /* @__PURE__ */ jsx("path", {
+															d: "M1 1l4 4 4-4",
+															stroke: "currentColor",
+															strokeWidth: "1.6",
+															strokeLinecap: "round",
+															strokeLinejoin: "round"
+														})
+													})
+												})]
+											})
+										}), /* @__PURE__ */ jsx("ul", {
+											className: "invisible absolute left-1/2 top-full min-w-52 -translate-x-1/2 translate-y-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2 opacity-0 shadow-xl transition-all group-hover/menu:visible group-hover/menu:translate-y-0 group-hover/menu:opacity-100 group-focus-within/menu:visible group-focus-within/menu:translate-y-0 group-focus-within/menu:opacity-100",
+											children: l.children.map((child) => /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(Link, {
+												href: child.url,
+												target: child.newTab ? "_blank" : void 0,
+												rel: child.newTab ? "noreferrer" : void 0,
+												onClick: child.newTab ? void 0 : (event) => navigateWithCurtain(event, child.url),
+												className: "block rounded-lg px-3 py-2.5 text-[12px] font-semibold text-[var(--mute)] transition-colors hover:bg-[var(--chip)] hover:text-[var(--ink)]",
+												children: child.label
+											}) }, child.id))
+										})]
+									}, l.href);
 									return /* @__PURE__ */ jsx(Link, {
 										href: l.href,
-										onClick: (event) => navigateWithCurtain(event, l.href),
+										target: l.newTab ? "_blank" : void 0,
+										rel: l.newTab ? "noreferrer" : void 0,
+										onClick: l.newTab ? void 0 : (event) => navigateWithCurtain(event, l.href),
 										className: linkClass,
 										children: /* @__PURE__ */ jsx(NavLabel, { label: l.label })
 									}, l.href);
@@ -1833,7 +1916,7 @@ function Header() {
 			/* @__PURE__ */ jsx(AnimatePresence, {
 				initial: false,
 				children: mega && /* @__PURE__ */ jsx(ServicesMegaMenu, {
-					categories: serviceCategories,
+					categories: serviceMegaGroups,
 					onNavigate: () => setMega(false),
 					onPointerOpen: openMega,
 					onPointerClose: scheduleMegaClose
@@ -1842,7 +1925,7 @@ function Header() {
 			/* @__PURE__ */ jsx(AnimatePresence, {
 				initial: false,
 				children: workMega && /* @__PURE__ */ jsx(ServicesMegaMenu, {
-					categories: workGroups,
+					categories: workMegaGroups,
 					onNavigate: () => setWorkMega(false),
 					onPointerOpen: openWorkMega,
 					onPointerClose: scheduleWorkMegaClose,
@@ -1893,14 +1976,28 @@ function Header() {
 						animate: "show",
 						exit: "hidden",
 						variants: MOBILE_MENU,
-						children: LINKS.map((l, i) => {
+						children: MOBILE_LINKS.map((l, i) => {
 							const active = isActive(url, l.href);
 							const accordion = l.href === "/services" ? {
-								groups: serviceCategories,
+								groups: serviceMegaGroups,
 								label: "services"
 							} : l.href === "/work" ? {
-								groups: workGroups,
+								groups: workMegaGroups,
 								label: "work"
+							} : l.children?.length > 0 ? {
+								groups: [{
+									slug: `menu-${l.href}`,
+									name: l.label,
+									href: l.href,
+									newTab: l.newTab,
+									items: l.children.map((child) => ({
+										slug: `menu-${child.id}`,
+										name: child.label,
+										href: child.url,
+										newTab: child.newTab
+									}))
+								}],
+								label: l.label
 							} : null;
 							if (accordion && accordion.groups.length > 0) {
 								const expanded = mobileSection === l.href;
@@ -2031,10 +2128,6 @@ var FALLBACK_SITEMAP = [
 		url: "/about"
 	},
 	{
-		label: "Services",
-		url: "/services"
-	},
-	{
 		label: "Our Work",
 		url: "/work"
 	},
@@ -2049,9 +2142,35 @@ function ColumnHeading({ children }) {
 		children
 	});
 }
+function FooterMenuLink({ item, className = "" }) {
+	if (item.newTab) return /* @__PURE__ */ jsx("a", {
+		href: item.url,
+		target: "_blank",
+		rel: "noreferrer",
+		className,
+		children: item.label
+	});
+	return /* @__PURE__ */ jsx(Link, {
+		href: item.url,
+		className,
+		children: item.label
+	});
+}
+function FooterMenuItems({ items }) {
+	return items.map((item) => /* @__PURE__ */ jsxs("li", { children: [/* @__PURE__ */ jsx(FooterMenuLink, {
+		item,
+		className: "footer-link block"
+	}), item.children?.length > 0 && /* @__PURE__ */ jsx("ul", {
+		className: "mt-2 flex flex-col gap-2 border-l border-[var(--line)] pl-3 text-[13px] font-medium text-[var(--mute)]",
+		children: item.children.map((child) => /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(FooterMenuLink, {
+			item: child,
+			className: "footer-link block"
+		}) }, `${child.label}-${child.url}`))
+	})] }, `${item.label}-${item.url}`));
+}
 function Footer() {
 	const reduce = useReducedMotion();
-	const { settings, menus } = usePage().props;
+	const { settings, menus, serviceCategories } = usePage().props;
 	const socials = [
 		{
 			label: "LinkedIn",
@@ -2082,8 +2201,24 @@ function Footer() {
 			href: settings.socials.youtube
 		}
 	].filter((s) => s.href);
-	const sitemap = menus?.footer_sitemap?.length ? menus.footer_sitemap : FALLBACK_SITEMAP;
-	const serviceLinks = menus?.footer_services ?? [];
+	const sitemap = (Object.prototype.hasOwnProperty.call(menus ?? {}, "footer_sitemap") ? menus.footer_sitemap : FALLBACK_SITEMAP).filter((link) => link.url !== "/services");
+	const categorySlugs = (serviceCategories ?? []).map((category) => category.slug);
+	const serviceLinks = (menus?.footer_services ?? []).map((link) => {
+		const slug = link.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
+		return {
+			...slug && categorySlugs.includes(slug) ? {
+				...link,
+				url: `/services#${slug}`
+			} : link,
+			children: (link.children ?? []).map((child) => {
+				const childSlug = child.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
+				return childSlug && categorySlugs.includes(childSlug) ? {
+					...child,
+					url: `/services#${childSlug}`
+				} : child;
+			})
+		};
+	});
 	const legalLinks = menus?.footer_legal ?? [];
 	const container = {
 		hidden: {},
@@ -2157,7 +2292,10 @@ function Footer() {
 						children: [
 							/* @__PURE__ */ jsx("div", {
 								className: "flex items-center",
-								children: /* @__PURE__ */ jsx(BrandLogo, { height: 28 })
+								children: /* @__PURE__ */ jsx(BrandLogo, {
+									height: 28,
+									draggable: false
+								})
 							}),
 							settings.footerIntro && /* @__PURE__ */ jsx("p", {
 								className: "mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]",
@@ -2165,32 +2303,17 @@ function Footer() {
 							}),
 							/* @__PURE__ */ jsxs("div", {
 								className: "mt-7",
-								children: [
-									/* @__PURE__ */ jsx(ColumnHeading, { children: "Follow" }),
-									/* @__PURE__ */ jsx("div", {
-										"data-cursor": "explore",
-										className: "mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold uppercase tracking-[0.16em]",
-										children: socials.map((s) => /* @__PURE__ */ jsx("a", {
-											href: s.href,
-											target: "_blank",
-											rel: "noreferrer",
-											"data-cursor": "explore",
-											"data-social-platform": s.label,
-											className: "footer-link",
-											children: s.label
-										}, s.label))
-									}),
-									/* @__PURE__ */ jsxs(Link, {
-										href: "/work",
-										"data-cursor": "cta",
-										className: "footer-explore btn-press mt-7 font-display",
-										children: ["Explore", /* @__PURE__ */ jsx("span", {
-											"aria-hidden": true,
-											className: "footer-explore__arrow text-[12px] leading-none",
-											children: "↗"
-										})]
-									})
-								]
+								children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Follow us" }), /* @__PURE__ */ jsx("div", {
+									className: "mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold tracking-[0.16em]",
+									children: socials.map((s) => /* @__PURE__ */ jsx("a", {
+										href: s.href,
+										target: "_blank",
+										rel: "noreferrer",
+										"data-social-platform": s.label,
+										className: "footer-link",
+										children: s.label.charAt(0).toUpperCase() + s.label.slice(1).toLowerCase()
+									}, s.label))
+								})]
 							})
 						]
 					}),
@@ -2198,13 +2321,9 @@ function Footer() {
 						variants: item,
 						"aria-label": "Footer",
 						className: "lg:col-span-3 lg:col-start-6",
-						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Sitemap" }), /* @__PURE__ */ jsx("ul", {
+						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Quick Links" }), /* @__PURE__ */ jsx("ul", {
 							className: "mt-5 flex flex-col gap-3 text-[15px] font-semibold",
-							children: sitemap.map((item) => /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(Link, {
-								href: item.url,
-								className: "footer-link block",
-								children: item.label
-							}) }, `${item.label}-${item.url}`))
+							children: /* @__PURE__ */ jsx(FooterMenuItems, { items: sitemap })
 						})]
 					}),
 					/* @__PURE__ */ jsxs(motion.div, {
@@ -2212,11 +2331,7 @@ function Footer() {
 						className: "lg:col-span-3 lg:col-start-10",
 						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Services" }), /* @__PURE__ */ jsx("ul", {
 							className: "mt-5 flex flex-col gap-3 text-[15px] font-semibold",
-							children: serviceLinks.map((item) => /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(Link, {
-								href: item.url,
-								className: "footer-link block",
-								children: item.label
-							}) }, `${item.label}-${item.url}`))
+							children: /* @__PURE__ */ jsx(FooterMenuItems, { items: serviceLinks })
 						})]
 					})
 				]
@@ -2231,41 +2346,49 @@ function Footer() {
 						once: true,
 						margin: "-4% 0px"
 					},
-					className: "container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:flex-row md:items-center md:justify-between md:gap-8",
-					children: [/* @__PURE__ */ jsxs("div", {
-						className: "flex flex-wrap items-center gap-x-6 gap-y-2",
-						children: [/* @__PURE__ */ jsx("span", { children: settings.copyright }), legalLinks.map((item) => /* @__PURE__ */ jsx(Link, {
-							href: item.url,
-							className: "footer-link footer-link--inline",
-							children: item.label
-						}, `${item.label}-${item.url}`))]
-					}), /* @__PURE__ */ jsxs("p", {
-						className: "footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em]",
-						children: [
-							/* @__PURE__ */ jsx("span", {
-								style: { color: "#891FFB" },
-								children: "IDEA"
-							}),
-							/* @__PURE__ */ jsx("span", {
-								"aria-hidden": true,
-								className: "px-1.5 sm:px-2.5",
-								children: "→"
-							}),
-							/* @__PURE__ */ jsx("span", {
-								style: { color: "#507AF4" },
-								children: "EXPERIENCE"
-							}),
-							/* @__PURE__ */ jsx("span", {
-								"aria-hidden": true,
-								className: "px-1.5 sm:px-2.5",
-								children: "→"
-							}),
-							/* @__PURE__ */ jsx("span", {
-								style: { color: "#1BE2EB" },
-								children: "RESULT"
-							})
-						]
-					})]
+					className: "container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-8",
+					children: [
+						/* @__PURE__ */ jsx("span", {
+							className: "md:justify-self-start",
+							children: settings.copyright
+						}),
+						/* @__PURE__ */ jsxs("p", {
+							className: "footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] md:justify-self-center",
+							children: [
+								/* @__PURE__ */ jsx("span", {
+									style: { color: "#891FFB" },
+									children: "IDEA"
+								}),
+								/* @__PURE__ */ jsx("span", {
+									"aria-hidden": true,
+									className: "bg-clip-text px-1.5 text-transparent sm:px-2.5",
+									style: { backgroundImage: BRAND_GRADIENT },
+									children: "→"
+								}),
+								/* @__PURE__ */ jsx("span", {
+									style: { color: "#507AF4" },
+									children: "EXPERIENCE"
+								}),
+								/* @__PURE__ */ jsx("span", {
+									"aria-hidden": true,
+									className: "bg-clip-text px-1.5 text-transparent sm:px-2.5",
+									style: { backgroundImage: BRAND_GRADIENT },
+									children: "→"
+								}),
+								/* @__PURE__ */ jsx("span", {
+									style: { color: "#1BE2EB" },
+									children: "RESULT"
+								})
+							]
+						}),
+						/* @__PURE__ */ jsx("div", {
+							className: "flex flex-wrap items-center gap-x-6 gap-y-2 md:justify-self-end",
+							children: legalLinks.map((item) => /* @__PURE__ */ jsx(FooterMenuLink, {
+								item,
+								className: "footer-link footer-link--inline"
+							}, `${item.label}-${item.url}`))
+						})
+					]
 				})
 			})
 		]
@@ -2531,9 +2654,8 @@ function CustomCursor() {
 			const marked = target.closest?.("[data-cursor]");
 			if (marked) {
 				const kind = marked.dataset.cursor;
-				if (kind === "view" || kind === "cta" || kind === "explore") return kind;
+				if (kind === "view" || kind === "explore") return kind;
 			}
-			if (target.closest?.("a,button,[role=button]")) return "hover";
 			return "default";
 		};
 		let frame = 0;
@@ -2767,39 +2889,6 @@ function consumeShowcaseArrival() {
 	return value;
 }
 /**
-* Send a sub-service visual to its own page.
-*
-* Scoped to the Branding / UI-UX showcase: only `SubServiceShowcase` scenes
-* call this, so no other page (Home, About, Work, Contact) ever triggers the
-* flight — those keep the standard cover transition untouched.
-*
-* The visual the reader clicked is lifted out of the page, flown forward to
-* the shape the hero will occupy, and held there while the route changes
-* underneath it. Because the showcase and the hero render the same
-* photograph, letting go of the copy reveals the real hero already in
-* position — the picture appears to have travelled rather than the page to
-* have swapped.
-*
-* @param {string} href
-* @param {{src: string, alt?: string, rect: DOMRect, radius?: number, accent?: string}} visual
-*/
-function expandTo(href, visual) {
-	if (!href || !visual?.src || !visual?.rect) return;
-	window.dispatchEvent(new CustomEvent("marketorr:showcase-expand", { detail: {
-		href,
-		src: visual.src,
-		alt: visual.alt ?? "",
-		radius: visual.radius ?? 24,
-		accent: visual.accent ?? "#891FFB",
-		rect: {
-			top: visual.rect.top,
-			left: visual.rect.left,
-			width: visual.rect.width,
-			height: visual.rect.height
-		}
-	} }));
-}
-/**
 * The layer that performs the flight. Mounted once, beside the page.
 *
 * Nothing here navigates on its own: it only ever runs in response to
@@ -3026,42 +3115,45 @@ createServer((page) => {
 		render: ReactDOMServer.renderToString,
 		resolve: async (name) => {
 			const resolved = await (/* @__PURE__ */ Object.assign({
-				"./pages/About.jsx": () => import("./assets/About-BW8dbgM-.js"),
-				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-sbnSjkKo.js"),
-				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-ByFDlbpU.js"),
-				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-DdDvxmKl.js"),
-				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-BB8PkSFs.js"),
-				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-P6R7mTu2.js"),
-				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-_gPjPrBJ.js"),
-				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-Cic9gmCo.js"),
-				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-BSt9I0Bd.js"),
-				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-CCSxwpu5.js"),
-				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-DYWHkSAM.js"),
-				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-DwAp5pMr.js"),
-				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-D9ueV-JN.js"),
-				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-JkHipCej.js"),
-				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-BXY-z5t-.js"),
-				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-GTNbxxX6.js"),
-				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-BC0XZVv7.js"),
-				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-CBEaAwSF.js"),
-				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-aRFB3LvO.js"),
-				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-BsI4PyDj.js"),
-				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-fmxJUbzX.js"),
-				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-Bmvppake.js"),
-				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-Cu2pkLAs.js"),
-				"./pages/CmsPage.jsx": () => import("./assets/CmsPage-BKQ2nFc8.js"),
-				"./pages/ContactPage.jsx": () => import("./assets/ContactPage-CHWEjJQR.js"),
-				"./pages/Home.jsx": () => import("./assets/Home-fGaUjbif.js"),
-				"./pages/Privacy.jsx": () => import("./assets/Privacy-365BCO3Y.js"),
-				"./pages/Services/Category.jsx": () => import("./assets/Category-C8t9ZN_1.js"),
-				"./pages/Services/Index.jsx": () => import("./assets/Index-DLuBZPQ8.js"),
-				"./pages/Services/Show.jsx": () => import("./assets/Show-DVPOSWDS.js"),
-				"./pages/Services/SubShow.jsx": () => import("./assets/SubShow-COlLbzVd.js"),
-				"./pages/Terms.jsx": () => import("./assets/Terms-D36CZGhf.js"),
-				"./pages/Work/Index.jsx": () => import("./assets/Index-EtRG7NXo.js"),
-				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-DW9Gh__r.js"),
-				"./pages/Work/Show.jsx": () => import("./assets/Show-hMAhf4oR.js"),
-				"./pages/Work/UiuxProject.jsx": () => import("./assets/UiuxProject-BP7EvT1E.js")
+				"./pages/About.jsx": () => import("./assets/About-BVV_YRGa.js"),
+				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-BaNFr2-l.js"),
+				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-BGk62lm9.js"),
+				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-BiOdEVIx.js"),
+				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-BbWpC73h.js"),
+				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-CUli7nKH.js"),
+				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-BXOx21di.js"),
+				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-Bx7eLwQe.js"),
+				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-CZ0lP27n.js"),
+				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-lhfYEDj8.js"),
+				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-C6KK7uVQ.js"),
+				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-Cx572-61.js"),
+				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-BD-y-PYW.js"),
+				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-LfFeXQ9r.js"),
+				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-CdKlU8FY.js"),
+				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-Day8Z8ec.js"),
+				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-C8qPO2Ya.js"),
+				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-CokzQ8Sj.js"),
+				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-CXTlpB9v.js"),
+				"./pages/Admin/ServiceGroups/Form.jsx": () => import("./assets/Form-pk2CbJ7a.js"),
+				"./pages/Admin/ServiceGroups/Index.jsx": () => import("./assets/Index-BtRsDSer.js"),
+				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-BH0njkIr.js"),
+				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-D_ee0nlo.js"),
+				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-CKKq8XLj.js"),
+				"./pages/Admin/SubServices/Form.jsx": () => import("./assets/Form-YB7ciNTL.js"),
+				"./pages/Admin/SubServices/Index.jsx": () => import("./assets/Index-DB78RX2J.js"),
+				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-DKrXm_4-.js"),
+				"./pages/CmsPage.jsx": () => import("./assets/CmsPage-BKopjCsG.js"),
+				"./pages/ContactPage.jsx": () => import("./assets/ContactPage-Bu3LjEBB.js"),
+				"./pages/Home.jsx": () => import("./assets/Home-CLdGRFVH.js"),
+				"./pages/Privacy.jsx": () => import("./assets/Privacy-C0X8YjTu.js"),
+				"./pages/Services/Index.jsx": () => import("./assets/Index-dYN0nl7b.js"),
+				"./pages/Services/Show.jsx": () => import("./assets/Show-CysSeZy0.js"),
+				"./pages/Services/SubShow.jsx": () => import("./assets/SubShow-A4J4SrM7.js"),
+				"./pages/Terms.jsx": () => import("./assets/Terms-CINDpgad.js"),
+				"./pages/Work/Index.jsx": () => import("./assets/Index-DfCgd-6q.js"),
+				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-BnNMxUPt.js"),
+				"./pages/Work/Show.jsx": () => import("./assets/Show-BoHZBzNu.js"),
+				"./pages/Work/UiuxProject.jsx": () => import("./assets/UiuxProject-B0dOmgd1.js")
 			}))[`./pages/${name}.jsx`]();
 			resolved.default.layout = resolved.default.layout || ((children) => /* @__PURE__ */ jsx(Layout, { children }));
 			return resolved;
@@ -3073,4 +3165,4 @@ createServer((page) => {
 	});
 });
 //#endregion
-export { Tag as _, MARK as a, transitionTo as c, useBoxPointer as d, BrandLogo as f, SectionLabel as g, GradientTitle as h, COLORS as i, useTapIntent as l, GradientButton as m, expandTo as n, markBarStyle as o, assetUrl as p, BRAND_SEQUENCE as r, markGap as s, consumeShowcaseArrival as t, MagneticButton as u, useTheme as v, useThemeMotion as y };
+export { useTheme as _, markBarStyle as a, useTapIntent as c, BrandLogo as d, assetUrl as f, Tag as g, SectionLabel as h, MARK as i, MagneticButton as l, GradientTitle as m, BRAND_SEQUENCE as n, markGap as o, GradientButton as p, COLORS as r, transitionTo as s, consumeShowcaseArrival as t, useBoxPointer as u, useThemeMotion as v };

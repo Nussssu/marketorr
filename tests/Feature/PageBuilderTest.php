@@ -212,6 +212,61 @@ class PageBuilderTest extends TestCase
                 ->has('palette', count(SectionType::cases())));
     }
 
+    public function test_saving_seo_from_the_builder_returns_to_the_builder(): void
+    {
+        $page = Page::factory()->create(['slug' => 'process', 'title' => 'Our Process']);
+
+        $this->actingAs($this->admin)
+            ->from("/admin/pages/{$page->id}/builder")
+            ->put("/admin/pages/{$page->id}", [
+                'slug' => 'process',
+                'title' => 'Our Process',
+                'status' => 'published',
+                'meta_title' => 'Process | Marketorr',
+                'meta_description' => 'How a project runs.',
+                'meta_robots' => 'index,follow',
+                'stay' => true,
+            ])
+            ->assertRedirect("/admin/pages/{$page->id}/builder");
+
+        $this->assertSame('Process | Marketorr', $page->fresh()->meta_title);
+    }
+
+    public function test_hiding_a_section_takes_it_off_the_live_page(): void
+    {
+        $page = Page::factory()->system()->create(['slug' => 'privacy']);
+        $section = PageSection::factory()->create(['page_id' => $page->id, 'enabled' => true]);
+
+        $this->actingAs($this->admin)
+            ->put("/admin/pages/{$page->id}/sections/{$section->id}", [
+                'type' => $section->type->value,
+                'name' => $section->name,
+                'content' => $section->content,
+                'enabled' => false,
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse($section->fresh()->enabled);
+        $this->get('/privacy')->assertInertia(fn ($inertia) => $inertia->has('page.sections', 0));
+    }
+
+    public function test_an_admin_can_toggle_a_pages_visibility(): void
+    {
+        $page = Page::factory()->create(['status' => 'published']);
+
+        $this->actingAs($this->admin)
+            ->patch("/admin/pages/{$page->id}/visibility")
+            ->assertRedirect();
+
+        $this->assertSame('draft', $page->fresh()->status->value);
+
+        $this->actingAs($this->admin)
+            ->patch("/admin/pages/{$page->id}/visibility")
+            ->assertRedirect();
+
+        $this->assertSame('published', $page->fresh()->status->value);
+    }
+
     public function test_guests_cannot_reach_the_page_module(): void
     {
         $page = Page::factory()->create();

@@ -185,7 +185,7 @@ function StackedProcess({ heading, items }) {
  */
 export default function Process({ content }) {
     const items = (content?.items ?? []).filter((item) => item?.stage);
-    const heading = content?.heading || 'How we work';
+    const heading = content?.heading ?? '';
 
     if (items.length === 0) return null;
 

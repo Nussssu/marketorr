@@ -64,7 +64,7 @@ function AccordionWidget({ id, title, subtitle, badge, icon, isOpen, onToggle, c
                     </span>
                     <span
                         className={`flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line)] text-[var(--ink)] transition-transform duration-300 ease-out ${
-                            isOpen ? 'rotate-180 border-[#1BE2EB]/40 bg-[#1BE2EB]/10 text-[#1BE2EB]' : ''
+                            isOpen ? 'rotate-180 bg-[var(--chip)]' : ''
                         }`}
                         aria-hidden
                     >
@@ -542,8 +542,8 @@ export default function Settings({ settings }) {
                     )}
                 >
                     <div className="space-y-6">
-                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-[12px] text-amber-200/90">
-                            <strong className="font-bold text-amber-400">Caution:</strong> Injected code runs verbatim in public visitor browsers. Only paste trusted verification tags and tracking scripts.
+                        <div className="rounded-xl border border-[#507AF4]/30 bg-[#507AF4]/10 p-4 text-[12px] text-[var(--ink)]">
+                            <strong className="font-bold text-[#6F91FF]">Caution:</strong> Injected code runs verbatim in public visitor browsers. Only paste trusted verification tags and tracking scripts.
                         </div>
 
                         <Field

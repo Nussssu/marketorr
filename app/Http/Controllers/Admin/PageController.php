@@ -11,6 +11,7 @@ use App\Models\Page;
 use App\Models\PageSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,6 +89,11 @@ class PageController extends Controller
 
         $page->update($data);
 
+        // The builder's SEO panel saves here too and stays on the builder.
+        if ($request->boolean('stay')) {
+            return back()->with('success', 'SEO saved.');
+        }
+
         return redirect()
             ->route('admin.pages.index')
             ->with('success', 'Page updated.');
@@ -122,6 +128,48 @@ class PageController extends Controller
      * A system page backs a hand-built route, so deleting it would leave that
      * route with nothing to render.
      */
+    /**
+     * Copy a page and all of its sections into a new, unpublished page, so an
+     * editor can rework it without touching the live original.
+     */
+    public function duplicate(Page $page): RedirectResponse
+    {
+        $copy = DB::transaction(function () use ($page): Page {
+            $copy = $page->replicate(['is_system']);
+            $copy->slug = $this->uniqueSlug($page->slug.'-copy');
+            $copy->title = $page->title.' (Copy)';
+            $copy->status = ContentStatus::Draft;
+            $copy->is_system = false;
+            $copy->sort_order = (int) Page::query()->max('sort_order') + 1;
+            $copy->save();
+
+            foreach ($page->sections as $section) {
+                $copy->sections()->create($section->only([
+                    'type', 'name', 'content', 'settings', 'enabled', 'sort_order',
+                ]));
+            }
+
+            return $copy;
+        });
+
+        return redirect()->route('admin.pages.index')->with('success', "Duplicated as “{$copy->title}”.");
+    }
+
+    public function toggleVisibility(Page $page): RedirectResponse
+    {
+        $page->update([
+            'status' => $page->status === ContentStatus::Published
+                ? ContentStatus::Draft
+                : ContentStatus::Published,
+        ]);
+
+        $message = $page->status === ContentStatus::Published
+            ? 'Page is now visible.'
+            : 'Page is now hidden.';
+
+        return back()->with('success', $message);
+    }
+
     public function destroy(Page $page): RedirectResponse
     {
         if ($page->is_system) {
@@ -150,6 +198,22 @@ class PageController extends Controller
     /**
      * @return array<string, mixed>
      */
+    /**
+     * A slug no page uses yet, soft-deleted pages included: `about-copy`,
+     * then `about-copy-2`, `about-copy-3`, and so on.
+     */
+    private function uniqueSlug(string $base): string
+    {
+        $slug = $base;
+        $suffix = 2;
+
+        while (Page::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
+    }
+
     private function toAdminArray(Page $page): array
     {
         return [

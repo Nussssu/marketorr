@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Service;
+use App\Models\ServiceGroup;
 use App\Models\Setting;
 use Illuminate\Http\Response;
 
@@ -100,7 +101,7 @@ class SeoController extends Controller
             ->values()
             ->all();
 
-        $subservices = collect(config('subservices'))
+        $subservices = collect(ServiceGroup::catalogue())
             ->flatMap(fn (array $category) => array_map(
                 fn (array $item) => [
                     'loc' => route('services.subshow', [$category['slug'], $item['slug']]),

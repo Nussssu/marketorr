@@ -15,7 +15,7 @@
                     </tr>
                     <tr>
                         <td style="padding:32px 32px 8px;font-family:'Helvetica Neue',Arial,sans-serif;">
-                            <p style="margin:0;font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:#8b8b9a;">{{ $siteName }}</p>
+                            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" width="180" style="display:block;width:180px;max-width:100%;height:auto;border:0;" />
                         </td>
                     </tr>
                     <tr>

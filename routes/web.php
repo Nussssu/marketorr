@@ -13,7 +13,9 @@ use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PageSectionController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\ServiceGroupController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SubServiceController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ContactController;
@@ -81,6 +83,12 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::patch('services/reorder', [AdminServiceController::class, 'reorder'])->name('services.reorder');
         Route::resource('services', AdminServiceController::class)->except('show');
 
+        Route::patch('service-groups/reorder', [ServiceGroupController::class, 'reorder'])->name('service-groups.reorder');
+        Route::resource('service-groups', ServiceGroupController::class)->except('show');
+
+        Route::patch('sub-services/reorder', [SubServiceController::class, 'reorder'])->name('sub-services.reorder');
+        Route::resource('sub-services', SubServiceController::class)->except('show');
+
         Route::post('media/fetch', [MediaController::class, 'fetch'])->name('media.fetch');
         Route::resource('media', MediaController::class)->except('show');
 
@@ -88,6 +96,8 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('categories', CategoryController::class)->except('show');
 
         Route::get('pages/{page}/builder', [AdminPageController::class, 'builder'])->name('pages.builder');
+        Route::post('pages/{page}/duplicate', [AdminPageController::class, 'duplicate'])->name('pages.duplicate');
+        Route::patch('pages/{page}/visibility', [AdminPageController::class, 'toggleVisibility'])->name('pages.visibility');
         Route::patch('pages/{page}/sections/reorder', [PageSectionController::class, 'reorder'])->name('pages.sections.reorder');
         Route::post('pages/{page}/sections', [PageSectionController::class, 'store'])->name('pages.sections.store');
         Route::put('pages/{page}/sections/{section}', [PageSectionController::class, 'update'])->name('pages.sections.update');
@@ -102,6 +112,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('global-blocks', '/admin/blocks');
 
         Route::get('inquiries/export', [InquiryController::class, 'export'])->name('inquiries.export');
+        Route::post('inquiries/import', [InquiryController::class, 'importCsv'])->name('inquiries.import');
         Route::get('inquiries', [InquiryController::class, 'index'])->name('inquiries.index');
         Route::redirect('inbox', '/admin/inquiries');
         Route::redirect('leads', '/admin/inquiries');

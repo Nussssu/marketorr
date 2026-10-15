@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import { assetUrl } from '../../lib/asset';
 import { Button } from './ui';
-import BrandMark from '../ui/BrandMark';
 
 export function getFormattedDate() {
     return new Intl.DateTimeFormat('en-US', {
@@ -66,7 +66,7 @@ export default function EmailPreviewModal({ open, template, onClose }) {
     const settings = props?.settings;
 
     const rawSiteName = settings?.siteName || 'Marketorr';
-    const siteNameUpper = rawSiteName.replace(/\.+$/, '').toUpperCase();
+    const previewLogo = settings?.logo ?? settings?.logoDark ?? assetUrl('/images/logo/marketorr-logo-on-light.png');
     const contactEmail = settings?.contactEmail || 'hello@marketorr.com';
     const currentYear = new Date().getFullYear();
     const copyrightText = settings?.copyright || `© ${currentYear} ${rawSiteName}. All rights reserved.`;
@@ -244,10 +244,7 @@ export default function EmailPreviewModal({ open, template, onClose }) {
                             {/* Header Agency Branding */}
                             <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
                                 <div className="flex items-center gap-2.5">
-                                    <BrandMark size="1.25rem" />
-                                    <span className="font-display text-[15px] font-extrabold uppercase tracking-tight text-slate-900">
-                                        {siteNameUpper}<span className="text-[#507AF4]">.</span>
-                                    </span>
+                                    <img src={previewLogo} alt={rawSiteName} style={{ height: 20, width: 'auto', display: 'block' }} />
                                 </div>
                                 <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border border-slate-100">
                                     {isNotification ? 'Internal Alert' : 'Confirmation'}

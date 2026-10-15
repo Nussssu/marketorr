@@ -59,7 +59,7 @@ class Media extends Model
     /**
      * @return array<string, mixed>
      */
-    public function toAdminArray(): array
+    public function toAdminArray(array $usage = []): array
     {
         return [
             'id' => $this->id,
@@ -72,6 +72,11 @@ class Media extends Model
             'usage_location' => $this->usage_location,
             'alt_text' => $this->alt_text,
             'created_at' => $this->created_at?->toDateTimeString(),
+            'is_image' => str_starts_with((string) $this->mime_type, 'image/')
+                || (bool) preg_match('/\.(jpe?g|png|webp|gif|svg|avif)$/i', $this->filename),
+            'usage_groups' => $usage['groups'] ?? [],
+            'usage_labels' => $usage['labels'] ?? [],
+            'usage_count' => count($usage['labels'] ?? []),
         ];
     }
 }

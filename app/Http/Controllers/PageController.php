@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Service;
+use App\Models\ServiceGroup;
 use App\Services\UiuxShowcase;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -36,7 +37,7 @@ class PageController extends Controller
                 ->get()
                 ->map(fn (Service $service) => $service->toPublicArray())
                 ->values(),
-            'subservices' => config('subservices'),
+            'subservices' => ServiceGroup::catalogue(),
         ]);
     }
 

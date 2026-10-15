@@ -2,9 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\InquiryType;
 use App\Models\GlobalBlock;
 use App\Models\Menu;
 use App\Models\Project;
+use App\Models\ServiceGroup;
 use App\Models\Setting;
 use App\Services\PublicAsset;
 use Illuminate\Http\Request;
@@ -52,6 +54,9 @@ class HandleInertiaRequests extends Middleware
             // server-rendered markup and hydration both start from it.
             'theme' => $request->cookie('theme') === 'dark' ? 'dark' : 'light',
             'settings' => fn () => Setting::current()->toPublicArray(),
+            // The project types an inquiry may carry; the contact form offers
+            // the ones its section lists, in that order.
+            'inquiryTypes' => InquiryType::values(),
             // Header and footer navigation, keyed by location.
             'menus' => fn () => Menu::publicTree(),
             // The site-wide banner, or null when it is switched off.
@@ -59,7 +64,7 @@ class HandleInertiaRequests extends Middleware
             // The header and footer Services menus list the two disciplines and
             // their sub-services, each linking straight to its page. Fields
             // stay minimal — only what the menus render.
-            'serviceCategories' => fn () => collect(config('subservices'))
+            'serviceCategories' => fn () => collect(ServiceGroup::catalogue())
                 ->map(fn (array $category) => [
                     'slug' => $category['slug'],
                     'name' => $category['name'],

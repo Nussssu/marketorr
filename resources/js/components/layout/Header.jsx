@@ -20,6 +20,39 @@ const FALLBACK_LINKS = [
     { label: 'Our Work', href: '/work' },
 ];
 
+function menuTreeToMegaGroups(items, fallbackGroups) {
+    return items.map((parent) => {
+        const fallback = fallbackGroups.find((group) =>
+            group.href === parent.url
+            || `/services#${group.slug}` === parent.url
+            || group.name === parent.label,
+        );
+
+        return {
+            ...fallback,
+            slug: fallback?.slug ?? `menu-${parent.id}`,
+            name: parent.label,
+            href: parent.url,
+            newTab: parent.newTab,
+            items: (parent.children ?? []).map((child) => {
+                const fallbackItem = fallback?.items?.find((item) =>
+                    item.href === child.url
+                    || `/services/${fallback.slug}/${item.slug}` === child.url
+                    || item.name === child.label,
+                );
+
+                return {
+                    ...fallbackItem,
+                    slug: fallbackItem?.slug ?? `menu-${child.id}`,
+                    name: child.label,
+                    href: child.url,
+                    newTab: child.newTab,
+                };
+            }),
+        };
+    });
+}
+
 function isActive(url, href) {
     if (href === '/') return url === '/';
     return url === href || url.startsWith(`${href}/`);
@@ -285,11 +318,13 @@ function MegaSubLink({ category, item, variants, onNavigate }) {
             <Link
                 href={href}
                 prefetch
+                target={item.newTab ? '_blank' : undefined}
+                rel={item.newTab ? 'noreferrer' : undefined}
                 data-cursor="explore"
                 {...tapIntent}
                 onClick={(event) => {
                     tapIntent.onClick(event);
-                    navigateWithCurtain(event, href, onNavigate);
+                    if (!item.newTab) navigateWithCurtain(event, href, onNavigate);
                 }}
                 className="group/row flex items-center gap-4 py-3.5 focus-visible:outline-none"
             >
@@ -368,7 +403,7 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
     const tapIntent = useTapIntent();
     const reduce = useReducedMotion();
     const href = category.href ?? '/work';
-    const items = (category.items ?? []).filter((item) => item.image);
+    const items = category.items ?? [];
 
     return (
         <div className="min-w-0">
@@ -376,11 +411,13 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
                 <Link
                     href={href}
                     prefetch
+                    target={category.newTab ? '_blank' : undefined}
+                    rel={category.newTab ? 'noreferrer' : undefined}
                     data-cursor="explore"
                     {...tapIntent}
                     onClick={(event) => {
                         tapIntent.onClick(event);
-                        navigateWithCurtain(event, href, onNavigate);
+                        if (!category.newTab) navigateWithCurtain(event, href, onNavigate);
                     }}
                     // Inside the mobile menu the header's touch rule makes links
                     // inline-flex; the heading keeps its stacked desktop layout.
@@ -428,24 +465,32 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
                                     <Link
                                         href={item.href}
                                         prefetch
+                                        target={item.newTab ? '_blank' : undefined}
+                                        rel={item.newTab ? 'noreferrer' : undefined}
                                         data-cursor="view"
                                         tabIndex={duplicate ? -1 : undefined}
                                         {...tapIntent}
                                         onClick={(event) => {
                                             tapIntent.onClick(event);
-                                            navigateWithCurtain(event, item.href, onNavigate);
+                                            if (!item.newTab) navigateWithCurtain(event, item.href, onNavigate);
                                         }}
                                         aria-label={item.name}
                                         className="group/tile block overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-soft)] focus-visible:outline-none"
                                     >
-                                        <img
-                                            src={item.image}
-                                            alt=""
-                                            loading="lazy"
-                                            decoding="async"
-                                            draggable={false}
-                                            className={`${compact ? 'h-16 w-24' : 'h-20 w-32'} object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]`}
-                                        />
+                                        {item.image ? (
+                                            <img
+                                                src={item.image}
+                                                alt=""
+                                                loading="lazy"
+                                                decoding="async"
+                                                draggable={false}
+                                                className={`${compact ? 'h-16 w-24' : 'h-20 w-32'} object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06]`}
+                                            />
+                                        ) : (
+                                            <span className={`${compact ? 'h-16 w-24' : 'h-20 w-32'} flex items-center justify-center bg-[var(--chip)] px-3 text-center text-[11px] font-bold text-[var(--ink)]`}>
+                                                {item.name}
+                                            </span>
+                                        )}
                                     </Link>
                                 </li>
                             ))}
@@ -633,7 +678,9 @@ function MobileServiceGroup({ category, index, onNavigate }) {
             {groupHref ? (
                 <Link
                     href={groupHref}
-                    onClick={(event) => navigateWithCurtain(event, groupHref, onNavigate)}
+                    target={category.newTab ? '_blank' : undefined}
+                    rel={category.newTab ? 'noreferrer' : undefined}
+                    onClick={category.newTab ? undefined : (event) => navigateWithCurtain(event, groupHref, onNavigate)}
                     className="block"
                 >
                     {heading}
@@ -646,7 +693,9 @@ function MobileServiceGroup({ category, index, onNavigate }) {
                     <li key={item.slug} className="border-b border-[var(--line-soft)] last:border-b-0">
                         <Link
                             href={itemHref(item)}
-                            onClick={(event) => navigateWithCurtain(event, itemHref(item), onNavigate)}
+                            target={item.newTab ? '_blank' : undefined}
+                            rel={item.newTab ? 'noreferrer' : undefined}
+                            onClick={item.newTab ? undefined : (event) => navigateWithCurtain(event, itemHref(item), onNavigate)}
                             className="flex items-center gap-3.5 py-3.5 active:opacity-70"
                         >
                             <span
@@ -680,17 +729,38 @@ export default function Header() {
     const { url, props } = usePage();
     const serviceCategories = props.serviceCategories ?? [];
     const workGroups = props.workGroups ?? [];
+    const serviceMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, 'mega_services')
+        ? menuTreeToMegaGroups(props.menus.mega_services, serviceCategories)
+        : serviceCategories;
+    const workMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, 'mega_work')
+        ? menuTreeToMegaGroups(props.menus.mega_work, workGroups)
+        : workGroups;
     // Editor-managed navigation; `/services` still opens the mega menu.
     // On desktop Contact is reached through the header CTA, so it is not a nav
     // link there; the mobile menu lists it after the rest.
-    const menuLinks = (props.menus?.header ?? [])
+    const hasManagedHeader = Object.prototype.hasOwnProperty.call(props.menus ?? {}, 'header');
+    const managedHeaderItems = props.menus?.header ?? [];
+    const menuLinks = managedHeaderItems
         .filter((item) => item.url !== '/contact')
         .map((item) => ({
             label: item.label,
             href: item.url,
+            newTab: item.newTab,
+            children: item.children ?? [],
         }));
-    const LINKS = menuLinks.length > 0 ? menuLinks : FALLBACK_LINKS;
-    const MOBILE_LINKS = [...LINKS, { label: 'Contact', href: '/contact' }];
+    const LINKS = hasManagedHeader ? menuLinks : FALLBACK_LINKS;
+    const managedContact = managedHeaderItems.find((item) => item.url === '/contact');
+    const MOBILE_LINKS = [
+        ...LINKS,
+        ...(managedContact
+            ? [{
+                label: managedContact.label,
+                href: managedContact.url,
+                newTab: managedContact.newTab,
+                children: managedContact.children ?? [],
+            }]
+            : hasManagedHeader ? [] : [{ label: 'Contact', href: '/contact' }]),
+    ];
     const settings = props.settings;
     const isSticky = settings?.headerSticky !== false;
     const ctaLink = settings?.headerCtaLink || '/contact';
@@ -868,11 +938,50 @@ export default function Header() {
                                         </div>
                                     );
                                 }
+                                if (l.children?.length > 0) {
+                                    return (
+                                        <div key={l.href} className="group/menu relative py-2">
+                                            <Link
+                                                href={l.href}
+                                                target={l.newTab ? '_blank' : undefined}
+                                                rel={l.newTab ? 'noreferrer' : undefined}
+                                                onClick={l.newTab ? undefined : (event) => navigateWithCurtain(event, l.href)}
+                                                className={linkClass}
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    <NavLabel label={l.label} />
+                                                    <span aria-hidden className="transition-transform duration-200 group-hover/menu:rotate-180">
+                                                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="block">
+                                                            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                    </span>
+                                                </span>
+                                            </Link>
+                                            <ul className="invisible absolute left-1/2 top-full min-w-52 -translate-x-1/2 translate-y-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2 opacity-0 shadow-xl transition-all group-hover/menu:visible group-hover/menu:translate-y-0 group-hover/menu:opacity-100 group-focus-within/menu:visible group-focus-within/menu:translate-y-0 group-focus-within/menu:opacity-100">
+                                                {l.children.map((child) => (
+                                                    <li key={child.id}>
+                                                        <Link
+                                                            href={child.url}
+                                                            target={child.newTab ? '_blank' : undefined}
+                                                            rel={child.newTab ? 'noreferrer' : undefined}
+                                                            onClick={child.newTab ? undefined : (event) => navigateWithCurtain(event, child.url)}
+                                                            className="block rounded-lg px-3 py-2.5 text-[12px] font-semibold text-[var(--mute)] transition-colors hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                                                        >
+                                                            {child.label}
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    );
+                                }
                                 return (
                                     <Link
                                         key={l.href}
                                         href={l.href}
-                                        onClick={(event) => navigateWithCurtain(event, l.href)}
+                                        target={l.newTab ? '_blank' : undefined}
+                                        rel={l.newTab ? 'noreferrer' : undefined}
+                                        onClick={l.newTab ? undefined : (event) => navigateWithCurtain(event, l.href)}
                                         className={linkClass}
                                     >
                                         <NavLabel label={l.label} />
@@ -921,7 +1030,7 @@ export default function Header() {
                 {mega && (
                     <ServicesMegaMenu
                         key="services-mega-menu"
-                        categories={serviceCategories}
+                        categories={serviceMegaGroups}
                         onNavigate={() => setMega(false)}
                         onPointerOpen={openMega}
                         onPointerClose={scheduleMegaClose}
@@ -932,7 +1041,7 @@ export default function Header() {
                 {workMega && (
                     <ServicesMegaMenu
                         key="work-mega-menu"
-                        categories={workGroups}
+                        categories={workMegaGroups}
                         onNavigate={() => setWorkMega(false)}
                         onPointerOpen={openWorkMega}
                         onPointerClose={scheduleWorkMegaClose}
@@ -971,9 +1080,25 @@ export default function Header() {
                                 // Services and Our Work open in place on mobile, listing the
                                 // same groups their desktop mega menus show.
                                 const accordion = l.href === '/services'
-                                    ? { groups: serviceCategories, label: 'services' }
+                                    ? { groups: serviceMegaGroups, label: 'services' }
                                     : l.href === '/work'
-                                        ? { groups: workGroups, label: 'work' }
+                                        ? { groups: workMegaGroups, label: 'work' }
+                                        : l.children?.length > 0
+                                            ? {
+                                                groups: [{
+                                                    slug: `menu-${l.href}`,
+                                                    name: l.label,
+                                                    href: l.href,
+                                                    newTab: l.newTab,
+                                                    items: l.children.map((child) => ({
+                                                        slug: `menu-${child.id}`,
+                                                        name: child.label,
+                                                        href: child.url,
+                                                        newTab: child.newTab,
+                                                    })),
+                                                }],
+                                                label: l.label,
+                                            }
                                         : null;
 
                                 if (accordion && accordion.groups.length > 0) {

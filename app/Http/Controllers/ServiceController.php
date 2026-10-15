@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Page;
 use App\Models\Service;
+use App\Models\ServiceGroup;
 use App\Services\PublicAsset;
 use App\Services\SubServiceRelatedWork;
 use Illuminate\Support\Collection;
@@ -15,19 +17,20 @@ class ServiceController extends Controller
     public function index(): Response
     {
         return Inertia::render('Services/Index', [
+            'page' => Page::forSlug('services')?->toPublicArray(),
             'services' => $this->publishedServices(),
-            'subservices' => config('subservices'),
+            'subservices' => ServiceGroup::catalogue(),
         ]);
     }
 
     /**
-     * A published service page. Branding and UI/UX no longer have pages of
-     * their own: their sections live on the Services page, so old links land
-     * there at the matching section.
+     * A published service page. Tabs (e.g. Branding and UI/UX) have no pages
+     * of their own: their sections live on the Services page, so old links
+     * land there on the matching tab.
      */
     public function show(string $slug): Response|SymfonyResponse
     {
-        $category = collect(config('subservices'))->firstWhere('slug', $slug);
+        $category = collect(ServiceGroup::catalogue())->firstWhere('slug', $slug);
 
         if ($category) {
             return Inertia::location(route('services.index').'#'.$category['slug']);
@@ -50,7 +53,7 @@ class ServiceController extends Controller
      */
     public function subShow(string $service, string $sub, SubServiceRelatedWork $relatedWork): Response
     {
-        $category = collect(config('subservices'))->firstWhere('slug', $service);
+        $category = collect(ServiceGroup::catalogue())->firstWhere('slug', $service);
         abort_if(! $category, 404);
 
         $item = collect($category['items'])->firstWhere('slug', $sub);

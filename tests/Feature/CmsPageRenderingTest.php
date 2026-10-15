@@ -61,6 +61,36 @@ class CmsPageRenderingTest extends TestCase
             ->assertInertia(fn ($inertia) => $inertia->where('page', null));
     }
 
+    public function test_the_services_page_uses_its_cms_page_and_sections(): void
+    {
+        $page = Page::factory()->system()->create(['slug' => 'services', 'title' => 'Services']);
+        PageSection::factory()
+            ->ofType(SectionType::Services, ['heading' => 'What we offer', 'intro' => 'Built around your goals.'])
+            ->create(['page_id' => $page->id]);
+
+        $this->get('/services')
+            ->assertOk()
+            ->assertInertia(fn ($inertia) => $inertia
+                ->component('Services/Index')
+                ->where('page.sections.0.type', 'services')
+                ->where('page.sections.0.content.heading', 'What we offer'));
+    }
+
+    public function test_the_work_page_uses_its_cms_page_and_sections(): void
+    {
+        $page = Page::factory()->system()->create(['slug' => 'work', 'title' => 'Our Work']);
+        PageSection::factory()
+            ->ofType(SectionType::Work, ['heading' => 'Selected work', 'intro' => 'Choose a practice.'])
+            ->create(['page_id' => $page->id]);
+
+        $this->get('/work')
+            ->assertOk()
+            ->assertInertia(fn ($inertia) => $inertia
+                ->component('Work/Index')
+                ->where('page.sections.0.type', 'work')
+                ->where('page.sections.0.content.heading', 'Selected work'));
+    }
+
     public function test_a_published_page_is_reachable_at_its_slug(): void
     {
         $page = Page::factory()->create(['slug' => 'our-process', 'title' => 'Our Process']);

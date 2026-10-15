@@ -1,10 +1,461 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Badge, Button, EmptyState, Input, PageHeader, Panel, Select } from '../../../components/admin/ui';
+import { Badge, Button, ConfirmDialog, EmptyState, Input, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
+
+const STATUS_THEME = {
+    new: { label: 'New', color: '#891FFB', background: 'rgba(137,31,251,0.1)' },
+    in_progress: { label: 'In Progress', color: '#507AF4', background: 'rgba(80,122,244,0.1)' },
+    replied: { label: 'Replied', color: '#1BE2EB', background: 'rgba(27,226,235,0.1)' },
+    archived: { label: 'Archived', color: '#8B98A8', background: 'rgba(139,152,168,0.1)' },
+};
+
+function StatusSelect({ inquiry, statuses }) {
+    const [open, setOpen] = useState(false);
+    const [currentStatus, setCurrentStatus] = useState(inquiry.status);
+    const [highlighted, setHighlighted] = useState(-1);
+    const [menuPosition, setMenuPosition] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
+    const theme = STATUS_THEME[currentStatus] ?? STATUS_THEME.archived;
+
+    useEffect(() => {
+        setCurrentStatus(inquiry.status);
+    }, [inquiry.status]);
+
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const closeOnOutsidePress = (event) => {
+            if (!buttonRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        const closeOnEscape = (event) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+        const closeOnViewportChange = () => setOpen(false);
+
+        document.addEventListener('pointerdown', closeOnOutsidePress);
+        document.addEventListener('keydown', closeOnEscape);
+        window.addEventListener('resize', closeOnViewportChange);
+        window.addEventListener('scroll', closeOnViewportChange, true);
+
+        return () => {
+            document.removeEventListener('pointerdown', closeOnOutsidePress);
+            document.removeEventListener('keydown', closeOnEscape);
+            window.removeEventListener('resize', closeOnViewportChange);
+            window.removeEventListener('scroll', closeOnViewportChange, true);
+        };
+    }, [open]);
+
+    const openList = () => {
+        const bounds = buttonRef.current?.getBoundingClientRect();
+
+        if (!bounds) return;
+
+        const menuWidth = 144;
+        const menuHeight = statuses.length * 37 + 12;
+        const dropUp = window.innerHeight - bounds.bottom < menuHeight + 12 && bounds.top > menuHeight;
+
+        setHighlighted(Math.max(0, statuses.indexOf(currentStatus)));
+        setMenuPosition({
+            left: Math.min(bounds.left, window.innerWidth - menuWidth - 8),
+            top: dropUp ? bounds.top - 8 : bounds.bottom + 8,
+            dropUp,
+            width: Math.max(bounds.width, menuWidth),
+        });
+        setOpen(true);
+    };
+
+    const choose = (status) => {
+        if (status === currentStatus) {
+            setOpen(false);
+
+            return;
+        }
+
+        const previousStatus = currentStatus;
+        setCurrentStatus(status);
+        setOpen(false);
+        setSaving(true);
+        router.patch(
+            `/admin/inquiries/${inquiry.id}/status`,
+            { status },
+            {
+                preserveScroll: true,
+                onError: () => setCurrentStatus(previousStatus),
+                onFinish: () => setSaving(false),
+            },
+        );
+    };
+
+    const onKeyDown = (event) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter' && event.key !== ' ') return;
+
+        event.preventDefault();
+        if (!open) {
+            openList();
+
+            return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            setHighlighted((index) => (index + step + statuses.length) % statuses.length);
+        } else if (highlighted >= 0) {
+            choose(statuses[highlighted]);
+        }
+    };
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={`Change status for ${inquiry.name}`}
+                disabled={saving}
+                onClick={() => (open ? setOpen(false) : openList())}
+                onKeyDown={onKeyDown}
+                className="flex h-9 w-[132px] items-center justify-between gap-2 rounded-lg border py-0 pr-3 pl-3 text-left text-[12px] font-semibold transition-all disabled:cursor-wait disabled:opacity-60"
+                style={{ borderColor: `${theme.color}66`, color: theme.color, background: theme.background }}
+            >
+                <span className="min-w-0 truncate">{saving ? 'Saving…' : theme.label}</span>
+                <svg
+                    viewBox="0 0 12 7"
+                    className={`h-[7px] w-3 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    fill="none"
+                    aria-hidden
+                >
+                    <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+
+            {open && menuPosition && typeof document !== 'undefined' && createPortal(
+                <ul
+                    ref={menuRef}
+                    role="listbox"
+                    aria-label={`Status for ${inquiry.name}`}
+                    className="fixed z-[300] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)]"
+                    style={{
+                        left: menuPosition.left,
+                        top: menuPosition.top,
+                        width: menuPosition.width,
+                        transform: menuPosition.dropUp ? 'translateY(-100%)' : undefined,
+                    }}
+                >
+                    {statuses.map((status, index) => {
+                        const optionTheme = STATUS_THEME[status] ?? STATUS_THEME.archived;
+                        const active = highlighted === index;
+                        const selected = currentStatus === status;
+
+                        return (
+                            <li
+                                key={status}
+                                role="option"
+                                aria-selected={selected}
+                                onPointerEnter={() => setHighlighted(index)}
+                                onClick={() => choose(status)}
+                                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-[12px] transition-colors duration-150 ${active ? 'text-white' : 'text-[var(--ink)]'} ${selected ? 'font-bold' : 'font-medium'}`}
+                                style={active ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined}
+                            >
+                                <span>{optionTheme.label}</span>
+                                {selected && (
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: active ? '#fff' : optionTheme.color }} aria-hidden />
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>,
+                document.body,
+            )}
+        </>
+    );
+}
+
+/**
+ * A filter dropdown (All statuses / All types) whose open list matches the
+ * message-status menu: dark surface, brand-gradient highlight, a dot on the
+ * chosen option. The trigger keeps the look of the other filter fields.
+ *
+ * @param {{ value: string, onChange: (value: string) => void, options: Array<{ value: string, label: string }>, placeholder: string, label: string }} props
+ */
+function FilterSelect({ value, onChange, options, placeholder, label }) {
+    const [open, setOpen] = useState(false);
+    const [highlighted, setHighlighted] = useState(-1);
+    const [menuPosition, setMenuPosition] = useState(null);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
+    const choices = [{ value: '', label: placeholder }, ...options];
+    const current = choices.find((choice) => choice.value === value) ?? choices[0];
+
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const closeOnOutsidePress = (event) => {
+            if (!buttonRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        const closeOnEscape = (event) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+        const closeOnViewportChange = () => setOpen(false);
+
+        document.addEventListener('pointerdown', closeOnOutsidePress);
+        document.addEventListener('keydown', closeOnEscape);
+        window.addEventListener('resize', closeOnViewportChange);
+        window.addEventListener('scroll', closeOnViewportChange, true);
+
+        return () => {
+            document.removeEventListener('pointerdown', closeOnOutsidePress);
+            document.removeEventListener('keydown', closeOnEscape);
+            window.removeEventListener('resize', closeOnViewportChange);
+            window.removeEventListener('scroll', closeOnViewportChange, true);
+        };
+    }, [open]);
+
+    const openList = () => {
+        const bounds = buttonRef.current?.getBoundingClientRect();
+
+        if (!bounds) return;
+
+        const menuHeight = choices.length * 37 + 12;
+        const dropUp = window.innerHeight - bounds.bottom < menuHeight + 12 && bounds.top > menuHeight;
+
+        setHighlighted(Math.max(0, choices.indexOf(current)));
+        setMenuPosition({
+            left: bounds.left,
+            top: dropUp ? bounds.top - 8 : bounds.bottom + 8,
+            dropUp,
+            width: bounds.width,
+        });
+        setOpen(true);
+    };
+
+    const choose = (choice) => {
+        setOpen(false);
+        if (choice.value !== value) onChange(choice.value);
+    };
+
+    const onKeyDown = (event) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter' && event.key !== ' ') return;
+
+        event.preventDefault();
+        if (!open) {
+            openList();
+
+            return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            setHighlighted((index) => (index + step + choices.length) % choices.length);
+        } else if (highlighted >= 0) {
+            choose(choices[highlighted]);
+        }
+    };
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={`${label}: ${current.label}`}
+                onClick={() => (open ? setOpen(false) : openList())}
+                onKeyDown={onKeyDown}
+                className={`flex min-w-[160px] items-center justify-between gap-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-left text-[14px] transition-colors hover:border-[rgba(137,31,251,0.65)] ${value ? 'text-[var(--ink)]' : 'text-[var(--placeholder)]'}`}
+            >
+                <span className="min-w-0 truncate capitalize">{current.label}</span>
+                <svg
+                    viewBox="0 0 12 7"
+                    className={`h-[7px] w-3 shrink-0 text-[var(--ink-faint)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    fill="none"
+                    aria-hidden
+                >
+                    <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+
+            {open && menuPosition && typeof document !== 'undefined' && createPortal(
+                <ul
+                    ref={menuRef}
+                    role="listbox"
+                    aria-label={label}
+                    className="fixed z-[300] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)]"
+                    style={{
+                        left: menuPosition.left,
+                        top: menuPosition.top,
+                        width: menuPosition.width,
+                        transform: menuPosition.dropUp ? 'translateY(-100%)' : undefined,
+                    }}
+                >
+                    {choices.map((choice, index) => {
+                        const active = highlighted === index;
+                        const selected = current.value === choice.value;
+
+                        return (
+                            <li
+                                key={choice.value || 'all'}
+                                role="option"
+                                aria-selected={selected}
+                                onPointerEnter={() => setHighlighted(index)}
+                                onClick={() => choose(choice)}
+                                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-[12px] capitalize transition-colors duration-150 ${active ? 'text-white' : 'text-[var(--ink)]'} ${selected ? 'font-bold' : 'font-medium'}`}
+                                style={active ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined}
+                            >
+                                <span>{choice.label}</span>
+                                {selected && (
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: active ? '#fff' : 'var(--ink-faint)' }} aria-hidden />
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>,
+                document.body,
+            )}
+        </>
+    );
+}
+
+function EyeIcon() {
+    return (
+        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.5-6 9.75-6 9.75 6 9.75 6-3.5 6-9.75 6-9.75-6-9.75-6Z" />
+            <circle cx="12" cy="12" r="2.75" />
+        </svg>
+    );
+}
+
+function TrashIcon() {
+    return (
+        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
+            <path strokeLinecap="round" d="M10 11.5v5M14 11.5v5" />
+        </svg>
+    );
+}
+
+function Detail({ label, children }) {
+    return (
+        <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{label}</p>
+            <p className="mt-1 break-words text-[14px] text-[var(--ink)]">{children || '-'}</p>
+        </div>
+    );
+}
+
+function InquiryModal({ inquiry, onClose }) {
+    useEffect(() => {
+        if (!inquiry) return undefined;
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') onClose();
+        };
+        const originalOverflow = document.body.style.overflow;
+
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [inquiry, onClose]);
+
+    if (!inquiry) return null;
+
+    const mailto = `mailto:${inquiry.email}?subject=${encodeURIComponent(`Re: your project inquiry: ${inquiry.type}`)}`;
+
+    return (
+        <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="inquiry-modal-title"
+        >
+            <button
+                type="button"
+                aria-label="Close lead details"
+                onClick={onClose}
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            <div className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-2xl">
+                <header className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+                    <div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h2 id="inquiry-modal-title" className="font-display text-xl font-extrabold text-[var(--ink-strong)]">{inquiry.name}</h2>
+                            <Badge tone={inquiry.status} />
+                        </div>
+                        <p className="mt-1 text-[12px] text-[var(--mute)]">Received {inquiry.createdAt}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--field-line)] text-xl text-[var(--ink-faint)] hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                    >
+                        &times;
+                    </button>
+                </header>
+
+                <div className="overflow-y-auto p-5 sm:p-6">
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="space-y-6 lg:col-span-2">
+                            <Panel title="Message">
+                                <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--ink)]">{inquiry.message}</p>
+                            </Panel>
+                            <Panel title="Contact details">
+                                <div className="grid gap-5 sm:grid-cols-2">
+                                    <Detail label="Email">{inquiry.email}</Detail>
+                                    <Detail label="Phone">{inquiry.phone}</Detail>
+                                    <Detail label="Company">{inquiry.company}</Detail>
+                                    <Detail label="Project type">{inquiry.type}</Detail>
+                                    <Detail label="Budget">{inquiry.budget}</Detail>
+                                </div>
+                            </Panel>
+                        </div>
+                        <div className="space-y-6">
+                            <Panel title="Request metadata">
+                                <div className="grid gap-5">
+                                    <Detail label="Source page">{inquiry.sourcePage}</Detail>
+                                    <Detail label="First replied">{inquiry.respondedAt}</Detail>
+                                    <Detail label="IP address">{inquiry.ipAddress}</Detail>
+                                    <Detail label="User agent">{inquiry.userAgent}</Detail>
+                                </div>
+                            </Panel>
+                            <Panel title="Internal notes">
+                                <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--ink)]">{inquiry.adminNotes || '-'}</p>
+                            </Panel>
+                        </div>
+                    </div>
+                </div>
+
+                <footer className="flex justify-end gap-3 border-t border-[var(--line)] px-5 py-4 sm:px-6">
+                    <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+                    <Button as="a" href={mailto}>Reply by email</Button>
+                </footer>
+            </div>
+        </div>
+    );
+}
 
 export default function InquiriesIndex({ inquiries, filters, statuses, types }) {
     const [form, setForm] = useState(filters);
+    const [selectedInquiry, setSelectedInquiry] = useState(null);
+    const [request, confirm, cancel, run] = useConfirm();
+
+    const askDelete = (inquiry) => confirm({
+        title: `Delete lead from “${inquiry.name}”?`,
+        body: 'The submission is permanently removed from the inbox.',
+        action: () => router.delete(`/admin/inquiries/${inquiry.id}`, { preserveScroll: true }),
+    });
 
     const apply = (next) => {
         setForm(next);
@@ -20,6 +471,28 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
         <>
             <Head title="Inquiries | Marketorr Admin" />
             <PageHeader title="Leads" subtitle={`${inquiries.total} submission${inquiries.total === 1 ? '' : 's'} from the contact form.`}>
+                <Form action="/admin/inquiries/import" method="post" resetOnSuccess>
+                    {({ errors, processing }) => (
+                        <div className="flex flex-col items-end gap-1">
+                            <Button
+                                as="label"
+                                variant="secondary"
+                                className={processing ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            >
+                                {processing ? 'Importing...' : 'Import CSV'}
+                                <input
+                                    type="file"
+                                    name="csv"
+                                    accept=".csv,text/csv"
+                                    className="sr-only"
+                                    disabled={processing}
+                                    onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                                />
+                            </Button>
+                            {errors.csv && <span className="max-w-xs text-right text-[11px] text-[#ff6b6b]">{errors.csv}</span>}
+                        </div>
+                    )}
+                </Form>
                 {/* Plain anchor, not a Link: the export is a file download, not
                     an Inertia visit. */}
                 <Button as="a" href={`/admin/inquiries/export?${new URLSearchParams(filters).toString()}`} variant="secondary">
@@ -35,14 +508,20 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                         placeholder="Search name, email or company…"
                         aria-label="Search inquiries"
                     />
-                    <Select value={form.status} onChange={(e) => apply({ ...form, status: e.target.value })} aria-label="Filter by status">
-                        <option value="">All statuses</option>
-                        {statuses.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                    </Select>
-                    <Select value={form.type} onChange={(e) => apply({ ...form, type: e.target.value })} aria-label="Filter by type">
-                        <option value="">All types</option>
-                        {types.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </Select>
+                    <FilterSelect
+                        label="Filter by status"
+                        value={form.status ?? ''}
+                        onChange={(status) => apply({ ...form, status })}
+                        placeholder="All statuses"
+                        options={statuses.map((s) => ({ value: s, label: STATUS_THEME[s]?.label ?? s.replace('_', ' ') }))}
+                    />
+                    <FilterSelect
+                        label="Filter by type"
+                        value={form.type ?? ''}
+                        onChange={(type) => apply({ ...form, type })}
+                        placeholder="All types"
+                        options={types.map((t) => ({ value: t, label: t }))}
+                    />
                     <Button type="submit" variant="secondary">Search</Button>
                 </form>
             </Panel>
@@ -76,15 +555,29 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                         <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.type}</td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.budget ?? '-'}</td>
                                         <td className="py-3 pr-4 font-mono text-[12px] text-[var(--ink-faint)]">{inquiry.sourcePage ?? '-'}</td>
-                                        <td className="py-3 pr-4"><Badge tone={inquiry.status} /></td>
+                                        <td className="py-3 pr-4">
+                                            <StatusSelect inquiry={inquiry} statuses={statuses} />
+                                        </td>
                                         <td className="py-3 pr-4 whitespace-nowrap text-[var(--mute)]">{inquiry.createdAt}</td>
-                                        <td className="py-3 text-right">
-                                            <Link
-                                                href={`/admin/inquiries/${inquiry.id}`}
-                                                className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                                        <td className="py-3 text-right whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedInquiry(inquiry)}
+                                                aria-label={`View ${inquiry.name}`}
+                                                title={`View ${inquiry.name}`}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[var(--ink-faint)] transition-colors hover:border-[var(--field-line)] hover:bg-[var(--chip)] hover:text-[var(--ink)]"
                                             >
-                                                View →
-                                            </Link>
+                                                <EyeIcon />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => askDelete(inquiry)}
+                                                aria-label={`Delete ${inquiry.name}`}
+                                                title={`Delete ${inquiry.name}`}
+                                                className="ml-2 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[#ff6b6b] transition-colors hover:border-[#ff6b6b]/40 hover:bg-[#ff6b6b]/10"
+                                            >
+                                                <TrashIcon />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -111,6 +604,9 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                     ))}
                 </nav>
             )}
+
+            <InquiryModal inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} />
+            <ConfirmDialog open={!!request} title={request?.title ?? ''} body={request?.body} confirmLabel="Delete" onConfirm={run} onCancel={cancel} />
         </>
     );
 }

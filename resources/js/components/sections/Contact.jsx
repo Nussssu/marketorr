@@ -7,12 +7,6 @@ import OfficeMap from '../ui/OfficeMap';
 import { useThemeMotion } from '../../lib/theme';
 import InkField from '../decor/InkField';
 
-/** Project types offered by the inquiry form. */
-const TYPES = ['Branding', 'UI/UX'];
-
-/** Budget bands offered by the inquiry form. */
-const BUDGETS = ['$10k - $25k', 'Under $10k', '$25k - $50k', '$50k+', 'Not sure yet'];
-
 const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
 
 /**
@@ -88,41 +82,24 @@ const faqBox = {
 const revealViewport = { once: true, amount: 0.15, margin: '0px 0px -5% 0px' };
 
 /**
- * The questions are drawn only from what the site already states: the two
- * practices and their sub-services, the reply window and NDA note carried by
- * this form, and the studio address in settings. Nothing here asserts a
- * timeline, a price or a capability that Marketorr has not published.
+ * A masked, multi-line heading: each line rises out of its own mask, and the
+ * last `highlight` lines carry the brand gradient. The lines come from the
+ * section's content, so editors write them in the admin.
+ *
+ * @param {{ lines?: string[], highlight?: number, reduce: boolean }} props
  */
-const FAQS = [
-    {
-        q: 'What does Marketorr do?',
-        a: 'Two practices. Branding: identities that demand attention. UI/UX: interfaces engineered to convert.',
-    },
-    {
-        q: 'What sits under Branding?',
-        a: 'Brand Strategy, Brand Identity Design, Rebranding, Packaging Design, Motion Branding and Brand Guidelines.',
-    },
-    {
-        q: 'What sits under UI/UX?',
-        a: 'Website UI/UX Design, Mobile App UI/UX, SaaS Product Design, UX Research & Strategy, Wireframing & Prototyping and Design Systems.',
-    },
-    {
-        q: 'How soon will you reply?',
-        a: 'We reply within 24–48 hours of receiving an inquiry.',
-    },
-    {
-        q: 'What do you need to start?',
-        a: 'Your name and email, the project type, a budget range, and a note on your goals, timeline and what success looks like.',
-    },
-    {
-        q: 'Do you work with NDAs?',
-        a: 'Yes, inquiries are NDA-friendly, and we never pass your details on.',
-    },
-    {
-        q: 'Where is the studio?',
-        a: 'Remote-first and working worldwide, from Natore Tower, Plot 32D & E, Road 2, Sector 3, Uttara, Dhaka 1230.',
-    },
-];
+function TitleLines({ lines = [], highlight = 0, reduce }) {
+    const visible = lines.filter(Boolean);
+    const gradientFrom = visible.length - Number(highlight || 0);
+
+    return visible.map((line, index) => (
+        <span key={`${line}-${index}`} className="mask-line">
+            <motion.span variants={reduce ? undefined : omniLine} className={`mask-inner${index >= gradientFrom ? ' text-gradient' : ''}`}>
+                {line}
+            </motion.span>
+        </span>
+    ));
+}
 
 /** Small ruled chip that opens each block, as the section labels do elsewhere. */
 function BlockChip({ children }) {
@@ -170,7 +147,7 @@ const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
                     {String(index + 1).padStart(2, '0')}
                 </span>
                 <span className="min-w-0 flex-1 font-display text-[15px] font-bold uppercase tracking-[0.04em] text-[var(--ink)] md:text-[17px]">
-                    {item.q}
+                    {item.question}
                 </span>
                 <span
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--line)] transition-colors duration-100 group-hover:border-transparent"
@@ -192,7 +169,7 @@ const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
                 <p
                     className={`max-w-[58ch] pb-5 pl-[4.4rem] pr-8 text-[14px] leading-[22px] text-[var(--mute)] transition-[opacity,transform] duration-100 ease-out motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-0.5 opacity-0'}`}
                 >
-                    {item.a}
+                    {item.answer}
                 </p>
             </FastCollapse>
         </motion.div>
@@ -203,7 +180,7 @@ const FaqRow = memo(function FaqRow({ item, index, open, onToggle, reduce }) {
  * Keep accordion state inside the FAQ subtree. Toggling an answer must not
  * re-render the contact form and map above it.
  */
-function FaqList({ reduce }) {
+function FaqList({ items, reduce }) {
     const [openFaq, setOpenFaq] = useState(-1);
     const toggleFaq = useCallback((index) => {
         setOpenFaq((current) => (current === index ? -1 : index));
@@ -215,9 +192,9 @@ function FaqList({ reduce }) {
     // stay locked as answers open and close.
     return (
         <div className="flex flex-col gap-3 lg:h-full lg:justify-between">
-            {FAQS.map((item, index) => (
+            {items.map((item, index) => (
                 <FaqRow
-                    key={item.q}
+                    key={`${item.question}-${index}`}
                     item={item}
                     index={index}
                     open={openFaq === index}
@@ -389,16 +366,20 @@ function StudioClock() {
     );
 }
 
-export default function Contact({ heroHeading = false }) {
+export default function Contact({ content = {} }) {
     const reduce = useReducedMotion();
     const fx = useThemeMotion();
     const [showSuccess, setShowSuccess] = useState(false);
     const scrollReveal = reduce
         ? {}
         : { initial: 'hidden', whileInView: 'show', viewport: revealViewport };
-    const { settings } = usePage().props;
-    const { contactEmail, contactPhone, socials, address, directionsUrl } = settings;
+    const { settings, inquiryTypes = [] } = usePage().props;
+    const { contactEmail, contactPhone, address, directionsUrl } = settings;
     const { data, setData, post, processing, errors, clearErrors } = useForm({ ...BLANK_INQUIRY });
+    const budgets = (content.budgets ?? []).filter(Boolean);
+    // Only types the server accepts, in the order the editor listed them.
+    const projectTypes = (content.projectTypes ?? []).filter((type) => inquiryTypes.includes(type));
+    const successBody = String(content.successBody ?? '').replace('{email}', contactEmail ?? '');
 
     const submit = (e) => {
         e.preventDefault();
@@ -437,7 +418,7 @@ export default function Contact({ heroHeading = false }) {
                 {/* ---------- 1. Contact ---------- */}
                 <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_600px] lg:grid-rows-[auto_1fr_auto] lg:items-stretch lg:gap-x-10 lg:gap-y-0">
                     <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="lg:col-start-1 lg:row-start-1">
-                        <SectionLabel name="CONTACT" />
+                        {content.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                     </motion.div>
 
                     <div className="flex flex-col lg:col-start-1 lg:row-start-2">
@@ -447,27 +428,14 @@ export default function Contact({ heroHeading = false }) {
                             variants={reduce ? undefined : lineGroup}
                             className="display-lg mt-7 uppercase text-[var(--ink-strong)]"
                         >
-                            <span className="mask-line">
-                                <motion.span variants={reduce ? undefined : omniLine} className="mask-inner">
-                                    Have a project?
-                                </motion.span>
-                            </span>
-                            <span className="mask-line">
-                                <motion.span variants={reduce ? undefined : omniLine} className="mask-inner text-gradient">
-                                    Let&rsquo;s make
-                                </motion.span>
-                            </span>
-                            <span className="mask-line">
-                                <motion.span variants={reduce ? undefined : omniLine} className="mask-inner text-gradient">
-                                    it matter.
-                                </motion.span>
-                            </span>
+                            <TitleLines lines={content.titleLines} highlight={content.titleHighlight} reduce={reduce} />
                         </motion.h2>
 
-                        <motion.p {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-7 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
-                            Tell us about the work and we will come back with a clear direction, scope and next steps.
-                            Two practices: Branding, and UI/UX.
-                        </motion.p>
+                        {content.intro && (
+                            <motion.p {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-7 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                                {content.intro}
+                            </motion.p>
+                        )}
 
                         {/* Email / Phone / Location, each behind a tinted glyph tile. */}
                         <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-9 grid gap-6 sm:grid-cols-3">
@@ -479,7 +447,7 @@ export default function Contact({ heroHeading = false }) {
                                     </svg>
                                 </span>
                                 <span className="min-w-0">
-                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Email</span>
+                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{content.emailTileLabel}</span>
                                     <a href={`mailto:${contactEmail}`} className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{contactEmail}</a>
                                 </span>
                             </div>
@@ -492,7 +460,7 @@ export default function Contact({ heroHeading = false }) {
                                         </svg>
                                     </span>
                                     <span className="min-w-0">
-                                        <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Phone</span>
+                                        <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{content.phoneTileLabel}</span>
                                         <a href={`tel:${contactPhone.replace(/[^+\d]/g, '')}`} className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{contactPhone}</a>
                                     </span>
                                 </div>
@@ -506,7 +474,7 @@ export default function Contact({ heroHeading = false }) {
                                     </svg>
                                 </span>
                                 <span className="min-w-0">
-                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">Location</span>
+                                    <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]">{content.locationTileLabel}</span>
                                     <a href={directionsUrl} target="_blank" rel="noreferrer" className="link-underline btn-press mt-1 block break-words text-[14px] font-semibold text-[var(--ink)]">{address}</a>
                                 </span>
                             </div>
@@ -523,7 +491,7 @@ export default function Contact({ heroHeading = false }) {
                             rel="noreferrer"
                             className="link-underline btn-press mt-3 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)] lg:hidden"
                         >
-                            Open in Google Maps &rarr;
+                            {content.mapLinkLabel}
                         </a>
                     </div>
 
@@ -534,7 +502,7 @@ export default function Contact({ heroHeading = false }) {
                             rel="noreferrer"
                             className="link-underline btn-press mt-4 inline-block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
                         >
-                            Open in Google Maps &rarr;
+                            {content.mapLinkLabel}
                         </a>
                     </div>
 
@@ -562,12 +530,13 @@ export default function Contact({ heroHeading = false }) {
                                     </svg>
                                 </span>
                                 <h3 className="mt-6 font-display text-[clamp(1.3rem,1.8vw,26px)] font-extrabold tracking-[-0.01em] text-[var(--ink-strong)]">
-                                    Thank you &mdash; your inquiry is in
+                                    {content.successHeading}
                                 </h3>
-                                <p className="mt-3 max-w-[38ch] text-[14px] leading-[22px] text-[var(--mute)]">
-                                    We&rsquo;ve received your details and will reply within 24&ndash;48 hours.
-                                    A copy of the conversation will come from {contactEmail}.
-                                </p>
+                                {successBody && (
+                                    <p className="mt-3 max-w-[38ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                                        {successBody}
+                                    </p>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -578,28 +547,34 @@ export default function Contact({ heroHeading = false }) {
                                     data-cursor="cta"
                                     className="btn-press mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--field-line)] px-7 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink)] transition-colors duration-300 hover:border-transparent hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]"
                                 >
-                                    Send another message
+                                    {content.sendAnotherLabel}
                                 </button>
                             </div>
                         ) : (
                         <>
-                            <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
-                                <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
-                                Send us a message
-                            </span>
-                            <h3 className="mt-4 font-display text-[clamp(1.4rem,2vw,28px)] font-extrabold tracking-[-0.01em] text-[var(--ink-strong)]">
-                                Let&rsquo;s build something great
-                            </h3>
-                            <p className="mt-2 text-[14px] leading-[22px] text-[var(--mute)]">
-                                Share a few details and we will get in touch shortly.
-                            </p>
+                            {content.formLabel && (
+                                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                                    {content.formLabel}
+                                </span>
+                            )}
+                            {content.formHeading && (
+                                <h3 className="mt-4 font-display text-[clamp(1.4rem,2vw,28px)] font-extrabold tracking-[-0.01em] text-[var(--ink-strong)]">
+                                    {content.formHeading}
+                                </h3>
+                            )}
+                            {content.formIntro && (
+                                <p className="mt-2 text-[14px] leading-[22px] text-[var(--mute)]">
+                                    {content.formIntro}
+                                </p>
+                            )}
 
                             <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:flex-1 lg:grid-rows-[auto_auto_auto_1fr]">
                                 {[
-                                    { key: 'name', label: 'Your name*', type: 'text', ph: 'Jane Cooper' },
-                                    { key: 'email', label: 'Email*', type: 'email', ph: 'jane@company.com' },
-                                    { key: 'phone', label: 'Phone', type: 'tel', ph: '+880 1700 000000' },
-                                    { key: 'company', label: 'Company', type: 'text', ph: 'Company Inc.' },
+                                    { key: 'name', label: content.nameLabel, type: 'text', ph: content.namePlaceholder },
+                                    { key: 'email', label: content.emailLabel, type: 'email', ph: content.emailPlaceholder },
+                                    { key: 'phone', label: content.phoneLabel, type: 'tel', ph: content.phonePlaceholder },
+                                    { key: 'company', label: content.companyLabel, type: 'text', ph: content.companyPlaceholder },
                                 ].map((f) => (
                                     <label key={f.key} className="block">
                                         <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{f.label}</span>
@@ -615,35 +590,35 @@ export default function Contact({ heroHeading = false }) {
                                 ))}
 
                                 <div className="block">
-                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Budget range</span>
+                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{content.budgetLabel}</span>
                                     <ThemedSelect
-                                        label="Budget range"
+                                        label={content.budgetLabel ?? ''}
                                         value={data.budget}
                                         onChange={(value) => setData('budget', value)}
-                                        options={BUDGETS}
-                                        placeholder="Select a budget"
+                                        options={budgets}
+                                        placeholder={content.budgetPlaceholder ?? ''}
                                     />
                                 </div>
 
                                 <div className="block">
-                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Project type</span>
+                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{content.typeLabel}</span>
                                     <ThemedSelect
-                                        label="Project type"
+                                        label={content.typeLabel ?? ''}
                                         value={data.type}
                                         onChange={(value) => setData('type', value)}
-                                        options={TYPES}
-                                        placeholder="Select a project type"
+                                        options={projectTypes}
+                                        placeholder={content.typePlaceholder ?? ''}
                                     />
                                     {errors.type && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors.type}</span>}
                                 </div>
 
                                 <label className="flex flex-col sm:col-span-2 lg:min-h-0 lg:h-full">
-                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">Message*</span>
+                                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{content.messageLabel}</span>
                                     <textarea
                                         rows={4}
                                         value={data.message}
                                         onChange={(e) => setData('message', e.target.value)}
-                                        placeholder="Tell us about your goals, timeline, and what success looks like..."
+                                        placeholder={content.messagePlaceholder ?? ''}
                                         className="field-box w-full resize-none rounded-xl p-4 text-[14px] lg:min-h-[120px] lg:flex-1"
                                     />
                                     {errors.message && <span className="mt-1 block text-[12px] text-[#ff6b6b]">{errors.message}</span>}
@@ -657,178 +632,209 @@ export default function Contact({ heroHeading = false }) {
                                 className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60"
                                 style={{ background: BRAND_GRADIENT }}
                             >
-                                {processing ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />Sending...</>)
-                                    : (<>Send inquiry <span aria-hidden>&rarr;</span></>)}
+                                {processing ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />{content.sendingLabel}</>)
+                                    : (<>{content.submitLabel} <span aria-hidden>&rarr;</span></>)}
                             </button>
-                            <p className="mt-3 text-center text-[12px] text-[var(--ink-faint)]">
-                                No spam. NDA-friendly.
-                            </p>
+                            {content.formNote && (
+                                <p className="mt-3 text-center text-[12px] text-[var(--ink-faint)]">
+                                    {content.formNote}
+                                </p>
+                            )}
                         </>
                         )}
                     </motion.form>
                 </div>
 
-                {/* The landing page shows the contact block and stops there;
-                    the questions and the closing panel belong to the contact
-                    page itself. */}
-                {heroHeading && (
-                    <>
-                    {/* ---------- 2. Questions ---------- */}
-                    <div className="mt-28 grid gap-12 lg:mt-32 lg:grid-cols-[minmax(0,1fr)_534px] lg:items-stretch lg:gap-x-12 lg:gap-y-0">
-                        <motion.div
-                            {...scrollReveal}
-                            variants={reduce ? undefined : omniGroup}
-                            className="flex flex-col"
-                        >
-                            <BlockChip>FAQs</BlockChip>
-                            <motion.h2
-                                variants={reduce ? undefined : lineGroup}
-                                className="display-lg mt-4 uppercase text-[var(--ink-strong)]"
-                            >
-                                <span className="mask-line">
-                                    <motion.span variants={reduce ? undefined : omniLine} className="mask-inner">
-                                        Clear answers
-                                    </motion.span>
-                                </span>
-                                <span className="mask-line">
-                                    <motion.span variants={reduce ? undefined : omniLine} className="mask-inner text-gradient">
-                                        before we start
-                                    </motion.span>
-                                </span>
-                            </motion.h2>
-                            <motion.span variants={reduce ? undefined : omniRise} className="mt-4 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
-                            <motion.p variants={reduce ? undefined : omniRise} className="mt-5 max-w-[44ch] text-[14px] leading-[22px] text-[var(--mute)]">
-                                What we do, what we need from you, and how quickly you will hear back.
-                            </motion.p>
-
-                            {/* Flexible rail spacer: absorbs FAQ growth so the
-                                assist box below glides with the FAQ column
-                                while the 40px rhythm above it never shrinks. */}
-                            <div className="hidden flex-1 lg:block" aria-hidden />
-                            <motion.div variants={reduce ? undefined : omniRise} className="mt-10 flex items-start gap-5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6">
-                                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-md border border-[var(--line)] text-[var(--ink)]" aria-hidden>
-                                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-4.2A8.4 8.4 0 1 1 21 11.5Z" />
-                                    </svg>
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block font-display text-[15px] font-bold uppercase tracking-[0.03em] text-[var(--ink)]">Still have questions?</span>
-                                    <span className="mt-1 block text-[13px] text-[var(--mute)]">Send the details and we will come back to you.</span>
-                                    <a href="#project-inquiry" data-cursor="cta" className="link-underline btn-press mt-4 inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-gradient">
-                                        Contact us <span aria-hidden>&rarr;</span>
-                                    </a>
-                                </span>
-                            </motion.div>
-                        </motion.div>
-
-                        <FaqList reduce={reduce} />
-                    </div>
-
-                    {/* ---------- 3. Let's connect ---------- */}
-                    <div className="mt-28 lg:mt-32">
-                        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_534px] lg:items-start lg:gap-x-12 lg:gap-y-0">
-                            <motion.div
-                                {...scrollReveal}
-                                variants={reduce ? undefined : omniGroup}
-                                className="flex flex-col"
-                            >
-                                <BlockChip>Let&rsquo;s connect</BlockChip>
-                                <motion.h2
-                                    variants={reduce ? undefined : lineGroup}
-                                    className="display-lg mt-4 uppercase text-[var(--ink-strong)]"
-                                >
-                                    <span className="mask-line">
-                                        <motion.span variants={reduce ? undefined : omniLine} className="mask-inner">
-                                            Let&rsquo;s build
-                                        </motion.span>
-                                    </span>
-                                    <span className="mask-line">
-                                        <motion.span variants={reduce ? undefined : omniLine} className="mask-inner text-gradient">
-                                            something
-                                        </motion.span>
-                                    </span>
-                                </motion.h2>
-                                <motion.span variants={reduce ? undefined : omniRise} className="mt-6 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
-                                <motion.p variants={reduce ? undefined : omniRise} className="mt-6 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
-                                    We&rsquo;re currently available for select projects and collaborations. Let&rsquo;s create digital experiences that leave a lasting impact.
-                                </motion.p>
-                            </motion.div>
-
-                            <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8 lg:mt-[44px]">
-                                <ul className="list-none border-b border-[var(--line)]">
-                                    {[
-                                        { label: 'LinkedIn', href: socials.linkedin },
-                                        { label: 'Behance', href: socials.behance },
-                                        { label: 'Dribbble', href: socials.dribbble },
-                                        { label: 'Instagram', href: socials.instagram },
-                                    ].filter((row) => row.href).map((row) => (
-                                        <li key={row.label} className="border-b border-[var(--line)] last:border-b-0">
-                                            <a
-                                                href={row.href}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                data-social-platform={row.label}
-                                                className="group flex items-center gap-4 py-4 text-[var(--ink)]"
-                                            >
-                                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--line)] text-[var(--ink)]" aria-hidden>
-                                                    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                                                        {row.label === 'LinkedIn' && (
-                                                            <>
-                                                                <rect x="3" y="3" width="18" height="18" rx="2.5" />
-                                                                <path d="M7.5 10v7M7.5 7.25v.1M11.5 17v-4a3 3 0 0 1 6 0v4M11.5 10v7" />
-                                                            </>
-                                                        )}
-                                                        {row.label === 'Behance' && (
-                                                            <>
-                                                                <path d="M3.5 6.5h5a3 3 0 0 1 0 6h-5zM3.5 12.5h5.75a3.25 3.25 0 0 1 0 6.5H3.5zM14.5 7h5" />
-                                                                <path d="M20.5 15.5h-7a3.5 3.5 0 1 0 6.35 2" />
-                                                            </>
-                                                        )}
-                                                        {row.label === 'Dribbble' && (
-                                                            <>
-                                                                <circle cx="12" cy="12" r="9" />
-                                                                <path d="M7.2 4.4c3.1 3.8 5.8 8.2 7.5 14.8M3.2 10.4c4.7.1 9.2-1.2 12.5-4.1M5.4 17.8c2.5-3.6 6.7-5.4 15.4-4.4" />
-                                                            </>
-                                                        )}
-                                                        {row.label === 'Instagram' && (
-                                                            <>
-                                                                <rect x="3" y="3" width="18" height="18" rx="5" />
-                                                                <circle cx="12" cy="12" r="4" />
-                                                                <circle cx="17.4" cy="6.7" r=".8" fill="currentColor" stroke="none" />
-                                                            </>
-                                                        )}
-                                                    </svg>
-                                                </span>
-                                                <span className="min-w-0 flex-1 truncate text-[15px]">{row.label}</span>
-                                                <span className="text-[13px] text-[var(--ink-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:text-[var(--ink)]" aria-hidden>&#8599;</span>
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <a
-                                    href="#project-inquiry"
-                                    data-cursor="cta"
-                                    className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white"
-                                    style={{ background: BRAND_GRADIENT }}
-                                >
-                                    Start a project <span aria-hidden>&rarr;</span>
-                                </a>
-                            </motion.div>
-                        </div>
-
-                        {/* Reply time and studio time only: Marketorr publishes no
-                            availability status, so none is claimed here. */}
-                        <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-12 flex flex-col gap-4 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between lg:mt-14">
-                            <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
-                                Marketorr &middot; <span className="text-gradient">We reply within 24&ndash;48 hours</span>
-                            </span>
-                            <StudioClock />
-                        </motion.div>
-                    </div>
-                    </>
-                )}
             </div>
         </section>
         </>
+    );
+}
+
+/**
+ * Shared setup for the Contact page's follow-on sections: the same reveal and
+ * reduced-motion handling as the main Contact block.
+ */
+function useSectionReveal() {
+    const reduce = useReducedMotion();
+    const scrollReveal = reduce
+        ? {}
+        : { initial: 'hidden', whileInView: 'show', viewport: revealViewport };
+
+    return { reduce, scrollReveal };
+}
+
+/**
+ * The Contact page's questions: heading, intro and a help box beside the
+ * accordion. Its top padding keeps the same gap below the Contact block that
+ * the page has always had.
+ *
+ * @param {{ content?: { label?: string, titleLines?: string[], titleHighlight?: number, intro?: string, items?: Array<{ question?: string, answer?: string }>, helpHeading?: string, helpBody?: string, helpLinkLabel?: string } }} props
+ */
+export function ContactFaq({ content = {} }) {
+    const { reduce, scrollReveal } = useSectionReveal();
+    const faqs = (content.items ?? []).filter((item) => item?.question);
+
+    return (
+        <section className="noise relative overflow-hidden bg-[var(--bg)] pt-12">
+            <div className="container-x relative">
+                        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_534px] lg:items-stretch lg:gap-x-12 lg:gap-y-0">
+                <motion.div
+                    {...scrollReveal}
+                    variants={reduce ? undefined : omniGroup}
+                    className="flex flex-col"
+                >
+                    {content.label && <BlockChip>{content.label}</BlockChip>}
+                    <motion.h2
+                        variants={reduce ? undefined : lineGroup}
+                        className="display-lg mt-4 uppercase text-[var(--ink-strong)]"
+                    >
+                        <TitleLines lines={content.titleLines} highlight={content.titleHighlight} reduce={reduce} />
+                    </motion.h2>
+                    <motion.span variants={reduce ? undefined : omniRise} className="mt-4 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                    {content.intro && (
+                        <motion.p variants={reduce ? undefined : omniRise} className="mt-5 max-w-[44ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                            {content.intro}
+                        </motion.p>
+                    )}
+
+                    {/* Flexible rail spacer: absorbs FAQ growth so the
+                        assist box below glides with the FAQ column
+                        while the 40px rhythm above it never shrinks. */}
+                    <div className="hidden flex-1 lg:block" aria-hidden />
+                    <motion.div variants={reduce ? undefined : omniRise} className="mt-10 flex items-start gap-5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6">
+                        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-md border border-[var(--line)] text-[var(--ink)]" aria-hidden>
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-4.2A8.4 8.4 0 1 1 21 11.5Z" />
+                            </svg>
+                        </span>
+                        <span className="min-w-0">
+                            <span className="block font-display text-[15px] font-bold uppercase tracking-[0.03em] text-[var(--ink)]">{content.helpHeading}</span>
+                            {content.helpBody && <span className="mt-1 block text-[13px] text-[var(--mute)]">{content.helpBody}</span>}
+                            {content.helpLinkLabel && (
+                                <a href="#project-inquiry" data-cursor="cta" className="link-underline btn-press mt-4 inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-gradient">
+                                    {content.helpLinkLabel} <span aria-hidden>&rarr;</span>
+                                </a>
+                            )}
+                        </span>
+                    </motion.div>
+                </motion.div>
+
+                <FaqList items={faqs} reduce={reduce} />
+            </div>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * The Contact page's closing block: heading and copy beside the social links
+ * and a call to action, then the reply-time line and studio clock.
+ *
+ * @param {{ content?: { label?: string, titleLines?: string[], titleHighlight?: number, body?: string, buttonLabel?: string, closingNote?: string } }} props
+ */
+export function ContactConnect({ content = {} }) {
+    const { reduce, scrollReveal } = useSectionReveal();
+    const { settings } = usePage().props;
+    const { socials } = settings;
+
+    return (
+        <section className="noise relative overflow-hidden bg-[var(--bg)] pb-16 pt-28 lg:pb-20 lg:pt-32">
+            <div className="container-x relative">
+                        <div>
+                <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_534px] lg:items-start lg:gap-x-12 lg:gap-y-0">
+                    <motion.div
+                        {...scrollReveal}
+                        variants={reduce ? undefined : omniGroup}
+                        className="flex flex-col"
+                    >
+                        {content.label && <BlockChip>{content.label}</BlockChip>}
+                        <motion.h2
+                            variants={reduce ? undefined : lineGroup}
+                            className="display-lg mt-4 uppercase text-[var(--ink-strong)]"
+                        >
+                            <TitleLines lines={content.titleLines} highlight={content.titleHighlight} reduce={reduce} />
+                        </motion.h2>
+                        <motion.span variants={reduce ? undefined : omniRise} className="mt-6 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+                        {content.body && (
+                            <motion.p variants={reduce ? undefined : omniRise} className="mt-6 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
+                                {content.body}
+                            </motion.p>
+                        )}
+                    </motion.div>
+
+                    <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8 lg:mt-[44px]">
+                        <ul className="list-none border-b border-[var(--line)]">
+                            {[
+                                { label: 'LinkedIn', href: socials.linkedin },
+                                { label: 'Behance', href: socials.behance },
+                                { label: 'Dribbble', href: socials.dribbble },
+                                { label: 'Instagram', href: socials.instagram },
+                            ].filter((row) => row.href).map((row) => (
+                                <li key={row.label} className="border-b border-[var(--line)] last:border-b-0">
+                                    <a
+                                        href={row.href}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        data-social-platform={row.label}
+                                        className="group flex items-center gap-4 py-4 text-[var(--ink)]"
+                                    >
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--line)] text-[var(--ink)]" aria-hidden>
+                                            <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                                                {row.label === 'LinkedIn' && (
+                                                    <>
+                                                        <rect x="3" y="3" width="18" height="18" rx="2.5" />
+                                                        <path d="M7.5 10v7M7.5 7.25v.1M11.5 17v-4a3 3 0 0 1 6 0v4M11.5 10v7" />
+                                                    </>
+                                                )}
+                                                {row.label === 'Behance' && (
+                                                    <>
+                                                        <path d="M3.5 6.5h5a3 3 0 0 1 0 6h-5zM3.5 12.5h5.75a3.25 3.25 0 0 1 0 6.5H3.5zM14.5 7h5" />
+                                                        <path d="M20.5 15.5h-7a3.5 3.5 0 1 0 6.35 2" />
+                                                    </>
+                                                )}
+                                                {row.label === 'Dribbble' && (
+                                                    <>
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M7.2 4.4c3.1 3.8 5.8 8.2 7.5 14.8M3.2 10.4c4.7.1 9.2-1.2 12.5-4.1M5.4 17.8c2.5-3.6 6.7-5.4 15.4-4.4" />
+                                                    </>
+                                                )}
+                                                {row.label === 'Instagram' && (
+                                                    <>
+                                                        <rect x="3" y="3" width="18" height="18" rx="5" />
+                                                        <circle cx="12" cy="12" r="4" />
+                                                        <circle cx="17.4" cy="6.7" r=".8" fill="currentColor" stroke="none" />
+                                                    </>
+                                                )}
+                                            </svg>
+                                        </span>
+                                        <span className="min-w-0 flex-1 truncate text-[15px]">{row.label}</span>
+                                        <span className="text-[13px] text-[var(--ink-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:text-[var(--ink)]" aria-hidden>&#8599;</span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                        <a
+                            href="#project-inquiry"
+                            data-cursor="cta"
+                            className="btn-press btn-3d mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full text-[13px] font-bold uppercase tracking-[0.18em] text-white"
+                            style={{ background: BRAND_GRADIENT }}
+                        >
+                            {content.buttonLabel} <span aria-hidden>&rarr;</span>
+                        </a>
+                    </motion.div>
+                </div>
+
+                {/* Reply time and studio time only: Marketorr publishes no
+                    availability status, so none is claimed here. */}
+                <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-12 flex flex-col gap-4 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between lg:mt-14">
+                    <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">
+                        Marketorr{content.closingNote && <> &middot; <span className="text-gradient">{content.closingNote}</span></>}
+                    </span>
+                    <StudioClock />
+                </motion.div>
+            </div>
+            </div>
+        </section>
     );
 }

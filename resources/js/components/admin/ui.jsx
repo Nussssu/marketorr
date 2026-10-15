@@ -40,6 +40,7 @@ export function Button({ as = 'button', variant = 'primary', className = '', ...
         secondary: 'border border-[var(--field-line)] text-[var(--ink)] hover:bg-[var(--chip)]',
         danger: 'border border-[#ff6b6b]/40 text-[#ff6b6b] hover:bg-[#ff6b6b]/10',
         ghost: 'text-[var(--ink-faint)] hover:text-[var(--ink)]',
+        dangerGhost: 'text-[#ff6b6b] hover:opacity-80',
     }[variant];
 
     const style = variant === 'primary' ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined;
@@ -64,7 +65,7 @@ export function Field({ label, error, hint, required = false, children, classNam
 }
 
 export const INPUT_CLASS =
-    'w-full rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors';
+    'w-full rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[#1BE2EB] focus:border-[#1BE2EB] transition-colors';
 
 export function Input({ className = '', ...props }) {
     return <input className={`${INPUT_CLASS} ${className}`} {...props} />;
@@ -90,7 +91,7 @@ export function ColorInput({ value, onChange, ...props }) {
                 type="color"
                 value={/^#[0-9a-fA-F]{6}$/.test(value ?? '') ? value : '#891FFB'}
                 onChange={(e) => onChange(e.target.value.toUpperCase())}
-                className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-[var(--field-line)] bg-[var(--bg)] p-1 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-[var(--field-line)] bg-[var(--bg)] p-1 focus:outline-none focus:ring-1 focus:ring-[#1BE2EB] focus:border-[#1BE2EB] transition-colors"
                 aria-label="Colour picker"
             />
             <Input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="#891FFB" {...props} />

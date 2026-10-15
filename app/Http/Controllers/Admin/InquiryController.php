@@ -9,7 +9,11 @@ use App\Models\ContactSubmission;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -36,8 +40,13 @@ class InquiryController extends Controller
                 'company' => $inquiry->company,
                 'type' => $inquiry->type->value,
                 'budget' => $inquiry->budget,
+                'message' => $inquiry->message,
                 'sourcePage' => $inquiry->source_page,
+                'adminNotes' => $inquiry->admin_notes,
+                'respondedAt' => $inquiry->responded_at?->format('j M Y, H:i'),
                 'status' => $inquiry->status->value,
+                'ipAddress' => $inquiry->ip_address,
+                'userAgent' => $inquiry->user_agent,
                 'createdAt' => $inquiry->created_at?->format('j M Y, H:i'),
             ]);
 
@@ -135,6 +144,123 @@ class InquiryController extends Controller
 
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    public function importCsv(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'csv' => ['required', File::types(['csv', 'txt'])->max(5 * 1024)],
+        ]);
+
+        $handle = fopen($validated['csv']->getRealPath(), 'rb');
+
+        if ($handle === false) {
+            throw ValidationException::withMessages([
+                'csv' => 'The CSV file could not be read.',
+            ]);
+        }
+
+        try {
+            $header = fgetcsv($handle, null, ',', '"', '');
+
+            if ($header === false) {
+                throw ValidationException::withMessages([
+                    'csv' => 'The CSV file is empty.',
+                ]);
+            }
+
+            $header = array_map(
+                fn (string $column): string => str($column)
+                    ->replaceFirst("\xEF\xBB\xBF", '')
+                    ->trim()
+                    ->lower()
+                    ->replace([' ', '-'], '_')
+                    ->value(),
+                $header,
+            );
+
+            $missingColumns = array_diff(['name', 'email', 'type', 'message'], $header);
+
+            if ($missingColumns !== []) {
+                throw ValidationException::withMessages([
+                    'csv' => 'Missing required columns: '.implode(', ', $missingColumns).'.',
+                ]);
+            }
+
+            $records = [];
+            $lineNumber = 1;
+
+            while (($row = fgetcsv($handle, null, ',', '"', '')) !== false) {
+                $lineNumber++;
+
+                if (count(array_filter($row, fn (?string $value): bool => trim((string) $value) !== '')) === 0) {
+                    continue;
+                }
+
+                if (count($row) !== count($header)) {
+                    throw ValidationException::withMessages([
+                        'csv' => "Row {$lineNumber} does not match the CSV header.",
+                    ]);
+                }
+
+                $record = array_combine($header, array_map(
+                    fn (?string $value): string => trim((string) $value),
+                    $row,
+                ));
+
+                $validator = Validator::make($record, [
+                    'name' => ['required', 'string', 'max:255'],
+                    'email' => ['required', 'email', 'max:255'],
+                    'phone' => ['nullable', 'string', 'max:255'],
+                    'company' => ['nullable', 'string', 'max:255'],
+                    'type' => ['required', Rule::in(InquiryType::values())],
+                    'budget' => ['nullable', 'string', 'max:255'],
+                    'message' => ['required', 'string'],
+                    'source_page' => ['nullable', 'string', 'max:255'],
+                    'status' => ['nullable', Rule::in(InquiryStatus::values())],
+                ]);
+
+                if ($validator->fails()) {
+                    throw ValidationException::withMessages([
+                        'csv' => "Row {$lineNumber}: ".$validator->errors()->first(),
+                    ]);
+                }
+
+                $data = $validator->validated();
+                $records[] = [
+                    ...$data,
+                    'phone' => $data['phone'] ?? null,
+                    'company' => $data['company'] ?? null,
+                    'budget' => $data['budget'] ?? null,
+                    'source_page' => $data['source_page'] ?? null,
+                    'status' => ($data['status'] ?? '') !== '' ? $data['status'] : InquiryStatus::New->value,
+                ];
+
+                if (count($records) > 5000) {
+                    throw ValidationException::withMessages([
+                        'csv' => 'A CSV import is limited to 5,000 leads.',
+                    ]);
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        if ($records === []) {
+            throw ValidationException::withMessages([
+                'csv' => 'The CSV file does not contain any lead rows.',
+            ]);
+        }
+
+        DB::transaction(function () use ($records): void {
+            foreach ($records as $record) {
+                ContactSubmission::create($record);
+            }
+        });
+
+        $count = count($records);
+
+        return back()->with('success', "{$count} lead".($count === 1 ? '' : 's').' imported.');
     }
 
     public function destroy(ContactSubmission $inquiry): RedirectResponse

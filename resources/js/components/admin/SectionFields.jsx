@@ -1,3 +1,4 @@
+import MediaPickerField from './MediaPickerField';
 import {
     ColorInput,
     Field,
@@ -36,7 +37,15 @@ function Repeater({ field, values, onChange }) {
                         </button>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        {field.item_fields.map((itemField) => (
+                        {field.item_fields.map((itemField) => itemField.type === 'image' ? (
+                            <MediaPickerField
+                                key={itemField.name}
+                                label={itemField.label}
+                                value={row[itemField.name] ?? ''}
+                                onChange={(url) => update(index, itemField.name, url)}
+                                className="sm:col-span-2"
+                            />
+                        ) : (
                             <Field
                                 key={itemField.name}
                                 label={itemField.label}
@@ -126,6 +135,18 @@ export default function SectionFields({ fields, content, onChange, errors = {} }
                                 onChange={(e) => set(field.name, e.target.value)}
                             />
                         </Field>
+                    );
+                }
+
+                if (field.type === 'image') {
+                    return (
+                        <MediaPickerField
+                            key={field.name}
+                            label={field.label}
+                            value={value ?? ''}
+                            error={error}
+                            onChange={(url) => set(field.name, url)}
+                        />
                     );
                 }
 

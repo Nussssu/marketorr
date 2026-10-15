@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Page;
 use App\Models\Project;
 use App\Services\UiuxShowcase;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ class ProjectController extends Controller
     public function index(): Response
     {
         return Inertia::render('Work/Index', [
+            'page' => Page::forSlug('work')?->toPublicArray(),
             'groups' => Project::workGroupSummaries(),
         ]);
     }

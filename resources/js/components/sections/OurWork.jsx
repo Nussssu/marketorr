@@ -10,6 +10,7 @@ import { useTapIntent } from '../../lib/tapIntent';
 import { GradientTitle, SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ProgressionBands from './ProgressionBands';
+import { gradientLines } from '../../lib/headingLines';
 
 /** Every project card shares this ratio, so the strip is one set of equal objects. */
 const CARD_RATIO = 16 / 10;
@@ -699,7 +700,7 @@ function WorkCarousel({ projects, glow, controlledPosition }) {
     );
 }
 
-export default function OurWork({ glow, projects = [] }) {
+export default function OurWork({ content = {}, glow, projects = [] }) {
     const stageRef = useRef(null);
     const desktopStage = useDesktopScrollStage();
     const lastSlide = projects.length;
@@ -712,13 +713,15 @@ export default function OurWork({ glow, projects = [] }) {
     return (
         <section id="work" className="relative overflow-x-clip bg-[var(--bg-soft)] section-pad">
             <div className="container-x relative">
-                <SectionLabel name="BRANDING WORK" />
+                {content.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                 {/* intro */}
                 <div className="mt-10 md:mt-0 lg:py-6">
-                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={['Brands that', 'create impact.']} highlightedLines={[1]} />
-                    <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
-                        Selected branding work: identities, logos, packaging and the campaigns that carry them.
-                    </p>
+                    <RevealText as="h2" className="display-lg uppercase text-[var(--ink-strong)]" lines={content.titleLines ?? []} highlightedLines={gradientLines(content.titleLines, content.titleHighlight)} />
+                    {content.intro && (
+                        <p className="mt-4 max-w-lg text-[15px] text-[var(--mute)]">
+                            {content.intro}
+                        </p>
+                    )}
                 </div>
             </div>
 

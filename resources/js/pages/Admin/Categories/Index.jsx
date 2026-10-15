@@ -20,7 +20,7 @@ function Row({ category, depth = 0, onDelete }) {
             <td className="py-3 text-right">
                 <div className="flex justify-end gap-3">
                     <Button as="link" variant="ghost" href={`/admin/categories/${category.id}/edit`}>Edit</Button>
-                    <Button variant="ghost" onClick={() => onDelete(category)}>Delete</Button>
+                    <Button variant="dangerGhost" onClick={() => onDelete(category)}>Delete</Button>
                 </div>
             </td>
         </tr>

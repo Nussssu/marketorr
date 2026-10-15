@@ -10,7 +10,7 @@ import RecognitionStrip from './RecognitionStrip';
  */
 export default function Recognition({ content }) {
     const items = (content?.items ?? []).filter((item) => item?.name && item?.image);
-    const heading = content?.heading || 'Featured and recognised';
+    const heading = content?.heading ?? '';
 
     if (items.length === 0) return null;
 
@@ -25,7 +25,7 @@ export default function Recognition({ content }) {
                 <RevealText
                     as="h2"
                     className="display-md mt-8 max-w-3xl uppercase text-[var(--ink-strong)]"
-                    lines={[heading]}
+                    lines={heading ? [heading] : []}
                 />
             </div>
             <div className="mt-10 md:mt-14">

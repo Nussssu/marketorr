@@ -6,6 +6,10 @@ import RevealText from '../motion/RevealText';
 import { SectionLabel } from '../ui/primitives';
 import ScrollHeading from '../motion/ScrollHeading';
 import Stage from '../decor/Stage';
+import { gradientLines } from '../../lib/headingLines';
+
+/** Tagline phrase colours, in order: purple, blue, cyan. */
+const TAGLINE_COLORS = ['#891FFB', '#507AF4', '#1BE2EB'];
 
 /** Accent bar under each stat block, repeating if more metrics are configured. */
 const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
@@ -53,7 +57,7 @@ function ManifestoWord({ word, progress, start, end, accent }) {
  * word by word on scroll. The About page opens with the headline version
  * instead, so the two no longer repeat each other.
  */
-function ManifestoAbout({ text, metrics, compactTop }) {
+function ManifestoAbout({ label, text, metrics, tagline, compactTop }) {
     const ref = useRef(null);
     const reduce = useReducedMotion();
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start 85%', 'end 45%'] });
@@ -70,8 +74,8 @@ function ManifestoAbout({ text, metrics, compactTop }) {
             </div>
 
             <div className="container-x relative">
-                <SectionLabel name="ABOUT" />
-                <h2 className="sr-only">About Marketorr</h2>
+                {label && <SectionLabel name={label.toUpperCase()} />}
+                <h2 className="sr-only">{label}</h2>
 
                 <p className="sr-only">{text}</p>
                 <p
@@ -98,11 +102,15 @@ function ManifestoAbout({ text, metrics, compactTop }) {
                 </p>
 
                 <div className="mt-10 flex flex-wrap items-center justify-between gap-6">
-                    <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em]">
-                        <span className="text-[#891FFB]">Creative thinking. </span>
-                        <span className="text-[#507AF4]">Digital execution. </span>
-                        <span className="text-[#1BE2EB]">Measurable results.</span>
-                    </p>
+                    {tagline.length > 0 && (
+                        <p className="font-display text-[12px] font-bold uppercase tracking-[0.22em]">
+                            {tagline.map((phrase, index) => (
+                                <span key={`${phrase}-${index}`} style={{ color: TAGLINE_COLORS[index % TAGLINE_COLORS.length] }}>
+                                    {phrase}{index < tagline.length - 1 ? ' ' : ''}
+                                </span>
+                            ))}
+                        </p>
+                    )}
                     <div className="flex flex-wrap gap-8">
                         <Link href="/about" data-cursor="explore" className="link-underline btn-press inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
                             Our story →
@@ -134,9 +142,10 @@ export default function About({ variant = 'hero', heroHeading = false, compactTo
     const { settings } = usePage().props;
     const text = content?.text || settings.about.text;
     const metrics = content?.metrics?.length ? content.metrics : settings.about.metrics;
+    const tagline = (content?.tagline ?? []).filter(Boolean);
 
     if (variant === 'manifesto') {
-        return <ManifestoAbout text={text} metrics={metrics} compactTop={compactTop} />;
+        return <ManifestoAbout label={content?.heading} text={text} metrics={metrics} tagline={tagline} compactTop={compactTop} />;
     }
 
     return (
@@ -153,15 +162,15 @@ export default function About({ variant = 'hero', heroHeading = false, compactTo
             </div>
 
             <div className="container-x relative">
-                <SectionLabel name="ABOUT" />
+                {content?.heading && <SectionLabel name={content.heading.toUpperCase()} />}
                 <div className="mt-10 grid gap-12 lg:grid-cols-12">
                     <div className="lg:col-span-7">
                         <ScrollHeading enabled={heroHeading}>
                             <RevealText
                                 as="h2"
                                 className="display-lg uppercase text-[var(--ink-strong)]"
-                                lines={['We build brands', 'that move people.']}
-                                highlightedLines={[1]}
+                                lines={content?.titleLines ?? []}
+                                highlightedLines={gradientLines(content?.titleLines, content?.titleHighlight)}
                             />
                         </ScrollHeading>
                         <motion.div
@@ -184,14 +193,20 @@ export default function About({ variant = 'hero', heroHeading = false, compactTo
                         >
                             {text}
                         </motion.p>
-                        <p className="mt-5 font-display text-[12px] font-bold uppercase tracking-[0.22em]">
-                            <span className="text-[#891FFB]">Creative thinking. </span>
-                            <span className="text-[#507AF4]">Digital execution. </span>
-                            <span className="text-[#1BE2EB]">Measurable results.</span>
-                        </p>
-                        <Link href="/services" data-cursor="explore" className="link-underline btn-press mt-6 inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
-                            Explore our services →
-                        </Link>
+                        {tagline.length > 0 && (
+                            <p className="mt-5 font-display text-[12px] font-bold uppercase tracking-[0.22em]">
+                                {tagline.map((phrase, index) => (
+                                    <span key={`${phrase}-${index}`} style={{ color: TAGLINE_COLORS[index % TAGLINE_COLORS.length] }}>
+                                        {phrase}{index < tagline.length - 1 ? ' ' : ''}
+                                    </span>
+                                ))}
+                            </p>
+                        )}
+                        {content?.linkLabel && (
+                            <Link href={content.linkUrl || '/services'} data-cursor="explore" className="link-underline btn-press mt-6 inline-block text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink)]">
+                                {content.linkLabel}
+                            </Link>
+                        )}
                     </div>
                 </div>
 

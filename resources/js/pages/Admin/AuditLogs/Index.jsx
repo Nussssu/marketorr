@@ -35,13 +35,13 @@ export default function AuditLogsIndex({ logs = [], filters = {}, stats = {} }) 
     const getLevelBadge = (level, status) => {
         switch (level) {
             case 'success':
-                return <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">{status || 'Success'}</span>;
+                return <span className="inline-flex items-center rounded-md border border-[#1BE2EB]/40 bg-[#1BE2EB]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1BE2EB]">{status || 'Success'}</span>;
             case 'warning':
-                return <span className="inline-flex items-center rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/20">{status || 'Warning'}</span>;
+                return <span className="inline-flex items-center rounded-md border border-[#507AF4]/40 bg-[#507AF4]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6F91FF]">{status || 'Warning'}</span>;
             case 'error':
-                return <span className="inline-flex items-center rounded-md bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-400 border border-rose-500/20">{status || 'Error'}</span>;
+                return <span className="inline-flex items-center rounded-md border border-[#891FFB]/40 bg-[#891FFB]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#A855F7]">{status || 'Error'}</span>;
             default:
-                return <span className="inline-flex items-center rounded-md bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">{status || 'Info'}</span>;
+                return <span className="inline-flex items-center rounded-md border border-[#507AF4]/40 bg-[#507AF4]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6F91FF]">{status || 'Info'}</span>;
         }
     };
 
@@ -61,15 +61,15 @@ export default function AuditLogsIndex({ logs = [], filters = {}, stats = {} }) 
                 </div>
                 <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">Lead Activity</p>
-                    <p className="mt-1 font-display text-2xl font-black text-cyan-400">{stats.leads ?? 0}</p>
+                    <p className="mt-1 font-display text-2xl font-black text-[#1BE2EB]">{stats.leads ?? 0}</p>
                 </div>
                 <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">System & Mail</p>
-                    <p className="mt-1 font-display text-2xl font-black text-violet-400">{stats.system ?? 0}</p>
+                    <p className="mt-1 font-display text-2xl font-black text-[#A855F7]">{stats.system ?? 0}</p>
                 </div>
                 <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">User Changes</p>
-                    <p className="mt-1 font-display text-2xl font-black text-emerald-400">{stats.users ?? 0}</p>
+                    <p className="mt-1 font-display text-2xl font-black text-[#6F91FF]">{stats.users ?? 0}</p>
                 </div>
             </div>
 
@@ -99,7 +99,7 @@ export default function AuditLogsIndex({ logs = [], filters = {}, stats = {} }) 
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Filter audit logs..."
-                            className="w-64 rounded-lg border border-[var(--field-line)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder-[var(--mute)] focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                            className="w-64 rounded-lg border border-[var(--field-line)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder-[var(--mute)] focus:outline-none focus:ring-1 focus:ring-[#1BE2EB] focus:border-[#1BE2EB] transition-colors"
                         />
                         {search && (
                             <button

@@ -4,18 +4,23 @@ import { useThemeMotion } from '../../lib/theme';
 import CinematicScene from '../motion/CinematicScene';
 import SectionAppear from '../motion/SectionAppear';
 import About from './About';
-import Contact from './Contact';
+import Awards from './Awards';
+import ClosingPanel from './ClosingPanel';
+import Contact, { ContactConnect, ContactFaq } from './Contact';
 import Cta from './Cta';
 import Faq from './Faq';
 import Features from './Features';
 import Hero from './Hero';
 import Marquee from './Marquee';
+import MissionVision from './MissionVision';
 import OurWork from './OurWork';
 import Process from './Process';
 import Recognition from './Recognition';
 import Results from './Results';
 import RichText from './RichText';
 import Services from './Services';
+import Story from './Story';
+import Team from './Team';
 import Testimonials from './Testimonials';
 import UiuxWork from './UiuxWork';
 
@@ -53,23 +58,31 @@ const WIDGETS = {
     services: {
         scene: SCENE.Depth,
         render: (section, { props }) => (
-            <Services subservices={props.subservices ?? []} showTransition={false} scrollAnimation />
+            <Services content={section.content} subservices={props.subservices ?? []} showTransition={false} scrollAnimation />
         ),
     },
     work: {
         scene: SCENE.None,
         render: (section, { props, fx }) => (
-            <OurWork glow={fx.barGlow} projects={props.featuredProjects ?? []} />
+            <OurWork content={section.content} glow={fx.barGlow} projects={props.featuredProjects ?? []} />
         ),
     },
     uiux_work: {
         scene: SCENE.None,
-        render: (section, { props }) => <UiuxWork projects={props.uiuxShowcase ?? []} />,
+        render: (section, { props }) => <UiuxWork content={section.content} projects={props.uiuxShowcase ?? []} />,
     },
+    // The Contact block, its FAQ and Let's connect are separate sections in the
+    // admin, but consecutive ones share one scene so they read as the single
+    // stage they always were.
     contact: {
         scene: SCENE.Flat,
-        render: (section, { standalone }) => <Contact heroHeading={standalone} />,
+        group: 'contact',
+        render: (section) => <Contact content={section.content} />,
     },
+    contact_faq: { scene: SCENE.Flat, group: 'contact', render: (section) => <ContactFaq content={section.content} /> },
+    contact_connect: { scene: SCENE.Flat, group: 'contact', render: (section) => <ContactConnect content={section.content} /> },
+    awards: { scene: SCENE.Depth, render: (section) => <Awards content={section.content} /> },
+    closing_panel: { scene: SCENE.None, render: (section) => <ClosingPanel content={section.content} /> },
     rich_text: { scene: SCENE.Depth, render: (section) => <RichText content={section.content} /> },
     features: { scene: SCENE.Depth, render: (section) => <Features content={section.content} /> },
     testimonials: { scene: SCENE.Depth, render: (section) => <Testimonials content={section.content} /> },
@@ -78,6 +91,10 @@ const WIDGETS = {
     process: { scene: SCENE.None, render: (section) => <Process content={section.content} /> },
     results: { scene: SCENE.Depth, render: (section) => <Results content={section.content} /> },
     recognition: { scene: SCENE.Depth, render: (section) => <Recognition content={section.content} /> },
+    // Story and Vision & Mission pin their own scroll stage, so they stay unwrapped.
+    story: { scene: SCENE.None, render: (section) => <Story content={section.content} /> },
+    mission_vision: { scene: SCENE.None, render: (section) => <MissionVision content={section.content} /> },
+    team: { scene: SCENE.Depth, render: (section) => <Team content={section.content} /> },
 };
 
 /**
@@ -107,25 +124,37 @@ export default function SectionRenderer({ sections = [], appearance = 'depth' })
     // it gets the larger hero treatment where the component supports one.
     const standalone = sections.length === 1;
 
-    return sections.map((section, index) => {
+    // Consecutive sections of the same `group` share one wrapper; every other
+    // section gets its own.
+    const runs = [];
+    sections.forEach((section, index) => {
         const widget = WIDGETS[section.type];
 
-        if (!widget) return null;
+        if (!widget) return;
 
         const compactTop = appearance === 'reveal' && sections[index - 1]?.type === 'marquee';
-        const element = widget.render(section, { props, fx, standalone, compactTop });
+        const element = <Fragment key={section.id}>{widget.render(section, { props, fx, standalone, compactTop })}</Fragment>;
+        const previous = runs[runs.length - 1];
 
+        if (widget.group && previous?.group === widget.group) {
+            previous.elements.push(element);
+        } else {
+            runs.push({ key: section.id, widget, group: widget.group, elements: [element] });
+        }
+    });
+
+    return runs.map(({ key, widget, elements }) => {
         if (widget.scene === SCENE.None) {
-            return <Fragment key={section.id}>{element}</Fragment>;
+            return <Fragment key={key}>{elements}</Fragment>;
         }
 
         if (appearance === 'reveal') {
-            return <SectionAppear key={section.id}>{element}</SectionAppear>;
+            return <SectionAppear key={key}>{elements}</SectionAppear>;
         }
 
         return (
-            <CinematicScene key={section.id} depth={widget.scene === SCENE.Depth}>
-                {element}
+            <CinematicScene key={key} depth={widget.scene === SCENE.Depth}>
+                {elements}
             </CinematicScene>
         );
     });

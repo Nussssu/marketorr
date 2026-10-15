@@ -37,11 +37,16 @@ class TemplatedMail extends Mailable
 
     public function content(): Content
     {
+        $settings = Setting::current();
+
         return new Content(
             view: 'mail.templated',
             with: [
                 'bodyHtml' => $this->template->renderBody($this->placeholders),
-                'siteName' => Setting::current()->site_name,
+                'siteName' => $settings->site_name,
+                'logoUrl' => $settings->assetUrl($settings->logo_dark_path)
+                    ?? $settings->assetUrl($settings->logo_path)
+                    ?? asset('images/logo/marketorr-logo-on-dark.png'),
             ],
         );
     }

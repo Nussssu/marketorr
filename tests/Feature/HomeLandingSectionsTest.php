@@ -24,6 +24,10 @@ class HomeLandingSectionsTest extends TestCase
         'hero', 'marquee', 'about', 'services', 'process', 'work', 'uiux_work', 'recognition', 'contact',
     ];
 
+    private const SEEDED_ORDER = [
+        'hero', 'about', 'work', 'uiux_work', 'services', 'process', 'recognition', 'contact',
+    ];
+
     public function test_the_migration_slots_the_new_sections_between_their_anchors(): void
     {
         $page = $this->homeWithOriginalSections();
@@ -124,7 +128,7 @@ class HomeLandingSectionsTest extends TestCase
         $this->seed(PageSeeder::class);
 
         $this->assertSame(
-            self::FULL_ORDER,
+            self::SEEDED_ORDER,
             $this->sectionTypes(Page::query()->where('slug', 'home')->sole()),
         );
     }

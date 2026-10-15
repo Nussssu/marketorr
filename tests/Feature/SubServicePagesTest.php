@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
+use App\Models\ServiceGroup;
 use App\Services\SubServiceRelatedWork;
 use Database\Seeders\ServiceSeeder;
 use Database\Seeders\SettingSeeder;
+use Database\Seeders\SubServiceCatalogueSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,11 +21,12 @@ class SubServicePagesTest extends TestCase
 
         $this->seed(SettingSeeder::class);
         $this->seed(ServiceSeeder::class);
+        $this->seed(SubServiceCatalogueSeeder::class);
     }
 
     public function test_every_catalogue_sub_service_page_renders(): void
     {
-        foreach (config('subservices') as $category) {
+        foreach (ServiceGroup::catalogue() as $category) {
             foreach ($category['items'] as $item) {
                 $this->get("/services/{$category['slug']}/{$item['slug']}")->assertStatus(200);
             }
@@ -32,7 +35,7 @@ class SubServicePagesTest extends TestCase
 
     public function test_each_service_category_redirects_to_its_section_on_the_services_page(): void
     {
-        foreach (config('subservices') as $category) {
+        foreach (ServiceGroup::catalogue() as $category) {
             $this->get("/services/{$category['slug']}")
                 ->assertRedirect(route('services.index').'#'.$category['slug']);
         }
@@ -107,11 +110,11 @@ class SubServicePagesTest extends TestCase
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->component('Home')
-                ->where('subservices', config('subservices')));
+                ->where('subservices', ServiceGroup::catalogue()));
 
         $this->get('/services')
             ->assertInertia(fn ($page) => $page
                 ->component('Services/Index')
-                ->where('subservices', config('subservices')));
+                ->where('subservices', ServiceGroup::catalogue()));
     }
 }

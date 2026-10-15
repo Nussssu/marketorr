@@ -29,6 +29,7 @@ class MenuController extends Controller
                     return [
                         'location' => $location->value,
                         'label' => $location->label(),
+                        'group' => $location->group(),
                         'items' => $items
                             ->whereNull('parent_id')
                             ->map(fn (MenuItem $item) => [

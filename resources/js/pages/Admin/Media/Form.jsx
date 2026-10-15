@@ -1,11 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { Button, Field, Input, PageHeader, Panel } from '../../../components/admin/ui';
 
 export default function MediaForm({ medium }) {
     const isEdit = Boolean(medium);
     const [preview, setPreview] = useState(medium?.file_url ?? null);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragDepth = useRef(0);
 
     const { data, setData, post, processing, errors } = useForm({
         // Spoofed so the multipart upload still reaches the PUT route on update.
@@ -19,6 +21,29 @@ export default function MediaForm({ medium }) {
     const onFileChange = (file) => {
         setData('file', file);
         setPreview(file ? URL.createObjectURL(file) : medium?.file_url ?? null);
+    };
+
+    useEffect(() => () => {
+        if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+    }, [preview]);
+
+    const onDragEnter = (event) => {
+        event.preventDefault();
+        dragDepth.current += 1;
+        setIsDragging(true);
+    };
+
+    const onDragLeave = (event) => {
+        event.preventDefault();
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setIsDragging(false);
+    };
+
+    const onDrop = (event) => {
+        event.preventDefault();
+        dragDepth.current = 0;
+        setIsDragging(false);
+        onFileChange(event.dataTransfer.files?.[0] ?? null);
     };
 
     const submit = (e) => {
@@ -47,12 +72,45 @@ export default function MediaForm({ medium }) {
                                 hint={isEdit ? 'Leave empty to keep the current file: choosing one replaces it.' : 'JPG, PNG, WebP or GIF, up to 12 MB.'}
                                 className="sm:col-span-2"
                             >
-                                <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-                                    className="w-full text-[13px] text-[var(--mute)] file:mr-3 file:rounded-lg file:border file:border-[var(--field-line)] file:bg-[var(--chip)] file:px-3 file:py-2 file:text-[12px] file:font-bold file:uppercase file:tracking-[0.12em] file:text-[var(--ink)]"
-                                />
+                                <label
+                                    onDragEnter={onDragEnter}
+                                    onDragOver={(event) => {
+                                        event.preventDefault();
+                                        event.dataTransfer.dropEffect = 'copy';
+                                    }}
+                                    onDragLeave={onDragLeave}
+                                    onDrop={onDrop}
+                                    className={`group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-8 text-center transition-all ${
+                                        isDragging
+                                            ? 'border-[#507AF4] bg-[#507AF4]/10 shadow-[0_0_0_1px_#507AF4]'
+                                            : 'border-[var(--field-line)] bg-[var(--bg)] hover:border-[#507AF4]/70 hover:bg-[var(--chip)]'
+                                    }`}
+                                >
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+                                        className="sr-only"
+                                    />
+                                    <span
+                                        className="flex h-11 w-11 items-center justify-center rounded-full text-white transition-transform group-hover:-translate-y-0.5"
+                                        style={{ background: 'linear-gradient(135deg,#891FFB,#507AF4,#1BE2EB)' }}
+                                        aria-hidden
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+                                        </svg>
+                                    </span>
+                                    <span className="mt-4 font-display text-[14px] font-bold text-[var(--ink-strong)]">
+                                        {isDragging ? 'Drop image here' : 'Drag and drop an image'}
+                                    </span>
+                                    <span className="mt-1 text-[12px] text-[var(--mute)]">or click to browse</span>
+                                    {data.file && (
+                                        <span className="mt-3 max-w-full truncate rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-semibold text-[var(--ink)]">
+                                            {data.file.name}
+                                        </span>
+                                    )}
+                                </label>
                             </Field>
                             {preview && (
                                 <div className="sm:col-span-2">
