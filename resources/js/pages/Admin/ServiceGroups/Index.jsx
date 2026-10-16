@@ -83,7 +83,7 @@ export default function ServiceGroupsIndex({ groups }) {
                                         </td>
                                         <td className="py-3 pr-4">
                                             <p className="font-semibold text-[var(--ink)]">{group.name}</p>
-                                            <p className="text-[12px] text-[var(--ink-faint)]">/{group.slug}</p>
+                                            <a href={`/services#${group.slug}`} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">/services#{group.slug} ↗</a>
                                         </td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{group.tagline || '—'}</td>
                                         <td className="py-3 pr-4">

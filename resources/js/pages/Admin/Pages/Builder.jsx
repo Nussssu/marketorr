@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import MediaPickerField from '../../../components/admin/MediaPickerField';
@@ -13,6 +13,7 @@ import {
     Panel,
     Select,
     Textarea,
+    WidgetPanel,
     useConfirm,
 } from '../../../components/admin/ui';
 
@@ -50,7 +51,7 @@ function VisibilitySwitch({ checked, onChange, label }) {
             title={checked ? 'Shown on the site — click to hide' : 'Hidden from the site — click to show'}
             onClick={() => onChange(!checked)}
             className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
-            style={{ background: checked ? 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' : 'var(--field-line)' }}
+            style={{ background: checked ? 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' : 'var(--field-line)' }}
         >
             <span
                 className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
@@ -62,8 +63,9 @@ function VisibilitySwitch({ checked, onChange, label }) {
 
 /**
  * One section as a widget card: its number, name and type in a single row
- * with reorder, show/hide, edit and delete controls. The form opens only
- * when the editor asks for it, and only one card is open at a time.
+ * with reorder, show/hide, edit and delete controls. Tapping the card (or
+ * its edit icon) opens its form and tapping again closes it; each card opens
+ * and closes on its own, so the others stay exactly as they were.
  */
 function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, onDelete }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -100,7 +102,7 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
     };
 
     return (
-        <div className={`rounded-xl border bg-[var(--surface)] transition-colors ${open ? 'border-[#507AF4]/50' : 'border-[var(--line)]'} ${section.enabled ? '' : 'opacity-75'}`}>
+        <div className={`rounded-xl border bg-[var(--surface)] transition-colors ${open ? 'border-[var(--brand-2)]/50' : 'border-[var(--line)]'} ${section.enabled ? '' : 'opacity-75'}`}>
             <div className="flex items-center gap-3 px-4 py-3">
                 <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-[var(--field-line)] px-1.5 font-mono text-[12px] font-bold text-[var(--ink)]">
                     {index + 1}
@@ -158,7 +160,7 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
             {open && (
                 <form onSubmit={submit} className="border-t border-[var(--line)] p-5">
                     {section.dataDriven && (
-                        <p className="mb-5 rounded-lg border border-[#507AF4]/30 bg-[#507AF4]/10 px-4 py-3 text-[12px] text-[var(--mute)]">
+                        <p className="mb-5 rounded-lg border border-[var(--brand-2)]/30 bg-[var(--brand-2)]/10 px-4 py-3 text-[12px] text-[var(--mute)]">
                             This section draws its own content from the database, the fields below only set the
                             surrounding copy.
                         </p>
@@ -183,6 +185,66 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
                     </div>
                 </form>
             )}
+        </div>
+    );
+}
+
+/** One category row: colour dot, name, slug, project count and actions. */
+function CategoryRow({ category, nested = false, onDelete }) {
+    return (
+        <div className={`flex items-center gap-3 border-t border-[var(--line)] py-3 ${nested ? 'pl-8' : ''}`}>
+            {category.accent && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: category.accent }} aria-hidden />}
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-[var(--ink-strong)]">{category.name}</p>
+                <p className="truncate font-mono text-[11px] text-[var(--ink-faint)]">{category.slug} · {category.projects_count} project{category.projects_count === 1 ? '' : 's'}</p>
+            </div>
+            <Link href={`/admin/categories/${category.id}/edit`} className={NEUTRAL_ICON} title="Edit category" aria-label={`Edit ${category.name}`}>
+                <Icon name="edit" />
+            </Link>
+            <button
+                type="button"
+                onClick={() => onDelete(category)}
+                className={`${ICON_BUTTON} text-[#ff6b6b] hover:border-[#ff6b6b]/40 hover:bg-[#ff6b6b]/10`}
+                title="Delete category"
+                aria-label={`Delete ${category.name}`}
+            >
+                <Icon name="delete" />
+            </button>
+        </div>
+    );
+}
+
+/**
+ * The categories projects are filed under, managed here on the Our Work
+ * page rather than in a module of their own.
+ */
+function CategoriesWidget({ categories, onDelete }) {
+    const total = categories.reduce((sum, category) => sum + 1 + (category.children?.length ?? 0), 0);
+
+    return (
+        <div id="categories" className="scroll-mt-24">
+            <WidgetPanel
+                title="Project categories"
+                description="The categories projects are filed under. Tap edit to change one."
+                summary={`${total} categor${total === 1 ? 'y' : 'ies'}`}
+                defaultOpen={typeof window !== 'undefined' && window.location.hash === '#categories'}
+                action={<Button as="link" href="/admin/categories/create" variant="secondary">Add category</Button>}
+            >
+                {categories.length === 0 ? (
+                    <EmptyState>No categories yet, add the first one.</EmptyState>
+                ) : (
+                    <div className="-mt-3">
+                        {categories.map((category) => (
+                            <div key={category.id}>
+                                <CategoryRow category={category} onDelete={onDelete} />
+                                {(category.children ?? []).map((child) => (
+                                    <CategoryRow key={child.id} category={child} nested onDelete={onDelete} />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </WidgetPanel>
         </div>
     );
 }
@@ -285,10 +347,18 @@ function SeoPanel({ page }) {
     );
 }
 
-export default function PageBuilder({ page, sections, palette }) {
+export default function PageBuilder({ page, sections, palette, categories = null }) {
     // Local copy so the up/down buttons reorder instantly, then persist.
     const [rows, setRows] = useState(sections);
-    const [openId, setOpenId] = useState(null);
+    // Each card's open state is its own: opening one never closes another.
+    const [openIds, setOpenIds] = useState(() => new Set());
+    const toggleOpen = (id) => setOpenIds((current) => {
+        const next = new Set(current);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+
+        return next;
+    });
     const [request, confirm, cancel, run] = useConfirm();
 
     useEffect(() => {
@@ -319,6 +389,19 @@ export default function PageBuilder({ page, sections, palette }) {
         });
     };
 
+    const askDeleteCategory = (category) => {
+        const children = category.children?.length ?? 0;
+        confirm({
+            title: `Delete “${category.name}”?`,
+            body: [
+                category.projects_count > 0 && `${category.projects_count} project(s) will be left without a category.`,
+                children > 0 && `${children} sub-categor${children === 1 ? 'y moves' : 'ies move'} to the top level.`,
+            ].filter(Boolean).join(' ') || 'The category is removed.',
+            confirmLabel: 'Delete',
+            action: () => router.delete(`/admin/categories/${category.id}`, { preserveScroll: true }),
+        });
+    };
+
     const visibleCount = rows.filter((row) => row.enabled).length;
 
     return (
@@ -344,13 +427,15 @@ export default function PageBuilder({ page, sections, palette }) {
                                 section={section}
                                 index={index}
                                 count={rows.length}
-                                open={openId === section.id}
-                                onToggleOpen={() => setOpenId((current) => (current === section.id ? null : section.id))}
+                                open={openIds.has(section.id)}
+                                onToggleOpen={() => toggleOpen(section.id)}
                                 onMove={move}
                                 onDelete={askDelete}
                             />
                         ))
                     )}
+
+                    {categories && <CategoriesWidget categories={categories} onDelete={askDeleteCategory} />}
                 </div>
 
                 <div className="space-y-6">

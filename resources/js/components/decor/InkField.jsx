@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { GLOW, PIGMENTS } from '../../lib/glow';
+import { GLOW, brandPigments } from '../../lib/glow';
 
 /**
  * Mouse-reactive watercolour field.
@@ -31,6 +31,8 @@ export default function InkField({ theme = 'dark' }) {
 
         const ctx = canvas.getContext('2d', { alpha: true });
         if (!ctx) return undefined;
+        // The brand colours as set in Settings, read once per mount.
+        const PIGMENTS = brandPigments();
 
         setPainting(true);
 
@@ -252,7 +254,7 @@ export default function InkField({ theme = 'dark' }) {
                     className="absolute inset-0"
                     style={{
                         background:
-                            'radial-gradient(60% 50% at 22% 18%, rgba(137,31,251,0.16), transparent 70%), radial-gradient(55% 45% at 78% 30%, rgba(80,122,244,0.14), transparent 70%), radial-gradient(70% 55% at 45% 92%, rgba(27,226,235,0.12), transparent 72%)',
+                            'radial-gradient(60% 50% at 22% 18%, rgba(var(--brand-1-rgb),0.16), transparent 70%), radial-gradient(55% 45% at 78% 30%, rgba(var(--brand-2-rgb),0.14), transparent 70%), radial-gradient(70% 55% at 45% 92%, rgba(var(--brand-3-rgb),0.12), transparent 72%)',
                         filter: 'blur(24px)',
                         opacity: light ? 0.6 : 0.9,
                     }}

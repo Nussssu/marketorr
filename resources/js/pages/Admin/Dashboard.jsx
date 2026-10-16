@@ -19,12 +19,12 @@ export default function Dashboard({ stats, recentInquiries }) {
             <PageHeader title="Dashboard" subtitle="What's live and what needs a reply." />
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Stat label="Published projects" value={stats.publishedProjects} accent="#891FFB" />
-                <Stat label="Draft projects" value={stats.draftProjects} accent="#507AF4" />
-                <Stat label="Services" value={stats.services} accent="#1BE2EB" />
-                <Stat label="Pages" value={stats.pages} accent="#507AF4" />
-                <Stat label="Categories" value={stats.categories} accent="#1BE2EB" />
-                <Stat label="New leads" value={stats.newInquiries} accent="#891FFB" />
+                <Stat label="Published projects" value={stats.publishedProjects} accent="var(--brand-1)" />
+                <Stat label="Draft projects" value={stats.draftProjects} accent="var(--brand-2)" />
+                <Stat label="Services" value={stats.services} accent="var(--brand-3)" />
+                <Stat label="Pages" value={stats.pages} accent="var(--brand-2)" />
+                <Stat label="Categories" value={stats.categories} accent="var(--brand-3)" />
+                <Stat label="New leads" value={stats.newInquiries} accent="var(--brand-1)" />
             </div>
 
             <div className="mt-8">

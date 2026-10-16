@@ -4,7 +4,7 @@ import ScrubRise from '../motion/ScrubRise';
 import { GradientTitle, SectionLabel } from '../ui/primitives';
 import { BRAND_SEQUENCE } from '../../lib/tokens';
 
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
 
 /** Where the first timeline entry starts revealing, and how far apart the rest are spread. */
 const REVEAL_FIRST = 0.03;

@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { Badge, Button, ConfirmDialog, EmptyState, Input, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
+import { withAlpha } from '../../../lib/tokens';
 
 const STATUS_THEME = {
-    new: { label: 'New', color: '#891FFB', background: 'rgba(137,31,251,0.1)' },
-    in_progress: { label: 'In Progress', color: '#507AF4', background: 'rgba(80,122,244,0.1)' },
-    replied: { label: 'Replied', color: '#1BE2EB', background: 'rgba(27,226,235,0.1)' },
+    new: { label: 'New', color: 'var(--brand-1)', background: 'rgba(var(--brand-1-rgb),0.1)' },
+    in_progress: { label: 'In Progress', color: 'var(--brand-2)', background: 'rgba(var(--brand-2-rgb),0.1)' },
+    replied: { label: 'Replied', color: 'var(--brand-3)', background: 'rgba(var(--brand-3-rgb),0.1)' },
     archived: { label: 'Archived', color: '#8B98A8', background: 'rgba(139,152,168,0.1)' },
 };
 
@@ -122,7 +123,7 @@ function StatusSelect({ inquiry, statuses }) {
                 onClick={() => (open ? setOpen(false) : openList())}
                 onKeyDown={onKeyDown}
                 className="flex h-9 w-[132px] items-center justify-between gap-2 rounded-lg border py-0 pr-3 pl-3 text-left text-[12px] font-semibold transition-all disabled:cursor-wait disabled:opacity-60"
-                style={{ borderColor: `${theme.color}66`, color: theme.color, background: theme.background }}
+                style={{ borderColor: `${withAlpha(theme.color, '66')}`, color: theme.color, background: theme.background }}
             >
                 <span className="min-w-0 truncate">{saving ? 'Saving…' : theme.label}</span>
                 <svg
@@ -161,7 +162,7 @@ function StatusSelect({ inquiry, statuses }) {
                                 onPointerEnter={() => setHighlighted(index)}
                                 onClick={() => choose(status)}
                                 className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-[12px] transition-colors duration-150 ${active ? 'text-white' : 'text-[var(--ink)]'} ${selected ? 'font-bold' : 'font-medium'}`}
-                                style={active ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined}
+                                style={active ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
                             >
                                 <span>{optionTheme.label}</span>
                                 {selected && (
@@ -270,7 +271,7 @@ function FilterSelect({ value, onChange, options, placeholder, label }) {
                 aria-label={`${label}: ${current.label}`}
                 onClick={() => (open ? setOpen(false) : openList())}
                 onKeyDown={onKeyDown}
-                className={`flex min-w-[160px] items-center justify-between gap-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-left text-[14px] transition-colors hover:border-[rgba(137,31,251,0.65)] ${value ? 'text-[var(--ink)]' : 'text-[var(--placeholder)]'}`}
+                className={`flex min-w-[160px] items-center justify-between gap-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-left text-[14px] transition-colors hover:border-[rgba(var(--brand-1-rgb),0.65)] ${value ? 'text-[var(--ink)]' : 'text-[var(--placeholder)]'}`}
             >
                 <span className="min-w-0 truncate capitalize">{current.label}</span>
                 <svg
@@ -308,7 +309,7 @@ function FilterSelect({ value, onChange, options, placeholder, label }) {
                                 onPointerEnter={() => setHighlighted(index)}
                                 onClick={() => choose(choice)}
                                 className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-[12px] capitalize transition-colors duration-150 ${active ? 'text-white' : 'text-[var(--ink)]'} ${selected ? 'font-bold' : 'font-medium'}`}
-                                style={active ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined}
+                                style={active ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
                             >
                                 <span>{choice.label}</span>
                                 {selected && (

@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
     'external_url', 'case_study', 'brief',
+    'meta_title', 'meta_description', 'meta_og_image', 'meta_robots', 'canonical_url',
 ])]
 class Project extends Model
 {
@@ -164,6 +165,24 @@ class Project extends Model
             'featured' => $this->featured,
             'externalUrl' => $this->external_url,
             'caseStudy' => $this->publicCaseStudy(),
+            'meta' => $this->publicMeta(),
+        ];
+    }
+
+    /**
+     * The project page's head tags. An empty SEO field falls back to the
+     * project's own title, description and cover.
+     *
+     * @return array{title: string, description: string, ogImage: string, robots: string, canonical: string|null}
+     */
+    public function publicMeta(): array
+    {
+        return [
+            'title' => filled($this->meta_title) ? $this->meta_title : $this->title.' | Marketorr',
+            'description' => filled($this->meta_description) ? $this->meta_description : str($this->description)->squish()->limit(160)->toString(),
+            'ogImage' => filled($this->meta_og_image) ? self::mediaUrl($this->meta_og_image) : $this->imageUrl(),
+            'robots' => $this->meta_robots ?: 'index,follow',
+            'canonical' => $this->canonical_url ?: null,
         ];
     }
 
@@ -215,36 +234,43 @@ class Project extends Model
         ];
 
         return collect($columns)
-            ->map(fn (array $column, string $key): array => [
-                'slug' => $key,
-                'name' => $column['name'],
-                'short' => null,
-                'accent' => $column['accent'],
-                'href' => '/work/portfolio/'.$key,
-                'items' => $key === 'uiux'
-                    ? self::uiuxShowcaseItems()
-                    : $grouped->get($key, collect())
-                        ->map(fn (self $project): array => [
-                            'slug' => $project->slug,
-                            'name' => $project->title,
-                            'accent' => $project->accent,
-                            'image' => $project->thumbUrl(),
-                            'imageAlt' => $project->image_alt,
-                            'href' => '/work/'.$project->slug,
-                        ])
-                        ->values()
-                        ->all(),
-            ])
+            ->map(function (array $column, string $key) use ($grouped): array {
+                $projects = $grouped->get($key, collect())
+                    ->map(fn (self $project): array => [
+                        'slug' => $project->slug,
+                        'name' => $project->title,
+                        'accent' => $project->accent,
+                        'image' => $project->thumbUrl(),
+                        'imageAlt' => $project->image_alt,
+                        'href' => '/work/'.$project->slug,
+                    ])
+                    ->values();
+
+                if ($key === 'uiux') {
+                    $projects = $projects
+                        ->concat(self::uiuxShowcaseItems())
+                        ->unique('slug')
+                        ->values();
+                }
+
+                return [
+                    'slug' => $key,
+                    'name' => $column['name'],
+                    'short' => null,
+                    'accent' => $column['accent'],
+                    'href' => '/work/portfolio/'.$key,
+                    'items' => $projects->all(),
+                ];
+            })
             ->values()
             ->all();
     }
 
     /**
-     * The UI/UX column's items: the six showcase projects and their Figma covers.
+     * The UI/UX column's additional showcase projects and their Figma covers.
      *
-     * The UI/UX portfolio presents these rather than its database projects, so
-     * the menu previews exactly what the reader lands on. Each opens the
-     * portfolio with that project's detail already open.
+     * These remain alongside the admin-managed database projects. Each opens
+     * the portfolio with that showcase project's detail already in view.
      *
      * @return array<int, array{slug: string, name: string, accent: string, image: string|null, imageAlt: string, href: string}>
      */
@@ -353,6 +379,7 @@ class Project extends Model
             ->map(function (array $section): array {
                 $images = collect($section['images'] ?? [])
                     ->filter(fn ($image) => filled($image['src'] ?? null) || filled($image['vimeo'] ?? null))
+                    ->reject(fn ($image) => (bool) ($image['hidden'] ?? false))
                     ->map(fn (array $image): array => [
                         'src' => self::mediaUrl($image['src']),
                         'alt' => $image['alt'] ?? '',

@@ -77,7 +77,7 @@ export default function SubServiceForm({ item, groups, statuses }) {
                             <Field label="Name" error={errors.name} required>
                                 <Input value={data.name} onChange={(e) => onNameChange(e.target.value)} />
                             </Field>
-                            <Field label="Slug" error={errors.slug} required hint="Used in the URL: /services/{tab}/{slug}">
+                            <Field label="Slug" error={errors.slug} required hint={`Live address: /services/${groups.find((group) => String(group.id) === String(data.service_group_id))?.slug ?? 'tab'}/${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`}>
                                 <Input
                                     value={data.slug}
                                     onChange={(e) => {

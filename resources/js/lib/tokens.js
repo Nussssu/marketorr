@@ -5,6 +5,18 @@ export const COLORS = {
     gradient: 'linear-gradient(90deg, #891FFB 0%, #507AF4 50%, #1BE2EB 100%)',
 };
 
+/**
+ * A colour at a given two-digit hex alpha (`'88'` = 53%), for brand colours
+ * and plain hex colours alike: `withAlpha(COLORS.iris, '88')`.
+ *
+ * @param {string} color
+ * @param {string} alphaHex
+ * @return {string}
+ */
+export function withAlpha(color, alphaHex) {
+    return `${color}${alphaHex}`;
+}
+
 export const STAGES = [
     { key: 'idea', label: 'IDEA', color: COLORS.grape, index: '01' },
     { key: 'experience', label: 'EXPERIENCE', color: COLORS.iris, index: '02' },

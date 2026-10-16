@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import {
@@ -8,27 +8,59 @@ import {
     Input,
     MediaPickerField,
     PageHeader,
-    Panel,
     ProjectGalleryManager,
     RepeatableList,
+    RepeatableRows,
     Select,
     Textarea,
+    WidgetPanel,
     slugify,
 } from '../../../components/admin/ui';
 
-export default function ProjectForm({ project, statuses, categories = [] }) {
+const BLANK_BRIEF = {
+    overview: '',
+    worked_on: [],
+    services: [],
+    highlights: [],
+    client: '',
+    website: '',
+    behance_url: '',
+    source_url: '',
+};
+
+const ROBOTS = ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'];
+
+/** A count that turns red once the text passes the length search engines show. */
+function LengthHint({ value, limit }) {
+    const length = String(value ?? '').length;
+
+    return <span className={length > limit ? 'text-[#ff6b6b]' : ''}>{length}/{limit} characters</span>;
+}
+
+const PORTFOLIOS = [
+    ['', 'Follow the category'],
+    ['branding', 'Branding Portfolio'],
+    ['uiux', 'UI/UX Portfolio'],
+];
+
+/**
+ * One project, edited as a stack of widgets that map one-to-one onto the
+ * public project page. Each widget opens and closes on its own.
+ */
+function ProjectFormFields({ project, statuses, categories = [], categoriesHref = '/admin/pages' }) {
     const isEdit = Boolean(project);
     // Only auto-fill the slug while the admin has not hand-edited it.
     const [slugLocked, setSlugLocked] = useState(isEdit);
     const [preview, setPreview] = useState(project?.image_url ?? null);
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, isDirty, reset, setDefaults } = useForm({
         // Spoofed so the multipart upload still reaches the PUT route on update.
         _method: isEdit ? 'put' : 'post',
         slug: project?.slug ?? '',
         title: project?.title ?? '',
         client: project?.client ?? '',
         category_id: project?.category_id ?? '',
+        work_group: project?.work_group ?? '',
         year: project?.year ?? String(new Date().getFullYear()),
         description: project?.description ?? '',
         metric: project?.metric ?? '',
@@ -42,7 +74,15 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
         status: project?.status ?? 'published',
         sort_order: project?.sort_order ?? '',
         gallery_images: project?.gallery_images ?? [],
+        brief: { ...BLANK_BRIEF, ...(project?.brief ?? {}) },
+        meta_title: project?.meta_title ?? '',
+        meta_description: project?.meta_description ?? '',
+        meta_og_image: project?.meta_og_image ?? '',
+        meta_robots: project?.meta_robots ?? 'index,follow',
+        canonical_url: project?.canonical_url ?? '',
     });
+
+    const setBrief = (key, value) => setData('brief', { ...data.brief, [key]: value });
 
     const onTitleChange = (value) => {
         setData((current) => ({
@@ -69,22 +109,34 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(isEdit ? `/admin/projects/${project.id}` : '/admin/projects', { forceFormData: true });
+        // Saving stays on this form, so what was just saved becomes the new
+        // baseline and the save bar reads "No unsaved changes" again.
+        post(isEdit ? `/admin/projects/${project.id}` : '/admin/projects', {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => setDefaults(),
+        });
     };
+
+    const categoryName = categories.find((category) => String(category.id) === String(data.category_id))?.label;
+    const filledBrief = Object.values(data.brief).filter((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value))).length;
 
     return (
         <>
             <Head title={`${isEdit ? 'Edit' : 'New'} project | Marketorr Admin`} />
             <PageHeader
                 title={isEdit ? `Edit ${project.title}` : 'New project'}
-                subtitle="Fields map one-to-one onto the public case study page."
+                subtitle="Each widget maps onto the public project page. Tap a widget to open or close it."
             >
+                {isEdit && (
+                    <Button as="a" href={`/work/${project.slug}`} target="_blank" rel="noreferrer" variant="secondary">View page ↗</Button>
+                )}
                 <Button as="link" href="/admin/projects" variant="secondary">Cancel</Button>
             </PageHeader>
 
-            <form onSubmit={submit} className="grid gap-6 lg:grid-cols-3">
-                <div className="space-y-6 lg:col-span-2">
-                    <Panel title="Basics">
+            <form id="project-form" onSubmit={submit} className="grid gap-6 lg:grid-cols-3 pb-24">
+                <div className="space-y-4 lg:col-span-2">
+                    <WidgetPanel title="Basics" summary={data.title || 'Title, slug, client, year and description'} defaultOpen>
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field label="Title" error={errors.title} required className="sm:col-span-2">
                                 <Input value={data.title} onChange={(e) => onTitleChange(e.target.value)} />
@@ -93,7 +145,7 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 label="Slug"
                                 error={errors.slug}
                                 required
-                                hint="Used in the URL: /work/your-slug"
+                                hint={`Live address: /work/${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`}
                                 className="sm:col-span-2"
                             >
                                 <Input
@@ -107,19 +159,6 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                             <Field label="Client" error={errors.client} required>
                                 <Input value={data.client} onChange={(e) => setData('client', e.target.value)} placeholder="Acme Co · Manufacturer" />
                             </Field>
-                            <Field
-                                label="Category"
-                                error={errors.category_id}
-                                required
-                                hint={categories.length === 0 ? 'No categories yet, create one first.' : undefined}
-                            >
-                                <Select value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
-                                    <option value="">Select a category…</option>
-                                    {categories.map((category) => (
-                                        <option key={category.id} value={category.id}>{category.label}</option>
-                                    ))}
-                                </Select>
-                            </Field>
                             <Field label="Year" error={errors.year} required>
                                 <Input value={data.year} onChange={(e) => setData('year', e.target.value)} />
                             </Field>
@@ -130,9 +169,104 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 <Textarea rows={5} value={data.description} onChange={(e) => setData('description', e.target.value)} />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Headline metric" description="Optional: shown over the cover image and on the case study.">
+                    <WidgetPanel
+                        title="Portfolio & category"
+                        description="Where the project is filed on the Our Work pages and in the menu."
+                        summary={[categoryName, PORTFOLIOS.find(([value]) => value === (data.work_group ?? ''))?.[1]].filter(Boolean).join(' · ') || 'Not filed yet'}
+                    >
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <Field
+                                label="Category"
+                                error={errors.category_id}
+                                required
+                                hint={
+                                    <>
+                                        Categories are managed on the Our Work page.{' '}
+                                        <Link href={categoriesHref} className="underline hover:text-[var(--ink)]">Manage categories</Link>
+                                    </>
+                                }
+                            >
+                                <Select value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
+                                    <option value="">Select a category…</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>{category.label}</option>
+                                    ))}
+                                </Select>
+                            </Field>
+                            <Field label="Portfolio" error={errors.work_group} hint="Leave on “Follow the category” unless this project belongs with the other portfolio.">
+                                <Select value={data.work_group ?? ''} onChange={(e) => setData('work_group', e.target.value)}>
+                                    {PORTFOLIOS.map(([value, label]) => (
+                                        <option key={value || 'auto'} value={value}>{label}</option>
+                                    ))}
+                                </Select>
+                            </Field>
+                        </div>
+                    </WidgetPanel>
+
+                    <WidgetPanel
+                        title="Project brief"
+                        description="The written record on the project page: overview, what was done, services and key figures."
+                        summary={filledBrief ? `${filledBrief} field${filledBrief === 1 ? '' : 's'} filled` : 'Empty: the page shows no brief'}
+                    >
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <Field label="Overview" error={errors['brief.overview']} className="sm:col-span-2">
+                                <Textarea rows={5} value={data.brief.overview} onChange={(e) => setBrief('overview', e.target.value)} />
+                            </Field>
+                            <Field label="Client (as shown in the brief)" error={errors['brief.client']}>
+                                <Input value={data.brief.client} onChange={(e) => setBrief('client', e.target.value)} />
+                            </Field>
+                            <Field label="Client website" error={errors['brief.website']}>
+                                <Input value={data.brief.website} onChange={(e) => setBrief('website', e.target.value)} placeholder="https://" />
+                            </Field>
+                            <Field label="Behance link" error={errors['brief.behance_url']}>
+                                <Input value={data.brief.behance_url} onChange={(e) => setBrief('behance_url', e.target.value)} placeholder="https://www.behance.net/gallery/..." />
+                            </Field>
+                            <Field label="Source link" error={errors['brief.source_url']}>
+                                <Input value={data.brief.source_url} onChange={(e) => setBrief('source_url', e.target.value)} placeholder="https://" />
+                            </Field>
+                            <Field label="What we worked on" className="sm:col-span-2">
+                                <RepeatableList
+                                    values={data.brief.worked_on}
+                                    onChange={(values) => setBrief('worked_on', values)}
+                                    placeholder="Logo design"
+                                    addLabel="Add item"
+                                    errors={errors}
+                                    name="brief.worked_on"
+                                />
+                            </Field>
+                            <Field label="Services" className="sm:col-span-2">
+                                <RepeatableList
+                                    values={data.brief.services}
+                                    onChange={(values) => setBrief('services', values)}
+                                    placeholder="Brand Identity Design"
+                                    addLabel="Add service"
+                                    errors={errors}
+                                    name="brief.services"
+                                />
+                            </Field>
+                            <Field label="Highlights" className="sm:col-span-2">
+                                <RepeatableRows
+                                    values={data.brief.highlights}
+                                    onChange={(values) => setBrief('highlights', values)}
+                                    fields={[
+                                        { key: 'label', placeholder: 'Label, e.g. Timeline' },
+                                        { key: 'value', placeholder: 'Value, e.g. 6 weeks' },
+                                    ]}
+                                    addLabel="Add highlight"
+                                    errors={errors}
+                                    name="brief.highlights"
+                                />
+                            </Field>
+                        </div>
+                    </WidgetPanel>
+
+                    <WidgetPanel
+                        title="Headline metric"
+                        description="Optional: shown over the cover image and on the case study."
+                        summary={data.metric ? `${data.metric} ${data.metric_label ?? ''}`.trim() : 'No metric'}
+                    >
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field label="Metric" error={errors.metric}>
                                 <Input value={data.metric ?? ''} onChange={(e) => setData('metric', e.target.value)} placeholder="2100%" />
@@ -141,9 +275,13 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 <Input value={data.metric_label ?? ''} onChange={(e) => setData('metric_label', e.target.value)} placeholder="Organic Traffic Increase" />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="External case study" description="Optional: when the full write-up lives elsewhere (Behance, Dribbble, the client's own site), the project page links out to it instead of repeating it.">
+                    <WidgetPanel
+                        title="External case study"
+                        description="Optional: when the full write-up lives elsewhere (Behance, Dribbble, the client's own site), the project page links out to it instead of repeating it."
+                        summary={data.external_url || 'No external link'}
+                    >
                         <Field label="Case study URL" error={errors.external_url}>
                             <Input
                                 type="url"
@@ -152,9 +290,9 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 placeholder="https://www.behance.net/gallery/..."
                             />
                         </Field>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Cover image">
+                    <WidgetPanel title="Cover image" summary={preview ? 'Cover set' : 'No cover yet'} defaultOpen={!isEdit}>
                         <div className="space-y-4">
                             <MediaPickerField
                                 label="Cover Image"
@@ -169,22 +307,23 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 <Input value={data.image_alt} onChange={(e) => setData('image_alt', e.target.value)} />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel
+                    <WidgetPanel
                         title="Project gallery"
                         description="Dedicated-page images in exact display order, first row renders first. Add from the Media Library, reorder with ↑ ↓, or remove."
+                        summary={`${(data.gallery_images ?? []).length} image${(data.gallery_images ?? []).length === 1 ? '' : 's'}`}
                     >
                         <ProjectGalleryManager
                             values={data.gallery_images ?? []}
                             onChange={(gallery_images) => setData('gallery_images', gallery_images)}
                             error={errors.gallery_images}
                         />
-                    </Panel>
+                    </WidgetPanel>
                 </div>
 
-                <div className="space-y-6">
-                    <Panel title="Publishing">
+                <div className="space-y-4">
+                    <WidgetPanel title="Publishing" summary={`${data.status}${data.featured ? ' · featured' : ''}`} defaultOpen>
                         <div className="space-y-5">
                             <Field label="Status" error={errors.status} required>
                                 <Select value={data.status} onChange={(e) => setData('status', e.target.value)}>
@@ -211,9 +350,39 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                                 />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Tags">
+                    <WidgetPanel
+                        title="SEO"
+                        description="How this project's page appears in search results and when shared. Empty fields use the project's title, description and cover."
+                        summary={data.meta_title || 'Uses the project title and description'}
+                    >
+                        <div className="grid gap-4">
+                            <Field label="Meta title" error={errors.meta_title} hint={<LengthHint value={data.meta_title} limit={60} />}>
+                                <Input value={data.meta_title} onChange={(e) => setData('meta_title', e.target.value)} placeholder={`${data.title || 'Project'} | Marketorr`} />
+                            </Field>
+                            <Field label="Meta description" error={errors.meta_description} hint={<LengthHint value={data.meta_description} limit={160} />}>
+                                <Textarea rows={3} value={data.meta_description} onChange={(e) => setData('meta_description', e.target.value)} placeholder={data.description.slice(0, 160)} />
+                            </Field>
+                            <MediaPickerField
+                                label="Share image"
+                                hint="Leave empty to use the cover image."
+                                value={data.meta_og_image}
+                                error={errors.meta_og_image}
+                                onChange={(url) => setData('meta_og_image', url)}
+                            />
+                            <Field label="Robots" error={errors.meta_robots}>
+                                <Select value={data.meta_robots} onChange={(e) => setData('meta_robots', e.target.value)}>
+                                    {ROBOTS.map((value) => <option key={value} value={value}>{value}</option>)}
+                                </Select>
+                            </Field>
+                            <Field label="Canonical URL" error={errors.canonical_url}>
+                                <Input value={data.canonical_url} onChange={(e) => setData('canonical_url', e.target.value)} placeholder="https://" />
+                            </Field>
+                        </div>
+                    </WidgetPanel>
+
+                    <WidgetPanel title="Tags" summary={data.tags.filter(Boolean).join(', ') || 'No tags'}>
                         <RepeatableList
                             values={data.tags}
                             onChange={(tags) => setData('tags', tags)}
@@ -223,15 +392,48 @@ export default function ProjectForm({ project, statuses, categories = [] }) {
                             name="tags"
                         />
                         {errors.tags && <p className="mt-2 text-[12px] text-[#ff6b6b]">{errors.tags}</p>}
-                    </Panel>
+                    </WidgetPanel>
+
+                    {Object.keys(errors).length > 0 && (
+                        <p className="rounded-lg border border-[#ff6b6b]/40 bg-[#ff6b6b]/10 px-4 py-3 text-[12px] text-[#ff6b6b]">
+                            Some fields need attention. Open the widgets above to see which.
+                        </p>
+                    )}
 
                     <Button type="submit" disabled={processing} className="w-full">
                         {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create project'}
                     </Button>
                 </div>
             </form>
+
+            {/* Always on screen, so the project can be saved from wherever the
+                editor is on the page; it says when there are unsaved changes. */}
+            <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
+                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                    <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
+                        <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
+                        {isDirty ? 'You have unsaved changes.' : isEdit ? 'No unsaved changes.' : 'Fill in the project, then create it.'}
+                    </p>
+                    <div className="flex gap-2">
+                        {isDirty && (
+                            <Button type="button" variant="secondary" onClick={() => reset()} disabled={processing}>Discard</Button>
+                        )}
+                        <Button type="submit" form="project-form" disabled={processing}>
+                            {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create project'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </>
     );
+}
+
+/**
+ * Keyed by project, so a newly created project (which stays on its form)
+ * starts a fresh form in edit mode rather than keeping the create form's state.
+ */
+export default function ProjectForm(props) {
+    return <ProjectFormFields key={props.project?.id ?? 'new'} {...props} />;
 }
 
 ProjectForm.layout = (page) => <AdminLayout>{page}</AdminLayout>;

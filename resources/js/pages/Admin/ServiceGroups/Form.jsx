@@ -60,7 +60,7 @@ export default function ServiceGroupForm({ group, statuses }) {
                             <Field label="Name" error={errors.name} required>
                                 <Input value={data.name} onChange={(e) => onNameChange(e.target.value)} placeholder="Branding" />
                             </Field>
-                            <Field label="Slug" error={errors.slug} required hint="Used in the URL: /services/your-tab">
+                            <Field label="Slug" error={errors.slug} required hint={`Opens this tab: /services#${slugify(data.slug) || 'your-tab'} · lowercase letters, numbers and hyphens`}>
                                 <Input
                                     value={data.slug}
                                     onChange={(e) => {

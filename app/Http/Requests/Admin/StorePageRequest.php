@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\ContentStatus;
+use App\Http\Requests\Admin\Concerns\NormalisesSlug;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
 class StorePageRequest extends FormRequest
 {
+    use NormalisesSlug;
+
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() ?? false;
@@ -20,7 +23,7 @@ class StorePageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slug' => ['required', 'string', 'max:190', 'alpha_dash', $this->slugRule()],
+            'slug' => ['required', 'string', 'max:190', 'regex:'.self::SLUG_PATTERN, $this->slugRule(), Rule::notIn(['admin', 'storage', 'build', 'images', 'fonts', 'videos', 'robots-txt', 'sitemap-xml', 'up'])],
             'title' => ['required', 'string', 'max:190'],
             'status' => ['required', Rule::enum(ContentStatus::class)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -46,6 +49,7 @@ class StorePageRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->slugMessages(),
             'schema_markup.json' => 'Schema markup must be valid JSON.',
         ];
     }
@@ -63,5 +67,10 @@ class StorePageRequest extends FormRequest
             : null;
 
         return $data;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge($this->normalisedSlug());
     }
 }

@@ -5,6 +5,78 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { Fragment as Fragment$1, jsx, jsxs } from "react/jsx-runtime";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import Lenis from "lenis";
+//#region resources/js/lib/tokens.js
+var COLORS = {
+	grape: "#891FFB",
+	iris: "#507AF4",
+	frost: "#1BE2EB",
+	gradient: "linear-gradient(90deg, #891FFB 0%, #507AF4 50%, #1BE2EB 100%)"
+};
+/**
+* A colour at a given two-digit hex alpha (`'88'` = 53%), for brand colours
+* and plain hex colours alike: `withAlpha(COLORS.iris, '88')`.
+*
+* @param {string} color
+* @param {string} alphaHex
+* @return {string}
+*/
+function withAlpha(color, alphaHex) {
+	return `${color}${alphaHex}`;
+}
+COLORS.grape, COLORS.iris, COLORS.frost;
+/** The brand colours in order, for cycling accents across a variable list. */
+var BRAND_SEQUENCE = [
+	COLORS.grape,
+	COLORS.iris,
+	COLORS.frost
+];
+/**
+* The logo's three-bar mark, measured off the artwork itself
+* (`marketorr-logo-on-*.png`, 1000x118): bars 38 / 75 / 112 tall, 35 wide,
+* 19 apart, in exactly these colours. Every size is a fraction of the
+* tallest bar, so the mark keeps its proportions at any size.
+*
+* Each bar is square except its top-left corner, which curves through the
+* bar's full width - the shortest bar is very nearly a quarter circle.
+*/
+var MARK = {
+	colors: [
+		"#830DFD",
+		"#4A76F8",
+		"#10E2F1"
+	],
+	heights: [
+		.34,
+		.67,
+		1
+	],
+	width: .3125,
+	gap: .17
+};
+/**
+* Size and shape of one mark bar, for a mark whose tallest bar is `tallest`
+* (any CSS length).
+*
+* @param {string} tallest
+* @param {number} index
+* @return {{ width: string, height: string, borderRadius: string }}
+*/
+function markBarStyle(tallest, index) {
+	const width = `calc(${tallest} * ${MARK.width})`;
+	return {
+		width,
+		height: `calc(${tallest} * ${MARK.heights[index % MARK.heights.length]})`,
+		borderRadius: `${width} 0 0 0`
+	};
+}
+/**
+* The gap between mark bars, for a mark whose tallest bar is `tallest`.
+*
+* @param {string} tallest
+* @return {string}
+*/
+var markGap = (tallest) => `calc(${tallest} * ${MARK.gap})`;
+//#endregion
 //#region resources/js/lib/theme.jsx
 var STORAGE_KEY = "theme";
 var LEGACY_KEY = "marketorr-theme";
@@ -97,7 +169,7 @@ function useThemeMotion() {
 		orb: light ? .65 : 1,
 		float: light ? .55 : 1,
 		orbBlur: light ? 100 : 140,
-		barGlow: (color, base) => `0 0 ${Math.round(base * (light ? .5 : 1))}px ${color}55`
+		barGlow: (color, base) => `0 0 ${Math.round(base * (light ? .5 : 1))}px ${withAlpha(color, "55")}`
 	};
 }
 //#endregion
@@ -177,7 +249,7 @@ function GradientTitle({ text, highlightWords = 1 }) {
 		children: highlight
 	})] });
 }
-function Tag({ children, accent = "#891FFB" }) {
+function Tag({ children, accent = "var(--brand-1)" }) {
 	return /* @__PURE__ */ jsxs("span", {
 		className: "inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--chip)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)]",
 		children: [/* @__PURE__ */ jsx("span", {
@@ -202,7 +274,7 @@ function GradientButton({ href, children, variant = "primary" }) {
 		href,
 		"data-cursor": "cta",
 		className: "btn-press group relative inline-flex items-center gap-3 overflow-hidden rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.18em] text-white",
-		style: { background: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)" },
+		style: { background: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))" },
 		children: [
 			/* @__PURE__ */ jsx("span", {
 				className: "absolute inset-0 bg-white/0 transition-colors duration-300 group-hover:bg-white/15",
@@ -269,27 +341,30 @@ var NATURAL_HEIGHT = 118;
 * been uploaded it is used for both themes, so a half-finished upload never
 * leaves one theme with no logo at all.
 *
-* @param {{ className?: string, height?: number, draggable?: boolean }} props
+* @param {{ className?: string, height?: number, draggable?: boolean, source?: string|null }} props
 *   `height` is the rendered height in px; the width follows the artwork's
 *   own aspect ratio. `priority` marks the header instance, which is often
 *   the first image on screen, for an early high-priority fetch. `draggable`
 *   false stops the browser lifting a ghost copy of the logo on drag.
 */
-function BrandLogo({ className = "", height = 26, priority = false, draggable }) {
+function BrandLogo({ className = "", height = 26, priority = false, draggable, source = null }) {
 	const { settings } = usePage().props;
 	const style = {
 		height,
 		width: "auto"
 	};
-	const uploadedLight = settings?.logo ?? settings?.logoDark ?? null;
-	const uploadedDark = settings?.logoDark ?? settings?.logo ?? null;
+	const isLockup = (url) => [ON_LIGHT, ON_DARK].some((path) => String(url ?? "").endsWith(path));
+	const override = source && !isLockup(source) ? source : null;
+	const uploadedLight = override ?? settings?.logo ?? settings?.logoDark ?? null;
+	const uploadedDark = override ?? settings?.logoDark ?? settings?.logo ?? null;
 	const onLight = uploadedLight ?? assetUrl(ON_LIGHT);
 	const onDark = uploadedDark ?? assetUrl(ON_DARK);
 	const siteName = settings?.siteName ?? "Marketorr";
-	const intrinsic = uploadedLight ? {} : {
+	const isShipped = (url) => !url || [ON_LIGHT, ON_DARK].some((path) => String(url).endsWith(path));
+	const intrinsic = isShipped(onLight) && isShipped(onDark) ? {
 		width: NATURAL_WIDTH,
 		height: NATURAL_HEIGHT
-	};
+	} : {};
 	return /* @__PURE__ */ jsxs("span", {
 		className: `brand-logo inline-flex items-center ${className}`.trimEnd(),
 		children: [
@@ -489,7 +564,7 @@ function ThemeToggle({ compact = false }) {
 			"aria-hidden": true,
 			children: [
 				/* @__PURE__ */ jsx(motion.span, {
-					className: "absolute inset-0 rounded-full bg-[#1BE2EB]",
+					className: "absolute inset-0 rounded-full bg-[var(--brand-3)]",
 					initial: false,
 					animate: {
 						scale: dark ? 0 : 1,
@@ -506,7 +581,7 @@ function ThemeToggle({ compact = false }) {
 					}
 				}),
 				/* @__PURE__ */ jsx(motion.span, {
-					className: "absolute inset-0 rounded-full bg-[#891FFB]",
+					className: "absolute inset-0 rounded-full bg-[var(--brand-1)]",
 					initial: false,
 					animate: {
 						scale: dark ? 1 : 0,
@@ -596,9 +671,9 @@ function useTapIntent() {
 //#endregion
 //#region resources/js/components/motion/PageTransition.jsx
 var PANELS = [
-	"#891FFB",
-	"#507AF4",
-	"#1BE2EB"
+	"var(--brand-1)",
+	"var(--brand-2)",
+	"var(--brand-3)"
 ];
 /**
 * Whether a visit is a reader actually going to another page.
@@ -848,67 +923,6 @@ function PageTransition({ children }) {
 	}, cycle), children] });
 }
 //#endregion
-//#region resources/js/lib/tokens.js
-var COLORS = {
-	grape: "#891FFB",
-	iris: "#507AF4",
-	frost: "#1BE2EB",
-	gradient: "linear-gradient(90deg, #891FFB 0%, #507AF4 50%, #1BE2EB 100%)"
-};
-COLORS.grape, COLORS.iris, COLORS.frost;
-/** The brand colours in order, for cycling accents across a variable list. */
-var BRAND_SEQUENCE = [
-	COLORS.grape,
-	COLORS.iris,
-	COLORS.frost
-];
-/**
-* The logo's three-bar mark, measured off the artwork itself
-* (`marketorr-logo-on-*.png`, 1000x118): bars 38 / 75 / 112 tall, 35 wide,
-* 19 apart, in exactly these colours. Every size is a fraction of the
-* tallest bar, so the mark keeps its proportions at any size.
-*
-* Each bar is square except its top-left corner, which curves through the
-* bar's full width - the shortest bar is very nearly a quarter circle.
-*/
-var MARK = {
-	colors: [
-		"#830DFD",
-		"#4A76F8",
-		"#10E2F1"
-	],
-	heights: [
-		.34,
-		.67,
-		1
-	],
-	width: .3125,
-	gap: .17
-};
-/**
-* Size and shape of one mark bar, for a mark whose tallest bar is `tallest`
-* (any CSS length).
-*
-* @param {string} tallest
-* @param {number} index
-* @return {{ width: string, height: string, borderRadius: string }}
-*/
-function markBarStyle(tallest, index) {
-	const width = `calc(${tallest} * ${MARK.width})`;
-	return {
-		width,
-		height: `calc(${tallest} * ${MARK.heights[index % MARK.heights.length]})`,
-		borderRadius: `${width} 0 0 0`
-	};
-}
-/**
-* The gap between mark bars, for a mark whose tallest bar is `tallest`.
-*
-* @param {string} tallest
-* @return {string}
-*/
-var markGap = (tallest) => `calc(${tallest} * ${MARK.gap})`;
-//#endregion
 //#region resources/js/components/layout/Header.jsx
 /**
 * Used only when the Header menu has been emptied in the admin panel — the
@@ -930,6 +944,10 @@ var FALLBACK_LINKS = [
 	{
 		label: "Our Work",
 		href: "/work"
+	},
+	{
+		label: "Contact",
+		href: "/contact"
 	}
 ];
 function menuTreeToMegaGroups(items, fallbackGroups) {
@@ -940,6 +958,7 @@ function menuTreeToMegaGroups(items, fallbackGroups) {
 			slug: fallback?.slug ?? `menu-${parent.id}`,
 			name: parent.label,
 			href: parent.url,
+			short: parent.description ?? fallback?.short,
 			newTab: parent.newTab,
 			items: (parent.children ?? []).map((child) => {
 				const fallbackItem = fallback?.items?.find((item) => item.href === child.url || `/services/${fallback.slug}/${item.slug}` === child.url || item.name === child.label);
@@ -1541,11 +1560,22 @@ function ServicesMegaMenu({ categories, onNavigate, onPointerOpen, onPointerClos
 				/* @__PURE__ */ jsx("span", {
 					"aria-hidden": true,
 					className: "absolute inset-x-0 bottom-0 h-px opacity-90",
-					style: { background: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)" }
+					style: { background: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))" }
 				})
 			]
 		})]
 	});
+}
+function MegaMenuHeadline({ before = "", highlight = "", after = "" }) {
+	return /* @__PURE__ */ jsxs(Fragment$1, { children: [
+		before,
+		before && highlight ? " " : "",
+		highlight && /* @__PURE__ */ jsx("span", {
+			className: "text-gradient",
+			children: highlight
+		}),
+		after
+	] });
 }
 /** Small chevron toggle used by the mobile Services accordion. */
 function AccordionChevron({ expanded }) {
@@ -1661,25 +1691,18 @@ function Header() {
 	const workGroups = props.workGroups ?? [];
 	const serviceMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "mega_services") ? menuTreeToMegaGroups(props.menus.mega_services, serviceCategories) : serviceCategories;
 	const workMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "mega_work") ? menuTreeToMegaGroups(props.menus.mega_work, workGroups) : workGroups;
+	const serviceMenuContent = props.menuContent?.mega_services ?? {};
+	const workMenuContent = props.menuContent?.mega_work ?? {};
 	const hasManagedHeader = Object.prototype.hasOwnProperty.call(props.menus ?? {}, "header");
 	const managedHeaderItems = props.menus?.header ?? [];
-	const menuLinks = managedHeaderItems.filter((item) => item.url !== "/contact").map((item) => ({
+	const mapMenuLink = (item) => ({
 		label: item.label,
 		href: item.url,
 		newTab: item.newTab,
 		children: item.children ?? []
-	}));
-	const LINKS = hasManagedHeader ? menuLinks : FALLBACK_LINKS;
-	const managedContact = managedHeaderItems.find((item) => item.url === "/contact");
-	const MOBILE_LINKS = [...LINKS, ...managedContact ? [{
-		label: managedContact.label,
-		href: managedContact.url,
-		newTab: managedContact.newTab,
-		children: managedContact.children ?? []
-	}] : hasManagedHeader ? [] : [{
-		label: "Contact",
-		href: "/contact"
-	}]];
+	});
+	const LINKS = hasManagedHeader ? managedHeaderItems.filter((item) => item.showOnDesktop !== false).map(mapMenuLink) : FALLBACK_LINKS;
+	const MOBILE_LINKS = hasManagedHeader ? managedHeaderItems.filter((item) => item.showOnMobile !== false).map(mapMenuLink) : FALLBACK_LINKS;
 	const settings = props.settings;
 	const isSticky = settings?.headerSticky !== false;
 	const ctaLink = settings?.headerCtaLink || "/contact";
@@ -1885,7 +1908,7 @@ function Header() {
 									onClick: (event) => navigateWithCurtain(event, ctaLink),
 									"data-cursor": "cta",
 									className: "btn-press inline-flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-3 text-[12px] xl:px-6 font-bold uppercase tracking-[0.16em] text-white",
-									style: { background: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)" },
+									style: { background: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))" },
 									children: [
 										ctaText,
 										" ",
@@ -1919,7 +1942,17 @@ function Header() {
 					categories: serviceMegaGroups,
 					onNavigate: () => setMega(false),
 					onPointerOpen: openMega,
-					onPointerClose: scheduleMegaClose
+					onPointerClose: scheduleMegaClose,
+					eyebrow: serviceMenuContent.eyebrow ?? "",
+					headline: /* @__PURE__ */ jsx(MegaMenuHeadline, {
+						before: serviceMenuContent.headline_before ?? "",
+						highlight: serviceMenuContent.headline_highlight ?? "",
+						after: serviceMenuContent.headline_after ?? ""
+					}),
+					blurb: serviceMenuContent.blurb ?? "",
+					allLabel: serviceMenuContent.all_label ?? "",
+					allHref: serviceMenuContent.all_url ?? "",
+					showAllLink: Boolean(serviceMenuContent.all_label && serviceMenuContent.all_url)
 				}, "services-mega-menu")
 			}),
 			/* @__PURE__ */ jsx(AnimatePresence, {
@@ -1931,16 +1964,13 @@ function Header() {
 					onPointerClose: scheduleWorkMegaClose,
 					Section: WorkMegaSection,
 					ariaLabel: "Our Work menu",
-					eyebrow: "Selected work",
-					headline: /* @__PURE__ */ jsxs(Fragment$1, { children: [
-						"Work that ",
-						/* @__PURE__ */ jsx("span", {
-							className: "text-gradient",
-							children: "creates impact"
-						}),
-						"."
-					] }),
-					blurb: "Two practices, one standard. Pick a discipline, or go straight to the project you want to see.",
+					eyebrow: workMenuContent.eyebrow ?? "",
+					headline: /* @__PURE__ */ jsx(MegaMenuHeadline, {
+						before: workMenuContent.headline_before ?? "",
+						highlight: workMenuContent.headline_highlight ?? "",
+						after: workMenuContent.headline_after ?? ""
+					}),
+					blurb: workMenuContent.blurb ?? "",
 					showAllLink: false
 				}, "work-mega-menu")
 			}),
@@ -2117,24 +2147,11 @@ var EASE$1 = [
 	.36,
 	1
 ];
-var BRAND_GRADIENT = "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)";
-/**
-* Used only when the Footer — Sitemap menu has been emptied in the admin
-* panel, so the footer is never left without links.
-*/
-var FALLBACK_SITEMAP = [
-	{
-		label: "About",
-		url: "/about"
-	},
-	{
-		label: "Our Work",
-		url: "/work"
-	},
-	{
-		label: "Contact",
-		url: "/contact"
-	}
+var BRAND_GRADIENT = "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))";
+var MOTTO_COLORS = [
+	"var(--brand-1)",
+	"var(--brand-2)",
+	"var(--brand-3)"
 ];
 function ColumnHeading({ children }) {
 	return /* @__PURE__ */ jsx("p", {
@@ -2170,56 +2187,17 @@ function FooterMenuItems({ items }) {
 }
 function Footer() {
 	const reduce = useReducedMotion();
-	const { settings, menus, serviceCategories } = usePage().props;
-	const socials = [
-		{
-			label: "LinkedIn",
-			href: settings.socials.linkedin
-		},
-		{
-			label: "Facebook",
-			href: settings.socials.facebook
-		},
-		{
-			label: "Behance",
-			href: settings.socials.behance
-		},
-		{
-			label: "Dribbble",
-			href: settings.socials.dribbble
-		},
-		{
-			label: "Instagram",
-			href: settings.socials.instagram
-		},
-		{
-			label: "X",
-			href: settings.socials.x
-		},
-		{
-			label: "YouTube",
-			href: settings.socials.youtube
-		}
-	].filter((s) => s.href);
-	const sitemap = (Object.prototype.hasOwnProperty.call(menus ?? {}, "footer_sitemap") ? menus.footer_sitemap : FALLBACK_SITEMAP).filter((link) => link.url !== "/services");
-	const categorySlugs = (serviceCategories ?? []).map((category) => category.slug);
-	const serviceLinks = (menus?.footer_services ?? []).map((link) => {
-		const slug = link.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
-		return {
-			...slug && categorySlugs.includes(slug) ? {
-				...link,
-				url: `/services#${slug}`
-			} : link,
-			children: (link.children ?? []).map((child) => {
-				const childSlug = child.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
-				return childSlug && categorySlugs.includes(childSlug) ? {
-					...child,
-					url: `/services#${childSlug}`
-				} : child;
-			})
-		};
-	});
+	const { settings, menus, menuLabels = {}, menuContent = {} } = usePage().props;
+	const socials = (menus?.footer_social ?? []).map((item) => ({
+		label: item.label,
+		href: item.url
+	}));
+	const sitemap = menus?.footer_sitemap ?? [];
+	const serviceLinks = menus?.footer_services ?? [];
 	const legalLinks = menus?.footer_legal ?? [];
+	const intro = menuContent.footer_social?.intro ?? "";
+	const mottoItems = menuContent.footer_legal?.motto_items ?? [];
+	const copyright = (menuContent.footer_legal?.copyright ?? "").replaceAll("{year}", String((/* @__PURE__ */ new Date()).getFullYear())).replaceAll("{site}", settings.siteName ?? "");
 	const container = {
 		hidden: {},
 		show: { transition: {
@@ -2290,20 +2268,21 @@ function Footer() {
 						variants: item,
 						className: "col-span-2 lg:col-span-4 lg:max-w-md",
 						children: [
-							/* @__PURE__ */ jsx("div", {
+							settings.footerLogoVisible !== false && /* @__PURE__ */ jsx("div", {
 								className: "flex items-center",
 								children: /* @__PURE__ */ jsx(BrandLogo, {
+									source: settings.footerLogo,
 									height: 28,
 									draggable: false
 								})
 							}),
-							settings.footerIntro && /* @__PURE__ */ jsx("p", {
+							intro && /* @__PURE__ */ jsx("p", {
 								className: "mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]",
-								children: settings.footerIntro
+								children: intro
 							}),
 							/* @__PURE__ */ jsxs("div", {
 								className: "mt-7",
-								children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Follow us" }), /* @__PURE__ */ jsx("div", {
+								children: [/* @__PURE__ */ jsx(ColumnHeading, { children: menuLabels.footer_social ?? "" }), /* @__PURE__ */ jsx("div", {
 									className: "mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold tracking-[0.16em]",
 									children: socials.map((s) => /* @__PURE__ */ jsx("a", {
 										href: s.href,
@@ -2311,7 +2290,7 @@ function Footer() {
 										rel: "noreferrer",
 										"data-social-platform": s.label,
 										className: "footer-link",
-										children: s.label.charAt(0).toUpperCase() + s.label.slice(1).toLowerCase()
+										children: s.label
 									}, s.label))
 								})]
 							})
@@ -2321,7 +2300,7 @@ function Footer() {
 						variants: item,
 						"aria-label": "Footer",
 						className: "lg:col-span-3 lg:col-start-6",
-						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Quick Links" }), /* @__PURE__ */ jsx("ul", {
+						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: menuLabels.footer_sitemap ?? "" }), /* @__PURE__ */ jsx("ul", {
 							className: "mt-5 flex flex-col gap-3 text-[15px] font-semibold",
 							children: /* @__PURE__ */ jsx(FooterMenuItems, { items: sitemap })
 						})]
@@ -2329,7 +2308,7 @@ function Footer() {
 					/* @__PURE__ */ jsxs(motion.div, {
 						variants: item,
 						className: "lg:col-span-3 lg:col-start-10",
-						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: "Services" }), /* @__PURE__ */ jsx("ul", {
+						children: [/* @__PURE__ */ jsx(ColumnHeading, { children: menuLabels.footer_services ?? "" }), /* @__PURE__ */ jsx("ul", {
 							className: "mt-5 flex flex-col gap-3 text-[15px] font-semibold",
 							children: /* @__PURE__ */ jsx(FooterMenuItems, { items: serviceLinks })
 						})]
@@ -2350,36 +2329,19 @@ function Footer() {
 					children: [
 						/* @__PURE__ */ jsx("span", {
 							className: "md:justify-self-start",
-							children: settings.copyright
+							children: copyright
 						}),
-						/* @__PURE__ */ jsxs("p", {
+						mottoItems.length > 0 && /* @__PURE__ */ jsx("p", {
 							className: "footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] md:justify-self-center",
-							children: [
-								/* @__PURE__ */ jsx("span", {
-									style: { color: "#891FFB" },
-									children: "IDEA"
-								}),
-								/* @__PURE__ */ jsx("span", {
-									"aria-hidden": true,
-									className: "bg-clip-text px-1.5 text-transparent sm:px-2.5",
-									style: { backgroundImage: BRAND_GRADIENT },
-									children: "→"
-								}),
-								/* @__PURE__ */ jsx("span", {
-									style: { color: "#507AF4" },
-									children: "EXPERIENCE"
-								}),
-								/* @__PURE__ */ jsx("span", {
-									"aria-hidden": true,
-									className: "bg-clip-text px-1.5 text-transparent sm:px-2.5",
-									style: { backgroundImage: BRAND_GRADIENT },
-									children: "→"
-								}),
-								/* @__PURE__ */ jsx("span", {
-									style: { color: "#1BE2EB" },
-									children: "RESULT"
-								})
-							]
+							children: mottoItems.map((word, index) => /* @__PURE__ */ jsxs("span", { children: [index > 0 && /* @__PURE__ */ jsx("span", {
+								"aria-hidden": true,
+								className: "bg-clip-text px-1.5 text-transparent sm:px-2.5",
+								style: { backgroundImage: BRAND_GRADIENT },
+								children: "→"
+							}), /* @__PURE__ */ jsx("span", {
+								style: { color: MOTTO_COLORS[index % MOTTO_COLORS.length] },
+								children: word
+							})] }, `${word}-${index}`))
 						}),
 						/* @__PURE__ */ jsx("div", {
 							className: "flex flex-wrap items-center gap-x-6 gap-y-2 md:justify-self-end",
@@ -2699,7 +2661,7 @@ function CustomCursor() {
 			y: ry,
 			translateX: "-50%",
 			translateY: "-50%",
-			background: "linear-gradient(135deg, rgba(137,31,251,0.5), rgba(80,122,244,0.4), rgba(27,226,235,0.4))"
+			background: "linear-gradient(135deg, rgba(var(--brand-1-rgb),0.5), rgba(var(--brand-2-rgb),0.4), rgba(var(--brand-3-rgb),0.4))"
 		},
 		animate: {
 			opacity: auraOpacity,
@@ -2719,7 +2681,7 @@ function CustomCursor() {
 			width,
 			height,
 			backgroundColor: isView ? "var(--ink)" : "rgba(255,255,255,0)",
-			borderColor: isSocial ? "rgba(255,255,255,0)" : isView ? "var(--ink)" : state === "default" ? "var(--ink-faint)" : "#891FFB",
+			borderColor: isSocial ? "rgba(255,255,255,0)" : isView ? "var(--ink)" : state === "default" ? "var(--ink-faint)" : "var(--brand-1)",
 			scale: ripple ? [
 				1,
 				1.35,
@@ -2735,7 +2697,7 @@ function CustomCursor() {
 			/* @__PURE__ */ jsx("span", {
 				className: "absolute inset-0 rounded-full",
 				style: {
-					background: state === "hover" || state === "cta" ? "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)" : "transparent",
+					background: state === "hover" || state === "cta" ? "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))" : "transparent",
 					filter: "blur(10px)",
 					opacity: state === "default" || isLabel ? 0 : .7
 				}
@@ -2760,9 +2722,9 @@ function CustomCursor() {
 					]
 				},
 				style: {
-					backgroundImage: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)",
+					backgroundImage: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))",
 					backgroundSize: "160% 100%",
-					boxShadow: "0 10px 30px -10px rgba(137,31,251,0.55), 0 6px 20px -8px rgba(27,226,235,0.45)"
+					boxShadow: "0 10px 30px -10px rgba(var(--brand-1-rgb),0.55), 0 6px 20px -8px rgba(var(--brand-3-rgb),0.45)"
 				}
 			}),
 			/* @__PURE__ */ jsxs(motion.span, {
@@ -2852,7 +2814,7 @@ function ScrollProgress() {
 		className: "fixed left-0 top-0 z-[10000] h-[3px] w-full origin-left",
 		style: {
 			scaleX,
-			background: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)"
+			background: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))"
 		},
 		"aria-hidden": true
 	});
@@ -3018,7 +2980,7 @@ function ShowcaseTransition() {
 			/* @__PURE__ */ jsx(motion.span, {
 				"aria-hidden": true,
 				className: "absolute inset-0",
-				style: { background: `radial-gradient(90% 55% at 50% 108%, ${flight.accent ?? "#891FFB"}55, transparent 65%)` },
+				style: { background: `radial-gradient(90% 55% at 50% 108%, ${withAlpha(flight.accent ?? "#891FFB", "55")}, transparent 65%)` },
 				initial: { opacity: 0 },
 				animate: {
 					opacity: 1,
@@ -3031,7 +2993,7 @@ function ShowcaseTransition() {
 			/* @__PURE__ */ jsx(motion.span, {
 				"aria-hidden": true,
 				className: "absolute inset-x-0 bottom-0 h-[4px]",
-				style: { background: "linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)" },
+				style: { background: "linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))" },
 				initial: { scaleX: 0 },
 				animate: {
 					scaleX: 1,
@@ -3068,8 +3030,8 @@ function MobileProjectButton() {
 		onClick: navigateToContact,
 		"data-cursor": "cta",
 		"aria-label": "Start a project",
-		className: "btn-press fixed right-2 top-1/2 z-[120] flex w-10 -translate-y-1/2 flex-col items-center rounded-full py-3.5 text-white shadow-[0_10px_28px_-12px_rgba(80,122,244,0.75)] lg:hidden",
-		style: { background: "linear-gradient(180deg,#891FFB,#507AF4,#1BE2EB)" },
+		className: "btn-press fixed right-2 top-1/2 z-[120] flex w-10 -translate-y-1/2 flex-col items-center rounded-full py-3.5 text-white shadow-[0_10px_28px_-12px_rgba(var(--brand-2-rgb),0.75)] lg:hidden",
+		style: { background: "linear-gradient(180deg,var(--brand-1),var(--brand-2),var(--brand-3))" },
 		children: [/* @__PURE__ */ jsx("span", {
 			className: "rotate-180 text-[9px] font-extrabold uppercase leading-none tracking-[0.16em] [writing-mode:vertical-rl]",
 			children: "Start a Project"
@@ -3115,45 +3077,46 @@ createServer((page) => {
 		render: ReactDOMServer.renderToString,
 		resolve: async (name) => {
 			const resolved = await (/* @__PURE__ */ Object.assign({
-				"./pages/About.jsx": () => import("./assets/About-BVV_YRGa.js"),
-				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-BaNFr2-l.js"),
-				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-BGk62lm9.js"),
-				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-BiOdEVIx.js"),
-				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-BbWpC73h.js"),
-				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-CUli7nKH.js"),
-				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-BXOx21di.js"),
-				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-Bx7eLwQe.js"),
-				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-CZ0lP27n.js"),
-				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-lhfYEDj8.js"),
-				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-C6KK7uVQ.js"),
-				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-Cx572-61.js"),
-				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-BD-y-PYW.js"),
-				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-LfFeXQ9r.js"),
-				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-CdKlU8FY.js"),
-				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-Day8Z8ec.js"),
-				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-C8qPO2Ya.js"),
-				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-CokzQ8Sj.js"),
-				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-CXTlpB9v.js"),
-				"./pages/Admin/ServiceGroups/Form.jsx": () => import("./assets/Form-pk2CbJ7a.js"),
-				"./pages/Admin/ServiceGroups/Index.jsx": () => import("./assets/Index-BtRsDSer.js"),
-				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-BH0njkIr.js"),
-				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-D_ee0nlo.js"),
-				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-CKKq8XLj.js"),
-				"./pages/Admin/SubServices/Form.jsx": () => import("./assets/Form-YB7ciNTL.js"),
-				"./pages/Admin/SubServices/Index.jsx": () => import("./assets/Index-DB78RX2J.js"),
-				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-DKrXm_4-.js"),
-				"./pages/CmsPage.jsx": () => import("./assets/CmsPage-BKopjCsG.js"),
-				"./pages/ContactPage.jsx": () => import("./assets/ContactPage-Bu3LjEBB.js"),
-				"./pages/Home.jsx": () => import("./assets/Home-CLdGRFVH.js"),
-				"./pages/Privacy.jsx": () => import("./assets/Privacy-C0X8YjTu.js"),
-				"./pages/Services/Index.jsx": () => import("./assets/Index-dYN0nl7b.js"),
-				"./pages/Services/Show.jsx": () => import("./assets/Show-CysSeZy0.js"),
-				"./pages/Services/SubShow.jsx": () => import("./assets/SubShow-A4J4SrM7.js"),
-				"./pages/Terms.jsx": () => import("./assets/Terms-CINDpgad.js"),
-				"./pages/Work/Index.jsx": () => import("./assets/Index-DfCgd-6q.js"),
-				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-BnNMxUPt.js"),
-				"./pages/Work/Show.jsx": () => import("./assets/Show-BoHZBzNu.js"),
-				"./pages/Work/UiuxProject.jsx": () => import("./assets/UiuxProject-B0dOmgd1.js")
+				"./pages/About.jsx": () => import("./assets/About-DC0tl0Zx.js"),
+				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-DRoJV_23.js"),
+				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-Cwa7vBsO.js"),
+				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-Bt-BOhSJ.js"),
+				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-CDd7U8Vr.js"),
+				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-LPIto3b-.js"),
+				"./pages/Admin/CustomCode.jsx": () => import("./assets/CustomCode-DnfTDEsl.js"),
+				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-CydxuR7e.js"),
+				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-Ua61_hZC.js"),
+				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-C8yU0uCv.js"),
+				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-yrxK5r7h.js"),
+				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-DqiU9dEn.js"),
+				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-BxAl8YW7.js"),
+				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-sApY3N7E.js"),
+				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-CxsvxJit.js"),
+				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-BYNVwetX.js"),
+				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-BdM7l1l8.js"),
+				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-OIHOzOJp.js"),
+				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-ChNeeXzm.js"),
+				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-DF71nLTN.js"),
+				"./pages/Admin/ServiceGroups/Form.jsx": () => import("./assets/Form-CEpC3OlF.js"),
+				"./pages/Admin/ServiceGroups/Index.jsx": () => import("./assets/Index-CKjOnQaQ.js"),
+				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-n-9RZLED.js"),
+				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-Gln-b-SE.js"),
+				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-CBhkjuQC.js"),
+				"./pages/Admin/SubServices/Form.jsx": () => import("./assets/Form-Cksr65Wd.js"),
+				"./pages/Admin/SubServices/Index.jsx": () => import("./assets/Index-COUwzFzV.js"),
+				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-Dni_X3n5.js"),
+				"./pages/CmsPage.jsx": () => import("./assets/CmsPage-B8rUEjLf.js"),
+				"./pages/ContactPage.jsx": () => import("./assets/ContactPage-DyUM6PBA.js"),
+				"./pages/Home.jsx": () => import("./assets/Home-Bo9B-4AA.js"),
+				"./pages/Privacy.jsx": () => import("./assets/Privacy-DlIbhwzm.js"),
+				"./pages/Services/Index.jsx": () => import("./assets/Index-C1zwoYz4.js"),
+				"./pages/Services/Show.jsx": () => import("./assets/Show-CielSNap.js"),
+				"./pages/Services/SubShow.jsx": () => import("./assets/SubShow-CdZql8oE.js"),
+				"./pages/Terms.jsx": () => import("./assets/Terms-CJg_fEax.js"),
+				"./pages/Work/Index.jsx": () => import("./assets/Index-DwDYZJjY.js"),
+				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-PlDRwHVS.js"),
+				"./pages/Work/Show.jsx": () => import("./assets/Show-DenWPOWp.js"),
+				"./pages/Work/UiuxProject.jsx": () => import("./assets/UiuxProject-BIxbjmys.js")
 			}))[`./pages/${name}.jsx`]();
 			resolved.default.layout = resolved.default.layout || ((children) => /* @__PURE__ */ jsx(Layout, { children }));
 			return resolved;
@@ -3165,4 +3128,4 @@ createServer((page) => {
 	});
 });
 //#endregion
-export { useTheme as _, markBarStyle as a, useTapIntent as c, BrandLogo as d, assetUrl as f, Tag as g, SectionLabel as h, MARK as i, MagneticButton as l, GradientTitle as m, BRAND_SEQUENCE as n, markGap as o, GradientButton as p, COLORS as r, transitionTo as s, consumeShowcaseArrival as t, useBoxPointer as u, useThemeMotion as v };
+export { markBarStyle as _, useBoxPointer as a, GradientButton as c, Tag as d, useTheme as f, MARK as g, COLORS as h, MagneticButton as i, GradientTitle as l, BRAND_SEQUENCE as m, transitionTo as n, BrandLogo as o, useThemeMotion as p, useTapIntent as r, assetUrl as s, consumeShowcaseArrival as t, SectionLabel as u, markGap as v, withAlpha as y };

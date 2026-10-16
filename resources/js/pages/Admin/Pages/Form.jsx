@@ -85,7 +85,7 @@ export default function PageForm({ page, statuses }) {
                                 required={!isSystem}
                                 hint={isSystem
                                     ? 'Locked: this page backs a built-in route.'
-                                    : 'Used in the URL: /your-slug'}
+                                    : `Live address: /${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`}
                                 className="sm:col-span-2"
                             >
                                 <Input
@@ -173,10 +173,10 @@ export default function PageForm({ page, statuses }) {
                         </div>
                     </Panel>
 
-                    <Button type="submit" disabled={processing} className="w-full">
-                        {processing ? 'Saving…' : isEdit ? 'Save page' : 'Create page'}
-                    </Button>
                 </div>
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? 'Saving…' : isEdit ? 'Save page' : 'Create page'}
+                </Button>
             </form>
         </>
     );

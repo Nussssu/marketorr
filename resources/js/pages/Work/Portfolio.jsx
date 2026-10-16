@@ -6,7 +6,7 @@ import WorkShowcase from '../../components/sections/WorkShowcase';
 import { projectHref } from '../../lib/uiuxShowcase';
 
 /** The UI/UX portfolio's accent: the brand purple, so its visuals carry a purple shade. */
-const UIUX_ACCENT = '#891FFB';
+const UIUX_ACCENT = 'var(--brand-1)';
 
 /**
  * The six UI/UX showcase projects in the shape the Branding showcase uses.
@@ -53,7 +53,13 @@ function uiuxProjects(showcase) {
  */
 export default function WorkPortfolio({ group, projects = [], showcase = null }) {
     const { url } = usePage();
-    const listed = useMemo(() => (showcase ? uiuxProjects(showcase) : projects), [showcase, projects]);
+    const listed = useMemo(() => {
+        if (!showcase) return projects;
+
+        return [...projects, ...uiuxProjects(showcase)].filter(
+            (project, index, allProjects) => allProjects.findIndex(({ slug }) => slug === project.slug) === index,
+        );
+    }, [showcase, projects]);
 
     // `?project=` — from a printer page's Close or the Our Work menu — brings
     // that project's visual into view.

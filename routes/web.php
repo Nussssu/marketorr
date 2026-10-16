@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CustomCodeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\GlobalBlockController;
@@ -78,6 +79,8 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::patch('projects/reorder', [AdminProjectController::class, 'reorder'])->name('projects.reorder');
         Route::patch('projects/{project}/featured', [AdminProjectController::class, 'toggleFeatured'])->name('projects.featured');
+        Route::patch('projects/{project}/status', [AdminProjectController::class, 'updateStatus'])->name('projects.status');
+        Route::post('projects/{project}/duplicate', [AdminProjectController::class, 'duplicate'])->name('projects.duplicate');
         Route::resource('projects', AdminProjectController::class)->except('show');
 
         Route::patch('services/reorder', [AdminServiceController::class, 'reorder'])->name('services.reorder');
@@ -87,6 +90,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('service-groups', ServiceGroupController::class)->except('show');
 
         Route::patch('sub-services/reorder', [SubServiceController::class, 'reorder'])->name('sub-services.reorder');
+        Route::post('sub-services/{sub_service}/duplicate', [SubServiceController::class, 'duplicate'])->name('sub-services.duplicate');
         Route::resource('sub-services', SubServiceController::class)->except('show');
 
         Route::post('media/fetch', [MediaController::class, 'fetch'])->name('media.fetch');
@@ -105,6 +109,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('pages', AdminPageController::class)->except('show');
 
         Route::get('menus', [MenuController::class, 'index'])->name('menus.index');
+        Route::put('menus', [MenuController::class, 'updateAll'])->name('menus.update-all');
         Route::put('menus/{location}', [MenuController::class, 'update'])->name('menus.update');
 
         Route::get('blocks', [GlobalBlockController::class, 'index'])->name('blocks.index');
@@ -126,6 +131,9 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::middleware('super-admin')->group(function (): void {
             Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
             Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+            Route::get('custom-code', [CustomCodeController::class, 'edit'])->name('custom-code.edit');
+            Route::put('custom-code', [CustomCodeController::class, 'update'])->name('custom-code.update');
 
             Route::get('email-smtp', [MailSettingController::class, 'edit'])->name('mail.smtp');
             Route::put('email-smtp', [MailSettingController::class, 'update']);

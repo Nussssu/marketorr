@@ -3,17 +3,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 
 const EASE = [0.22, 1, 0.36, 1];
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
-
-/**
- * Used only when the Footer — Sitemap menu has been emptied in the admin
- * panel, so the footer is never left without links.
- */
-const FALLBACK_SITEMAP = [
-    { label: 'About', url: '/about' },
-    { label: 'Our Work', url: '/work' },
-    { label: 'Contact', url: '/contact' },
-];
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
+const MOTTO_COLORS = ['var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
 
 function ColumnHeading({ children }) {
     return (
@@ -50,41 +41,16 @@ function FooterMenuItems({ items }) {
 
 export default function Footer() {
     const reduce = useReducedMotion();
-    const { settings, menus, serviceCategories } = usePage().props;
-    // Only the socials that have been filled in, in display order.
-    const socials = [
-        { label: 'LinkedIn', href: settings.socials.linkedin },
-        { label: 'Facebook', href: settings.socials.facebook },
-        { label: 'Behance', href: settings.socials.behance },
-        { label: 'Dribbble', href: settings.socials.dribbble },
-        { label: 'Instagram', href: settings.socials.instagram },
-        { label: 'X', href: settings.socials.x },
-        { label: 'YouTube', href: settings.socials.youtube },
-    ].filter((s) => s.href);
-
-    // Services has its own column, so it is not repeated under Quick Links.
-    const sitemap = (Object.prototype.hasOwnProperty.call(menus ?? {}, 'footer_sitemap')
-        ? menus.footer_sitemap
-        : FALLBACK_SITEMAP)
-        .filter((link) => link.url !== '/services');
-    // Branding and UI/UX live as sections of the Services page, so a link to
-    // their old standalone page goes straight to that section instead.
-    const categorySlugs = (serviceCategories ?? []).map((category) => category.slug);
-    const serviceLinks = (menus?.footer_services ?? []).map((link) => {
-        const slug = link.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
-
-        return {
-            ...(slug && categorySlugs.includes(slug) ? { ...link, url: `/services#${slug}` } : link),
-            children: (link.children ?? []).map((child) => {
-                const childSlug = child.url?.match(/^\/services\/([^/#?]+)\/?$/)?.[1];
-
-                return childSlug && categorySlugs.includes(childSlug)
-                    ? { ...child, url: `/services#${childSlug}` }
-                    : child;
-            }),
-        };
-    });
+    const { settings, menus, menuLabels = {}, menuContent = {} } = usePage().props;
+    const socials = (menus?.footer_social ?? []).map((item) => ({ label: item.label, href: item.url }));
+    const sitemap = menus?.footer_sitemap ?? [];
+    const serviceLinks = menus?.footer_services ?? [];
     const legalLinks = menus?.footer_legal ?? [];
+    const intro = menuContent.footer_social?.intro ?? '';
+    const mottoItems = menuContent.footer_legal?.motto_items ?? [];
+    const copyright = (menuContent.footer_legal?.copyright ?? '')
+        .replaceAll('{year}', String(new Date().getFullYear()))
+        .replaceAll('{site}', settings.siteName ?? '');
 
     const container = {
         hidden: {},
@@ -128,16 +94,18 @@ export default function Footer() {
             >
                 {/* Brand + intro */}
                 <motion.div variants={item} className="col-span-2 lg:col-span-4 lg:max-w-md">
-                    <div className="flex items-center">
-                        <BrandLogo height={28} draggable={false} />
-                    </div>
-                    {settings.footerIntro && (
+                    {settings.footerLogoVisible !== false && (
+                        <div className="flex items-center">
+                            <BrandLogo source={settings.footerLogo} height={28} draggable={false} />
+                        </div>
+                    )}
+                    {intro && (
                         <p className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[var(--mute)]">
-                            {settings.footerIntro}
+                            {intro}
                         </p>
                     )}
                     <div className="mt-7">
-                        <ColumnHeading>Follow us</ColumnHeading>
+                        <ColumnHeading>{menuLabels.footer_social ?? ''}</ColumnHeading>
                         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-bold tracking-[0.16em]">
                             {socials.map((s) => (
                                 <a
@@ -148,7 +116,7 @@ export default function Footer() {
                                     data-social-platform={s.label}
                                     className="footer-link"
                                 >
-                                    {s.label.charAt(0).toUpperCase() + s.label.slice(1).toLowerCase()}
+                                    {s.label}
                                 </a>
                             ))}
                         </div>
@@ -157,7 +125,7 @@ export default function Footer() {
 
                 {/* Sitemap */}
                 <motion.nav variants={item} aria-label="Footer" className="lg:col-span-3 lg:col-start-6">
-                    <ColumnHeading>Quick Links</ColumnHeading>
+                    <ColumnHeading>{menuLabels.footer_sitemap ?? ''}</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
                         <FooterMenuItems items={sitemap} />
                     </ul>
@@ -165,7 +133,7 @@ export default function Footer() {
 
                 {/* Services */}
                 <motion.div variants={item} className="lg:col-span-3 lg:col-start-10">
-                    <ColumnHeading>Services</ColumnHeading>
+                    <ColumnHeading>{menuLabels.footer_services ?? ''}</ColumnHeading>
                     <ul className="mt-5 flex flex-col gap-3 text-[15px] font-semibold">
                         <FooterMenuItems items={serviceLinks} />
                     </ul>
@@ -180,14 +148,19 @@ export default function Footer() {
                     viewport={{ once: true, margin: '-4% 0px' }}
                     className="container-x flex flex-col items-start gap-4 py-6 text-[12px] text-[var(--ink-faint)] md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-8"
                 >
-                    <span className="md:justify-self-start">{settings.copyright}</span>
-                    <p className="footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] md:justify-self-center">
-                        <span style={{ color: '#891FFB' }}>IDEA</span>
-                        <span aria-hidden className="bg-clip-text px-1.5 text-transparent sm:px-2.5" style={{ backgroundImage: BRAND_GRADIENT }}>→</span>
-                        <span style={{ color: '#507AF4' }}>EXPERIENCE</span>
-                        <span aria-hidden className="bg-clip-text px-1.5 text-transparent sm:px-2.5" style={{ backgroundImage: BRAND_GRADIENT }}>→</span>
-                        <span style={{ color: '#1BE2EB' }}>RESULT</span>
-                    </p>
+                    <span className="md:justify-self-start">{copyright}</span>
+                    {mottoItems.length > 0 && (
+                        <p className="footer-motto font-display text-[12px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] md:justify-self-center">
+                            {mottoItems.map((word, index) => (
+                                <span key={`${word}-${index}`}>
+                                    {index > 0 && (
+                                        <span aria-hidden className="bg-clip-text px-1.5 text-transparent sm:px-2.5" style={{ backgroundImage: BRAND_GRADIENT }}>→</span>
+                                    )}
+                                    <span style={{ color: MOTTO_COLORS[index % MOTTO_COLORS.length] }}>{word}</span>
+                                </span>
+                            ))}
+                        </p>
+                    )}
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 md:justify-self-end">
                         {legalLinks.map((item) => (
                             <FooterMenuLink key={`${item.label}-${item.url}`} item={item} className="footer-link footer-link--inline" />

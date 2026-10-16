@@ -46,7 +46,7 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
                                     {item.short} Combined with the rest of the {item.category.name} practice, it ships as one coherent system, not a pile of deliverables.
                                 </p>
                             </div>
-                            <Link href="/contact" data-cursor="cta" className="btn-press mt-8 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            <Link href="/contact" data-cursor="cta" className="btn-press mt-8 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}>
                                 Discuss this service ↗
                             </Link>
                         </div>
@@ -54,7 +54,7 @@ export default function SubServicePage({ item, siblings, parentHref, parentName 
 
                     <div className="mt-8 flex flex-wrap gap-4">
                         <MagneticButton>
-                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}>
                                 Start a project ↗
                             </Link>
                         </MagneticButton>

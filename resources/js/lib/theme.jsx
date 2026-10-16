@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { withAlpha } from './tokens';
 
 const STORAGE_KEY = 'theme';
 const LEGACY_KEY = 'marketorr-theme';
@@ -107,6 +108,6 @@ export function useThemeMotion() {
         float: light ? 0.55 : 1, // decorative float amplitude multiplier
         orbBlur: light ? 100 : 140, // ambient orb blur radius
         barGlow: (color, base) =>
-            `0 0 ${Math.round(base * (light ? 0.5 : 1))}px ${color}55`,
+            `0 0 ${Math.round(base * (light ? 0.5 : 1))}px ${withAlpha(color, '55')}`,
     };
 }

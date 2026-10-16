@@ -37,7 +37,7 @@ function LeadershipCopy({ name, role, bio }) {
             className="flex flex-col justify-center"
         >
             {role && (
-                <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[#891FFB]">
+                <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--brand-1)]">
                     {role}
                 </p>
             )}

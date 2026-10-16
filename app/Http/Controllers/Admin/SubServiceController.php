@@ -84,6 +84,24 @@ class SubServiceController extends Controller
         return back()->with('success', 'Sub-service deleted.');
     }
 
+    public function duplicate(SubService $subService): RedirectResponse
+    {
+        $copy = $subService->replicate();
+        $copy->slug = $this->uniqueSlug($subService->slug.'-copy');
+        $copy->name = $subService->name.' (Copy)';
+        $copy->status = ContentStatus::Draft;
+        $copy->sort_order = (int) SubService::query()
+            ->where('service_group_id', $subService->service_group_id)
+            ->max('sort_order') + 1;
+        $copy->save();
+
+        ServiceGroup::forgetCatalogue();
+
+        return redirect()
+            ->route('admin.sub-services.edit', $copy)
+            ->with('success', 'Sub-service copied.');
+    }
+
     /**
      * Persist a drag-and-drop ordering as a single pass of `sort_order` values.
      */
@@ -117,6 +135,18 @@ class SubServiceController extends Controller
                 'name' => $group->name,
             ])
             ->all();
+    }
+
+    private function uniqueSlug(string $base): string
+    {
+        $slug = $base;
+        $suffix = 2;
+
+        while (SubService::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 
     /**

@@ -6,6 +6,8 @@ use App\Enums\MenuLocation;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\Project;
+use App\Models\ServiceGroup;
+use App\Models\Setting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,15 +23,18 @@ class MenuSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->menus() as [$location, $items]) {
-            $menu = Menu::query()->updateOrCreate(
+            $menu = Menu::query()->firstOrCreate(
                 ['location' => $location],
-                ['name' => $location->label()],
+                [
+                    'name' => $location->label(),
+                    'content' => $location->defaultContent() ?: null,
+                ],
             );
 
-            foreach ($items as $order => [$label, $url, $children]) {
+            foreach ($items as $order => [$label, $url, $children, $description]) {
                 $parent = MenuItem::query()->firstOrCreate(
                     ['menu_id' => $menu->id, 'label' => $label, 'parent_id' => null],
-                    ['url' => $url, 'enabled' => true, 'sort_order' => $order],
+                    ['url' => $url, 'description' => $description, 'enabled' => true, 'sort_order' => $order],
                 );
 
                 foreach ($children as $childOrder => [$childLabel, $childUrl]) {
@@ -43,31 +48,44 @@ class MenuSeeder extends Seeder
     }
 
     /**
-     * @return array<int, array{0: MenuLocation, 1: array<int, array{0: string, 1: string, 2: array<int, array{0: string, 1: string}>}>}>
+     * @return array<int, array{0: MenuLocation, 1: array<int, array{0: string, 1: string, 2: array<int, array{0: string, 1: string}>, 3: ?string}>}>
      */
     private function menus(): array
     {
         return [
             [MenuLocation::Header, [
-                ['Home', '/', []],
-                ['About', '/about', []],
-                ['Services', '/services', []],
-                ['Our Work', '/work', []],
+                ['Home', '/', [], null],
+                ['About', '/about', [], null],
+                ['Services', '/services', [], null],
+                ['Our Work', '/work', [], null],
             ]],
             [MenuLocation::FooterSitemap, [
-                ['About', '/about', []],
-                ['Our Work', '/work', []],
-                ['Contact', '/contact', []],
+                ['About', '/about', [], null],
+                ['Our Work', '/work', [], null],
+                ['Contact', '/contact', [], null],
             ]],
             [MenuLocation::FooterServices, [
-                ['Branding', '/services#branding', []],
-                ['UI/UX Design', '/services#ui-ux', []],
+                ['Branding', '/services#branding', [], null],
+                ['UI/UX Design', '/services#ui-ux', [], null],
             ]],
             [MenuLocation::FooterLegal, [
-                ['Privacy', '/privacy', []],
-                ['Terms', '/terms', []],
+                ['Privacy', '/privacy', [], null],
+                ['Terms', '/terms', [], null],
             ]],
-            [MenuLocation::MegaServices, collect(config('subservices'))
+            [MenuLocation::FooterSocial, collect([
+                'LinkedIn' => 'social_linkedin',
+                'Facebook' => 'social_facebook',
+                'Behance' => 'social_behance',
+                'Dribbble' => 'social_dribbble',
+                'Instagram' => 'social_instagram',
+                'X' => 'social_x',
+                'YouTube' => 'social_youtube',
+            ])
+                ->map(fn (string $column, string $label): array => [$label, (string) (Setting::defaults()[$column] ?? ''), [], null])
+                ->filter(fn (array $item): bool => $item[1] !== '')
+                ->values()
+                ->all()],
+            [MenuLocation::MegaServices, collect(ServiceGroup::catalogue())
                 ->map(fn (array $category): array => [
                     $category['name'],
                     '/services#'.$category['slug'],
@@ -75,6 +93,7 @@ class MenuSeeder extends Seeder
                         $item['name'],
                         '/services/'.$category['slug'].'/'.$item['slug'],
                     ])->all(),
+                    $category['tagline'] ?? null,
                 ])->all()],
             [MenuLocation::MegaWork, collect(Project::workGroupSummaries())
                 ->map(fn (array $group): array => [
@@ -84,6 +103,7 @@ class MenuSeeder extends Seeder
                         $item['name'],
                         $item['href'],
                     ])->all(),
+                    null,
                 ])->all()],
         ];
     }

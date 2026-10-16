@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Project;
 use App\Services\PublicAsset;
 use Database\Seeders\ProjectSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,12 +92,37 @@ class UiuxShowcaseTest extends TestCase
         $this->get('/work')
             ->assertInertia(fn ($page) => $page
                 ->where('workGroups.1.slug', 'uiux')
-                ->has('workGroups.1.items', 6)
-                ->where('workGroups.1.items.2.slug', 'microters')
-                ->where('workGroups.1.items.2.name', 'Microters')
-                ->where('workGroups.1.items.2.image', fn (string $image) => str_contains($image, '/microters/01-home.png'))
-                ->where('workGroups.1.items.2.href', '/work/portfolio/uiux?project=microters')
-                ->where('workGroups.1.items.0.image', null));
+                ->where('workGroups.1.items', function ($projects): bool {
+                    $microters = $projects->firstWhere('slug', 'microters');
+
+                    return $projects->count() === 10
+                        && $microters['name'] === 'Microters'
+                        && str_contains($microters['image'], '/microters/01-home.png')
+                        && $microters['href'] === '/work/portfolio/uiux?project=microters';
+                }));
+    }
+
+    public function test_admin_managed_uiux_projects_are_kept_alongside_showcase_projects(): void
+    {
+        $project = Project::factory()->create([
+            'slug' => 'admin-managed-uiux',
+            'title' => 'Admin Managed UI/UX',
+            'work_group' => 'uiux',
+            'status' => 'published',
+            'sort_order' => -1,
+        ]);
+
+        $this->get('/work')
+            ->assertInertia(fn ($page) => $page
+                ->has('workGroups.1.items', 11)
+                ->where('workGroups.1.items.0.slug', $project->slug)
+                ->where('workGroups.1.items.0.name', $project->title)
+                ->where('workGroups.1.items.0.href', '/work/'.$project->slug));
+
+        $this->get('/work/portfolio/uiux')
+            ->assertInertia(fn ($page) => $page
+                ->where('projects.0.slug', $project->slug)
+                ->has('showcase', 6));
     }
 
     public function test_a_project_page_carries_its_summary_and_what_marketorr_worked_on(): void

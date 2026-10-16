@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
-import { COLORS } from '../../lib/tokens';
+import { COLORS, withAlpha } from '../../lib/tokens';
 
 const RICH_QUERY = '(min-width: 1024px)';
 const COARSE_QUERY = '(pointer: coarse)';
@@ -161,12 +161,12 @@ export default function DesignCanvas({ progress }) {
                     <Layer depth={-40} className="design-canvas__panel left-[2cqw] top-[6cqw] w-[66cqw] p-[3cqw]">
                         <div className="mb-[3cqw] flex gap-[1.2cqw]">
                             {SWATCHES.map((color) => (
-                                <span key={color} className="h-[1.6cqw] w-[1.6cqw] rounded-full" style={{ background: `${color}aa` }} />
+                                <span key={color} className="h-[1.6cqw] w-[1.6cqw] rounded-full" style={{ background: `${withAlpha(color, 'aa')}` }} />
                             ))}
                         </div>
                         <div
                             className={`design-canvas__build h-[15cqw] rounded-[1.4cqw] ${live('design-canvas__build--run')}`.trimEnd()}
-                            style={{ ...play, background: `linear-gradient(120deg, ${COLORS.grape}55, ${COLORS.iris}44 55%, ${COLORS.frost}33)` }}
+                            style={{ ...play, background: `linear-gradient(120deg, ${withAlpha(COLORS.grape, '55')}, ${withAlpha(COLORS.iris, '44')} 55%, ${withAlpha(COLORS.frost, '33')})` }}
                         />
                         <div className="mt-[3cqw] space-y-[1.6cqw]">
                             {COPY_LINES.map((width, index) => (
@@ -208,7 +208,7 @@ export default function DesignCanvas({ progress }) {
                                     <span
                                         key={color}
                                         className={`design-canvas__swatch h-[7cqw] flex-1 rounded-[1.2cqw] ${live('design-canvas__swatch--run')}`.trimEnd()}
-                                        style={{ ...play, background: color, boxShadow: `0 0 3cqw ${color}66`, animationDelay: `${index * 0.22}s` }}
+                                        style={{ ...play, background: color, boxShadow: `0 0 3cqw ${withAlpha(color, '66')}`, animationDelay: `${index * 0.22}s` }}
                                     />
                                 ))}
                             </div>
@@ -221,9 +221,9 @@ export default function DesignCanvas({ progress }) {
                         <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
                             <defs>
                                 <linearGradient id="design-canvas-pen" x1="0" x2="1" y1="0" y2="0">
-                                    <stop offset="0" stopColor={COLORS.grape} />
-                                    <stop offset="0.5" stopColor={COLORS.iris} />
-                                    <stop offset="1" stopColor={COLORS.frost} />
+                                    <stop offset="0" style={{ stopColor: COLORS.grape }} />
+                                    <stop offset="0.5" style={{ stopColor: COLORS.iris }} />
+                                    <stop offset="1" style={{ stopColor: COLORS.frost }} />
                                 </linearGradient>
                             </defs>
                             <path
@@ -253,7 +253,7 @@ export default function DesignCanvas({ progress }) {
                             style={play}
                         >
                             <svg viewBox="0 0 24 24" className="h-[5cqw] w-[5cqw]">
-                                <path d="M3 2l7.5 19 2.6-7.9L21 10.5z" fill={COLORS.grape} stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
+                                <path d="M3 2l7.5 19 2.6-7.9L21 10.5z" style={{ fill: COLORS.grape }} stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
                             </svg>
                             <span className="ml-[3.6cqw] mt-[-0.6cqw] block w-max rounded-full px-[1.8cqw] py-[0.6cqw] text-[2.2cqw] font-bold uppercase tracking-[0.12em] text-white" style={{ background: COLORS.grape }}>
                                 UI / UX

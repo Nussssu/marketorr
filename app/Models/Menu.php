@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['location', 'name'])]
+#[Fillable(['location', 'name', 'content'])]
 class Menu extends Model
 {
     /**
@@ -17,6 +17,7 @@ class Menu extends Model
     {
         return [
             'location' => MenuLocation::class,
+            'content' => 'array',
         ];
     }
 
@@ -52,6 +53,48 @@ class Menu extends Model
                         ])
                         ->values()
                         ->all(),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Public-facing parent labels keyed by menu location.
+     *
+     * @return array<string, string>
+     */
+    public static function publicLabels(): array
+    {
+        $stored = self::query()->pluck('name', 'location');
+
+        return collect(MenuLocation::cases())
+            ->mapWithKeys(fn (MenuLocation $location): array => [
+                $location->value => $stored->has($location->value)
+                    ? (string) $stored->get($location->value)
+                    : $location->label(),
+            ])
+            ->all();
+    }
+
+    /**
+     * Editable supporting copy keyed by menu location.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function publicContent(): array
+    {
+        $stored = self::query()->get()->keyBy(fn (self $menu): string => $menu->location->value);
+
+        return collect(MenuLocation::cases())
+            ->filter(fn (MenuLocation $location): bool => $location->defaultContent() !== [])
+            ->mapWithKeys(function (MenuLocation $location) use ($stored): array {
+                $menu = $stored->get($location->value);
+
+                return [
+                    $location->value => [
+                        ...$location->defaultContent(),
+                        ...($menu?->content ?? []),
+                    ],
                 ];
             })
             ->all();

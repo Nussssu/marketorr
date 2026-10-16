@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import PageMeta from '../../components/PageMeta';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import WorkHero from '../../components/sections/WorkHero';
@@ -159,9 +160,13 @@ export default function CaseStudy({ project: p }) {
         transitionTo(url);
     };
 
-    const hasDetails = Boolean(
-        brief && (brief.overview || brief.workedOn.length || brief.services.length || brief.highlights.length),
-    );
+    const hasOverview = Boolean(brief?.overview);
+    const hasWorkedOn = Boolean(brief?.workedOn?.length);
+    const hasServices = Boolean(brief?.services?.length);
+    const hasHighlights = Boolean(brief?.highlights?.length);
+    const hasClient = Boolean(brief?.client || brief?.website);
+    const hasBehanceProject = Boolean(brief?.behanceUrl);
+    const hasDetails = hasOverview || hasWorkedOn || hasServices || hasHighlights || hasClient || hasBehanceProject;
 
     const details = (
         <div className="space-y-12">
@@ -180,14 +185,14 @@ export default function CaseStudy({ project: p }) {
 
             {hasDetails ? (
                 <>
-                    <DetailBlock title="Overview">
-                        {brief.overview ? (
+                    {hasOverview && (
+                        <DetailBlock title="Overview">
                             <p className="text-[16px] leading-[1.8] text-[var(--mute)]">{brief.overview}</p>
-                        ) : null}
-                    </DetailBlock>
+                        </DetailBlock>
+                    )}
 
-                    <DetailBlock title="What Marketorr worked on">
-                        {brief.workedOn.length > 0 ? (
+                    {hasWorkedOn && (
+                        <DetailBlock title="What Marketorr worked on">
                             <ul className="space-y-3 text-[15px] leading-relaxed text-[var(--mute)]">
                                 {brief.workedOn.map((row) => (
                                     <li key={row} className="flex gap-3">
@@ -200,11 +205,11 @@ export default function CaseStudy({ project: p }) {
                                     </li>
                                 ))}
                             </ul>
-                        ) : null}
-                    </DetailBlock>
+                        </DetailBlock>
+                    )}
 
-                    <DetailBlock title={`${p.workGroupName ?? ''} services delivered`.trim()}>
-                        {brief.services.length > 0 ? (
+                    {hasServices && (
+                        <DetailBlock title={`${p.workGroupName ?? ''} services delivered`.trim()}>
                             <ul className="flex flex-wrap gap-2">
                                 {brief.services.map((service) => (
                                     <li key={service}>
@@ -212,11 +217,11 @@ export default function CaseStudy({ project: p }) {
                                     </li>
                                 ))}
                             </ul>
-                        ) : null}
-                    </DetailBlock>
+                        </DetailBlock>
+                    )}
 
-                    <DetailBlock title="Highlights">
-                        {brief.highlights.length > 0 ? (
+                    {hasHighlights && (
+                        <DetailBlock title="Highlights">
                             <dl className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
                                 {brief.highlights.map((row) => (
                                     <div key={row.label} className="py-4">
@@ -227,16 +232,16 @@ export default function CaseStudy({ project: p }) {
                                     </div>
                                 ))}
                             </dl>
-                        ) : null}
-                    </DetailBlock>
+                        </DetailBlock>
+                    )}
 
-                    <DetailBlock title="Client">
-                        {brief.client ? (
+                    {hasClient && (
+                        <DetailBlock title="Client">
                             <p className="text-[15px] leading-relaxed text-[var(--ink)]">
-                                {brief.client}
+                                {brief.client || null}
                                 {brief.website && (
                                     <>
-                                        <br />
+                                        {brief.client && <br />}
                                         <a
                                             href={brief.website}
                                             target="_blank"
@@ -248,10 +253,10 @@ export default function CaseStudy({ project: p }) {
                                     </>
                                 )}
                             </p>
-                        ) : null}
-                    </DetailBlock>
+                        </DetailBlock>
+                    )}
 
-                    {brief.behanceUrl && (
+                    {hasBehanceProject && (
                         <DetailBlock title="Full project">
                             <a
                                 href={brief.behanceUrl}
@@ -275,7 +280,7 @@ export default function CaseStudy({ project: p }) {
                         href="/#contact"
                         data-cursor="cta"
                         className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white"
-                        style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                        style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                     >
                         Start a project ↗
                     </Link>
@@ -296,7 +301,7 @@ export default function CaseStudy({ project: p }) {
 
     return (
         <>
-            <Head title={`${p.title} | Marketorr`} />
+            <PageMeta page={{ title: p.meta?.title, meta: p.meta ?? {} }} fallbackTitle={`${p.title} | Marketorr`} />
             <article className="bg-[var(--bg)] pb-28">
                 <WorkHero project={p} />
 

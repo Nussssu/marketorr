@@ -9,10 +9,10 @@ import Stage from '../decor/Stage';
 import { gradientLines } from '../../lib/headingLines';
 
 /** Tagline phrase colours, in order: purple, blue, cyan. */
-const TAGLINE_COLORS = ['#891FFB', '#507AF4', '#1BE2EB'];
+const TAGLINE_COLORS = ['var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
 
 /** Accent bar under each stat block, repeating if more metrics are configured. */
-const METRIC_ACCENTS = ['#891FFB', '#891FFB', '#507AF4', '#1BE2EB'];
+const METRIC_ACCENTS = ['var(--brand-1)', 'var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
 
 function MetricsGrid({ metrics }) {
     return (
@@ -179,7 +179,7 @@ export default function About({ variant = 'hero', heroHeading = false, compactTo
                             viewport={{ once: true }}
                             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-8 h-[3px] w-48 origin-left"
-                            style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                            style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                             aria-hidden
                         />
                     </div>

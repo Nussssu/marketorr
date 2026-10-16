@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { skipCoverForNextVisit } from './PageTransition';
+import { withAlpha } from '../../lib/tokens';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -214,14 +215,14 @@ export default function ShowcaseTransition() {
                     <motion.span
                         aria-hidden
                         className="absolute inset-0"
-                        style={{ background: `radial-gradient(90% 55% at 50% 108%, ${flight.accent ?? '#891FFB'}55, transparent 65%)` }}
+                        style={{ background: `radial-gradient(90% 55% at 50% 108%, ${withAlpha(flight.accent ?? '#891FFB', '55')}, transparent 65%)` }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1, transition: { duration: FLIGHT_MS / 1000, ease: [...EASE] } }}
                     />
                     <motion.span
                         aria-hidden
                         className="absolute inset-x-0 bottom-0 h-[4px]"
-                        style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                        style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1, transition: { duration: FLIGHT_MS / 1000, ease: [...EASE] } }}
                     />

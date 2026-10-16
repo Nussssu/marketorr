@@ -449,7 +449,7 @@ export default function MediaPickerModal({
                                                     onClick={() => setSelectedAsset(item)}
                                                     className={`group relative flex flex-col rounded-xl border p-2 text-left cursor-pointer transition-all ${
                                                         isSelected
-                                                            ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(27,226,235,0.15)] ring-1 ring-cyan-400'
+                                                            ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(var(--brand-3-rgb),0.15)] ring-1 ring-cyan-400'
                                                             : 'border-slate-800/80 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900/90'
                                                     }`}
                                                 >

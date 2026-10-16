@@ -14,4 +14,13 @@ class UpdateServiceRequest extends StoreServiceRequest
     {
         return Rule::unique('services', 'slug')->ignore($this->route('service'));
     }
+
+    /**
+     * Only a changed slug is checked against the tabs, so a record saved
+     * before this rule existed can still be edited.
+     */
+    protected function tabSlugRule(): Unique
+    {
+        return Rule::unique('service_groups', 'slug')->whereNot('slug', $this->route('service')?->slug);
+    }
 }

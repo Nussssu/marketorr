@@ -59,6 +59,10 @@ class HandleInertiaRequests extends Middleware
             'inquiryTypes' => InquiryType::values(),
             // Header and footer navigation, keyed by location.
             'menus' => fn () => Menu::publicTree(),
+            // Editable parent labels for those same menu locations.
+            'menuLabels' => fn () => Menu::publicLabels(),
+            // Supporting copy around the footer and mega-menu link trees.
+            'menuContent' => fn () => Menu::publicContent(),
             // The site-wide banner, or null when it is switched off.
             'announcement' => fn () => GlobalBlock::announcement(),
             // The header and footer Services menus list the two disciplines and

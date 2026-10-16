@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-const PANELS = ['#891FFB', '#507AF4', '#1BE2EB'];
+const PANELS = ['var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
 
 /**
  * Whether a visit is a reader actually going to another page.

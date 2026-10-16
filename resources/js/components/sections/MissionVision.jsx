@@ -71,7 +71,7 @@ export default function MissionVision({ content = {} }) {
                     className="pointer-events-none absolute inset-0 opacity-70"
                     style={{
                         background:
-                            'radial-gradient(40% 70% at 8% 100%, rgba(137,31,251,0.14), transparent 68%), radial-gradient(36% 65% at 95% 0%, rgba(27,226,235,0.1), transparent 66%)',
+                            'radial-gradient(40% 70% at 8% 100%, rgba(var(--brand-1-rgb),0.14), transparent 68%), radial-gradient(36% 65% at 95% 0%, rgba(var(--brand-3-rgb),0.1), transparent 66%)',
                     }}
                     aria-hidden
                 />

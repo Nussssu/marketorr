@@ -176,14 +176,14 @@ class ProjectCaseStudyTest extends TestCase
             'status' => 'published',
         ];
 
-        $this->actingAs($admin)->post('/admin/projects', $payload)->assertRedirect('/admin/projects');
+        $this->actingAs($admin)->post('/admin/projects', $payload)->assertRedirectContains('/edit');
 
         $project = Project::query()->sole();
         $this->assertSame($payload['external_url'], $project->external_url);
 
         $this->actingAs($admin)
             ->put("/admin/projects/{$project->id}", [...$payload, 'image' => null, 'external_url' => ''])
-            ->assertRedirect('/admin/projects');
+            ->assertRedirectContains('/edit');
 
         $this->assertNull($project->fresh()->external_url);
     }

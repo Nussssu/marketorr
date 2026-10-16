@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCategoryRequest;
 use App\Http\Requests\Admin\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Models\Page;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -16,27 +17,26 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
-    public function index(): Response
+    /**
+     * Categories are managed on the Our Work page, where the projects they
+     * file live; this old address goes there.
+     */
+    public function index(): RedirectResponse
     {
-        $categories = Category::query()
-            ->withCount('projects')
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
+        return redirect()->to(self::manageUrl());
+    }
 
-        return Inertia::render('Admin/Categories/Index', [
-            // Nested one level: the tree the site exposes is parent → child.
-            'categories' => $categories
-                ->whereNull('parent_id')
-                ->map(fn (Category $parent) => [
-                    ...$this->toAdminArray($parent),
-                    'children' => $categories
-                        ->where('parent_id', $parent->id)
-                        ->map(fn (Category $child) => $this->toAdminArray($child))
-                        ->values(),
-                ])
-                ->values(),
-        ]);
+    /**
+     * Where categories are managed: the Our Work page's builder, or the pages
+     * list when that page does not exist.
+     */
+    public static function manageUrl(): string
+    {
+        $workPage = Page::query()->where('slug', 'work')->first();
+
+        return $workPage
+            ? route('admin.pages.builder', $workPage).'#categories'
+            : route('admin.pages.index');
     }
 
     public function create(): Response
@@ -64,14 +64,14 @@ class CategoryController extends Controller
         Category::query()->create($data);
 
         return redirect()
-            ->route('admin.categories.index')
+            ->to(self::manageUrl())
             ->with('success', 'Category created.');
     }
 
     public function edit(Category $category): Response
     {
         return Inertia::render('Admin/Categories/Form', [
-            'category' => $this->toAdminArray($category),
+            'category' => $category->toAdminArray(),
             'statuses' => ContentStatus::values(),
             'parents' => $this->parentOptions($category),
         ]);
@@ -98,7 +98,7 @@ class CategoryController extends Controller
         $category->update($data);
 
         return redirect()
-            ->route('admin.categories.index')
+            ->to(self::manageUrl())
             ->with('success', 'Category updated.');
     }
 
@@ -164,24 +164,5 @@ class CategoryController extends Controller
         }
 
         Storage::disk('public')->delete($path);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function toAdminArray(Category $category): array
-    {
-        return [
-            'id' => $category->id,
-            'parent_id' => $category->parent_id,
-            'slug' => $category->slug,
-            'name' => $category->name,
-            'description' => $category->description,
-            'thumbnail_url' => $category->thumbnailUrl(),
-            'accent' => $category->accent,
-            'status' => $category->status->value,
-            'sort_order' => $category->sort_order,
-            'projects_count' => $category->projects_count ?? 0,
-        ];
     }
 }

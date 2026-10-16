@@ -64,7 +64,7 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
                 title={isEdit ? `Edit ${category.name}` : 'New category'}
                 subtitle="Categories file projects and can nest one level deep."
             >
-                <Button as="link" href="/admin/categories" variant="secondary">Cancel</Button>
+                <Button type="button" variant="secondary" onClick={() => window.history.back()}>Cancel</Button>
             </PageHeader>
 
             <form onSubmit={submit} className="grid gap-6 lg:grid-cols-3">
@@ -78,7 +78,7 @@ export default function CategoryForm({ category, statuses, parents = [] }) {
                                 label="Slug"
                                 error={errors.slug}
                                 required
-                                hint="Used when filtering by category."
+                                hint={`Saved as: ${slugify(data.slug) || 'your-category'} · used when filtering by category; lowercase letters, numbers and hyphens`}
                                 className="sm:col-span-2"
                             >
                                 <Input

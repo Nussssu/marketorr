@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="{{ $siteSettings?->meta_default_description ?? 'Marketorr is an independent creative & digital agency building brands, digital products and experiences designed for measurable growth.' }}" />
     <title inertia>{{ $siteSettings?->meta_default_title ?? 'Marketorr | We Turn Attention Into Results' }}</title>
-    @if ($faviconUrl = $siteSettings?->assetUrl($siteSettings->favicon_path))
+    {{-- An uploaded favicon replaces the set; the shipped Marketorr icon keeps every size. --}}
+    @if (($siteSettings?->favicon_path !== '/favicon.svg') && ($faviconUrl = $siteSettings?->assetUrl($siteSettings?->favicon_path)))
         <link rel="icon" href="{{ $faviconUrl }}" />
     @else
     <link rel="icon" href="{{ \App\Services\PublicAsset::to('favicon.ico') }}" sizes="any" />

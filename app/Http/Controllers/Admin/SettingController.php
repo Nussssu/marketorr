@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\MenuLocation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingRequest;
+use App\Models\MenuItem;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -32,29 +34,33 @@ class SettingController extends Controller
                 'directions_url' => $settings->directions_url,
                 'copyright_text' => $settings->copyright_text,
                 'footer_intro' => $settings->footer_intro,
-                'social_linkedin' => $settings->social_linkedin,
-                'social_facebook' => $settings->social_facebook,
-                'social_behance' => $settings->social_behance,
-                'social_dribbble' => $settings->social_dribbble,
-                'social_instagram' => $settings->social_instagram,
-                'social_x' => $settings->social_x,
-                'social_youtube' => $settings->social_youtube,
-                'hero_eyebrow' => $settings->hero_eyebrow,
-                'hero_heading_lines' => $settings->hero_heading_lines ?? [],
-                'hero_subtext' => $settings->hero_subtext,
-                'about_text' => $settings->about_text,
-                'about_metrics' => $settings->about_metrics ?? [],
+                'footer_logo_url' => $settings->assetUrl($settings->footer_logo_path),
+                'footer_logo_visible' => (bool) ($settings->footer_logo_visible ?? true),
+                'footer_motto_items' => is_array($settings->footer_motto_items)
+                    ? $settings->footer_motto_items
+                    : ['IDEA', 'EXPERIENCE', 'RESULT'],
                 'meta_default_title' => $settings->meta_default_title,
                 'meta_default_description' => $settings->meta_default_description,
                 'og_image_url' => $settings->ogImageUrl(),
-                'head_scripts' => $settings->head_scripts,
-                'body_scripts' => $settings->body_scripts,
                 'robots_txt' => $settings->robots_txt,
                 'schema_markup' => filled($settings->schema_markup)
                     ? json_encode($settings->schema_markup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                     : '',
                 'sitemap_enabled' => $settings->sitemap_enabled,
             ],
+            // The site-wide social links: one list for the footer and the
+            // Contact page, each with its own show/hide switch.
+            'socials' => MenuItem::query()
+                ->whereHas('menu', fn ($query) => $query->where('location', MenuLocation::FooterSocial))
+                ->whereNull('parent_id')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (MenuItem $item): array => [
+                    'label' => $item->label,
+                    'url' => $item->url,
+                    'enabled' => $item->enabled,
+                ])
+                ->values(),
         ]);
     }
 
@@ -96,6 +102,7 @@ class SettingController extends Controller
             'logo' => 'logo_path',
             'logo_dark' => 'logo_dark_path',
             'favicon' => 'favicon_path',
+            'footer_logo' => 'footer_logo_path',
             'meta_default_og_image' => 'meta_default_og_image',
         ];
     }

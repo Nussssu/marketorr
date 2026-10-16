@@ -90,7 +90,7 @@ export default function PagesIndex({ pages }) {
                                                         ? 'border-transparent'
                                                         : 'border-[var(--field-line)] bg-[var(--chip)]'
                                                 }`}
-                                                style={page.status === 'published' ? { background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' } : undefined}
+                                                style={page.status === 'published' ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
                                             >
                                                 <span
                                                     className={`absolute top-[3px] h-4 w-4 rounded-full bg-white transition-all ${

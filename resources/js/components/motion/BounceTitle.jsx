@@ -1,11 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 
-/** The brand gradient's three stops: purple, blue, cyan. */
-const STOPS = [
-    [0x89, 0x1f, 0xfb],
-    [0x50, 0x7a, 0xf4],
-    [0x1b, 0xe2, 0xeb],
-];
+/** The brand gradient's three stops, as the brand colour variables. */
+const STOPS = ['var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
 
 /**
  * The brand gradient's colour at `t` (0–1).
@@ -20,10 +16,9 @@ function brandColor(t) {
     const scaled = Math.min(1, Math.max(0, t)) * (STOPS.length - 1);
     const index = Math.min(STOPS.length - 2, Math.floor(scaled));
     const local = scaled - index;
-    const [a, b] = [STOPS[index], STOPS[index + 1]];
-    const channel = (k) => Math.round(a[k] + (b[k] - a[k]) * local);
+    const share = Math.round((1 - local) * 10000) / 100;
 
-    return `rgb(${channel(0)}, ${channel(1)}, ${channel(2)})`;
+    return `color-mix(in srgb, ${STOPS[index]} ${share}%, ${STOPS[index + 1]})`;
 }
 
 /**

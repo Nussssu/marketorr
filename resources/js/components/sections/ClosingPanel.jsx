@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import BounceTitle from '../motion/BounceTitle';
 
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
 
 /**
  * A centred closing panel: a small label, a heading and one button.

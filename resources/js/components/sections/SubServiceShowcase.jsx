@@ -11,7 +11,7 @@ import MediaPlaceholder from '../media/MediaPlaceholder';
 import { transitionTo } from '../motion/PageTransition';
 import { expandTo } from '../motion/ShowcaseTransition';
 
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
 
 /** Pads a position for display: 1 -> "01". */
 const pad = (n) => String(n).padStart(2, '0');
@@ -252,7 +252,7 @@ function DesktopShowcase({ category }) {
                 className="pointer-events-none absolute inset-0"
                 style={{
                     background:
-                        'radial-gradient(46% 34% at 10% 8%, rgba(137,31,251,0.10), transparent 70%), radial-gradient(40% 32% at 90% 92%, rgba(27,226,235,0.08), transparent 70%)',
+                        'radial-gradient(46% 34% at 10% 8%, rgba(var(--brand-1-rgb),0.10), transparent 70%), radial-gradient(40% 32% at 90% 92%, rgba(var(--brand-3-rgb),0.08), transparent 70%)',
                 }}
             />
 

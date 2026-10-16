@@ -7,6 +7,7 @@ use App\Enums\SectionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePageRequest;
 use App\Http\Requests\Admin\UpdatePageRequest;
+use App\Models\Category;
 use App\Models\Page;
 use App\Models\PageSection;
 use Illuminate\Http\RedirectResponse;
@@ -121,6 +122,8 @@ class PageController extends Controller
                     'dataDriven' => $section->type->isDataDriven(),
                 ]),
             'palette' => SectionType::palette(),
+            // The Our Work page also manages the categories its projects are filed under.
+            'categories' => $page->slug === 'work' ? Category::adminTree() : null,
         ]);
     }
 

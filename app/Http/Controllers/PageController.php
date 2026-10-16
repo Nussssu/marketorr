@@ -28,7 +28,6 @@ class PageController extends Controller
                 ->with('category.parent')
                 ->orderBy('sort_order')
                 ->get()
-                ->filter(fn (Project $project): bool => $project->workGroup() === 'branding')
                 ->map(fn (Project $project) => $project->toPublicArray())
                 ->values(),
             'uiuxShowcase' => $this->uiuxShowcaseCovers($showcase),

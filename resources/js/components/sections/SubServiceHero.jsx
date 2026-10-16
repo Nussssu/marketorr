@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { consumeShowcaseArrival } from '../motion/ShowcaseTransition';
 import { enter } from '../../lib/motion';
 import ServiceScene from '../decor/ServiceScene';
+import { withAlpha } from '../../lib/tokens';
 
 /**
  * Hero for every sub-service page (Brand Strategy … Design System).
@@ -41,7 +42,7 @@ export default function SubServiceHero({ item, parentHref }) {
             <div className="grid-bg pointer-events-none absolute inset-0" aria-hidden />
             <div
                 className="pointer-events-none absolute right-[-10%] top-[10%] h-[620px] w-[620px] rounded-full"
-                style={{ background: `radial-gradient(closest-side, ${item.accent}26, transparent)` }}
+                style={{ background: `radial-gradient(closest-side, ${withAlpha(item.accent, '26')}, transparent)` }}
                 aria-hidden
             />
 

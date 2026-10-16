@@ -82,8 +82,8 @@ export default function MediaForm({ medium }) {
                                     onDrop={onDrop}
                                     className={`group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-8 text-center transition-all ${
                                         isDragging
-                                            ? 'border-[#507AF4] bg-[#507AF4]/10 shadow-[0_0_0_1px_#507AF4]'
-                                            : 'border-[var(--field-line)] bg-[var(--bg)] hover:border-[#507AF4]/70 hover:bg-[var(--chip)]'
+                                            ? 'border-[var(--brand-2)] bg-[var(--brand-2)]/10 shadow-[0_0_0_1px_var(--brand-2)]'
+                                            : 'border-[var(--field-line)] bg-[var(--bg)] hover:border-[var(--brand-2)]/70 hover:bg-[var(--chip)]'
                                     }`}
                                 >
                                     <input
@@ -94,7 +94,7 @@ export default function MediaForm({ medium }) {
                                     />
                                     <span
                                         className="flex h-11 w-11 items-center justify-center rounded-full text-white transition-transform group-hover:-translate-y-0.5"
-                                        style={{ background: 'linear-gradient(135deg,#891FFB,#507AF4,#1BE2EB)' }}
+                                        style={{ background: 'linear-gradient(135deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                                         aria-hidden
                                     >
                                         <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">

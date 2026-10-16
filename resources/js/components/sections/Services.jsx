@@ -13,7 +13,7 @@ import { transitionTo } from '../motion/PageTransition';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import { gradientLines } from '../../lib/headingLines';
 
-const BRAND_GRADIENT = 'linear-gradient(90deg, #891FFB, #507AF4, #1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg, var(--brand-1), var(--brand-2), var(--brand-3))';
 
 function navigateWithCurtain(event, href, tapIntent) {
     if (event.defaultPrevented) return;
@@ -120,7 +120,7 @@ function CategoryGateway({ category, variants, solidHeadings = false }) {
                 aria-label={`Explore ${category.name} services`}
                 {...cardTapIntent}
                 onClick={(event) => navigateWithCurtain(event, exploreHref, cardTapIntent)}
-                className="absolute inset-0 z-0 rounded-3xl focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#507AF4]"
+                className="absolute inset-0 z-0 rounded-3xl focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-2)]"
             />
             <div className="pointer-events-none relative z-0 flex h-full gap-4 sm:gap-7">
                 <div className="flex h-full min-w-0 flex-1 flex-col justify-between gap-8">
@@ -134,7 +134,7 @@ function CategoryGateway({ category, variants, solidHeadings = false }) {
                             aria-label={`Explore ${category.name}`}
                             {...arrowTapIntent}
                             onClick={(event) => navigateWithCurtain(event, exploreHref, arrowTapIntent)}
-                            className="services-card__arrow pointer-events-auto relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white"
+                            className="services-card__arrow pointer-events-auto relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl text-[var(--ink)] transition-all duration-500 group-hover:rotate-45 group-hover:border-transparent group-hover:bg-[var(--brand-2)] group-hover:text-white"
                         >
                             ↗
                         </Link>

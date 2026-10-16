@@ -25,6 +25,8 @@ class Setting extends Model
             'schema_markup' => 'array',
             'sitemap_enabled' => 'boolean',
             'header_sticky' => 'boolean',
+            'footer_logo_visible' => 'boolean',
+            'footer_motto_items' => 'array',
         ];
     }
 
@@ -64,9 +66,9 @@ class Setting extends Model
     {
         return [
             'site_name' => 'Marketorr',
-            'logo_path' => null,
-            'logo_dark_path' => null,
-            'favicon_path' => null,
+            'logo_path' => '/images/logo/marketorr-logo-on-light.png',
+            'logo_dark_path' => '/images/logo/marketorr-logo-on-dark.png',
+            'favicon_path' => '/favicon.svg',
             'contact_email' => 'hello@marketorr.com',
             'contact_phone' => '+8801332850355',
             'location_text' => 'Remote-first · Worldwide',
@@ -74,6 +76,9 @@ class Setting extends Model
             'directions_url' => 'https://www.google.com/maps/search/?api=1&query=Natore+Tower+Uttara+Dhaka+1230+Bangladesh',
             'copyright_text' => '© {year} {site}. All rights reserved.',
             'footer_intro' => 'Independent creative & digital agency. We turn ideas into experiences, and experiences into measurable results.',
+            'footer_logo_path' => '/images/logo/marketorr-logo-on-light.png',
+            'footer_logo_visible' => true,
+            'footer_motto_items' => ['IDEA', 'EXPERIENCE', 'RESULT'],
             'social_linkedin' => 'https://www.linkedin.com/company/marketorr360',
             'social_facebook' => null,
             'social_behance' => 'https://www.behance.net/marketorr',
@@ -162,6 +167,11 @@ class Setting extends Model
             'favicon' => $this->assetUrl($this->favicon_path),
             'copyright' => $this->copyrightLine(),
             'footerIntro' => $this->footer_intro,
+            'footerLogo' => $this->assetUrl($this->footer_logo_path),
+            'footerLogoVisible' => (bool) ($this->footer_logo_visible ?? true),
+            'footerMottoItems' => is_array($this->footer_motto_items)
+                ? $this->footer_motto_items
+                : ['IDEA', 'EXPERIENCE', 'RESULT'],
             'socials' => [
                 'linkedin' => $this->social_linkedin,
                 'facebook' => $this->social_facebook,

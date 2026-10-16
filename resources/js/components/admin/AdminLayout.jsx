@@ -31,7 +31,6 @@ const NAV = [
         group: 'CONTENT MANAGEMENT',
         items: [
             { label: 'Pages', href: '/admin/pages' },
-            { label: 'Categories', href: '/admin/categories' },
             { label: 'Projects', href: '/admin/projects' },
             { label: 'Services', href: '/admin/sub-services' },
             { label: 'Media Library', href: '/admin/media' },
@@ -49,6 +48,7 @@ const NAV = [
                 matches: ['/admin/email-smtp', '/admin/mail', '/admin/email-templates', '/admin/settings/email'],
             },
             { label: 'Settings', href: '/admin/settings', superAdminOnly: true },
+            { label: 'Custom Code', href: '/admin/custom-code', superAdminOnly: true },
             { label: 'Audit Logs', href: '/admin/audit-logs' },
         ],
     },
@@ -105,7 +105,7 @@ export default function AdminLayout({ children }) {
             <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900 lg:hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                     <span className="font-display text-[15px] font-extrabold tracking-tight text-white">
-                        MARKETORR<span className="text-[#1BE2EB]">.</span> Admin
+                        MARKETORR<span className="text-[var(--brand-3)]">.</span> Admin
                     </span>
                     <button
                         onClick={() => setOpen((v) => !v)}
@@ -147,15 +147,15 @@ export default function AdminLayout({ children }) {
                             <defs>
                                 <linearGradient id="brand-bar-purple" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor="#A855F7" />
-                                    <stop offset="100%" stopColor="#891FFB" />
+                                    <stop offset="100%" style={{ stopColor: 'var(--brand-1)' }} />
                                 </linearGradient>
                                 <linearGradient id="brand-bar-blue" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor="#60A5FA" />
-                                    <stop offset="100%" stopColor="#507AF4" />
+                                    <stop offset="100%" style={{ stopColor: 'var(--brand-2)' }} />
                                 </linearGradient>
                                 <linearGradient id="brand-bar-cyan" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor="#22D3EE" />
-                                    <stop offset="100%" stopColor="#1BE2EB" />
+                                    <stop offset="100%" style={{ stopColor: 'var(--brand-3)' }} />
                                 </linearGradient>
                             </defs>
                             <rect x="0.5" y="10" width="3.8" height="10" rx="1.9" fill="url(#brand-bar-purple)" />
@@ -163,7 +163,7 @@ export default function AdminLayout({ children }) {
                             <rect x="13.1" y="0" width="3.8" height="20" rx="1.9" fill="url(#brand-bar-cyan)" />
                         </svg>
                         <span className="font-display text-[15px] font-extrabold tracking-tight text-white">
-                            MARKETORR<span className="text-[#1BE2EB]">.</span>
+                            MARKETORR<span className="text-[var(--brand-3)]">.</span>
                         </span>
                     </Link>
                     <button
@@ -241,9 +241,9 @@ export default function AdminLayout({ children }) {
             {notice && (
                 <div
                     role="status"
-                    className="fixed bottom-5 right-5 z-[200] flex max-w-sm items-start gap-3 rounded-xl border border-[#1BE2EB]/40 bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--ink)] shadow-2xl"
+                    className="fixed bottom-5 right-5 z-[200] flex max-w-sm items-start gap-3 rounded-xl border border-[var(--brand-3)]/40 bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--ink)] shadow-2xl"
                 >
-                    <span aria-hidden className="mt-0.5 text-[#1BE2EB]">✓</span>
+                    <span aria-hidden className="mt-0.5 text-[var(--brand-3)]">✓</span>
                     <span className="flex-1">{notice}</span>
                     <button
                         type="button"

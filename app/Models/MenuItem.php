@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'menu_id', 'parent_id', 'label', 'url',
-    'opens_in_new_tab', 'enabled', 'sort_order',
+    'menu_id', 'parent_id', 'label', 'url', 'description',
+    'opens_in_new_tab', 'enabled', 'show_on_desktop', 'show_on_mobile', 'sort_order',
 ])]
 class MenuItem extends Model
 {
@@ -21,6 +21,8 @@ class MenuItem extends Model
         return [
             'opens_in_new_tab' => 'boolean',
             'enabled' => 'boolean',
+            'show_on_desktop' => 'boolean',
+            'show_on_mobile' => 'boolean',
             'sort_order' => 'integer',
         ];
     }
@@ -41,7 +43,7 @@ class MenuItem extends Model
     }
 
     /**
-     * @return array{id: int, label: string, url: string, newTab: bool}
+     * @return array{id: int, label: string, url: string, description: ?string, newTab: bool, showOnDesktop: bool, showOnMobile: bool}
      */
     public function toPublicArray(): array
     {
@@ -49,7 +51,10 @@ class MenuItem extends Model
             'id' => $this->id,
             'label' => $this->label,
             'url' => $this->url,
+            'description' => $this->description,
             'newTab' => $this->opens_in_new_tab,
+            'showOnDesktop' => $this->show_on_desktop,
+            'showOnMobile' => $this->show_on_mobile,
         ];
     }
 }

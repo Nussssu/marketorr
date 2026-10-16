@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useThemeMotion } from '../../lib/theme';
-import { MARK, markBarStyle, markGap } from '../../lib/tokens';
+import { MARK, markBarStyle, markGap, withAlpha } from '../../lib/tokens';
 
 /** Height of the tallest bar: the logo's proportions set the rest. */
 const MARK_SIZE = 'clamp(200px, 26vw, 300px)';
@@ -33,8 +33,8 @@ export default function BrandBars({ className = '' }) {
                     className="border"
                     style={{
                         ...markBarStyle(MARK_SIZE, index),
-                        background: `linear-gradient(180deg, ${color}44, transparent)`,
-                        borderColor: `${color}33`,
+                        background: `linear-gradient(180deg, ${withAlpha(color, '44')}, transparent)`,
+                        borderColor: `${withAlpha(color, '33')}`,
                     }}
                 />
             ))}

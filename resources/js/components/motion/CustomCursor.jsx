@@ -237,7 +237,7 @@ export default function CustomCursor() {
                     y: ry,
                     translateX: '-50%',
                     translateY: '-50%',
-                    background: 'linear-gradient(135deg, rgba(137,31,251,0.5), rgba(80,122,244,0.4), rgba(27,226,235,0.4))',
+                    background: 'linear-gradient(135deg, rgba(var(--brand-1-rgb),0.5), rgba(var(--brand-2-rgb),0.4), rgba(var(--brand-3-rgb),0.4))',
                 }}
                 animate={{ opacity: auraOpacity, scale: auraScale }}
                 transition={{ duration: 0.25 }}
@@ -251,7 +251,7 @@ export default function CustomCursor() {
                     width,
                     height,
                     backgroundColor: isView ? 'var(--ink)' : 'rgba(255,255,255,0)',
-                    borderColor: isSocial ? 'rgba(255,255,255,0)' : isView ? 'var(--ink)' : state === 'default' ? 'var(--ink-faint)' : '#891FFB',
+                    borderColor: isSocial ? 'rgba(255,255,255,0)' : isView ? 'var(--ink)' : state === 'default' ? 'var(--ink-faint)' : 'var(--brand-1)',
                     scale: ripple ? [1, 1.35, 1] : 1,
                 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
@@ -261,7 +261,7 @@ export default function CustomCursor() {
                     style={{
                         background:
                             state === 'hover' || state === 'cta'
-                                ? 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)'
+                                ? 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))'
                                 : 'transparent',
                         filter: 'blur(10px)',
                         opacity: state === 'default' || isLabel ? 0 : 0.7,
@@ -274,9 +274,9 @@ export default function CustomCursor() {
                         animate={{ opacity: 1, backgroundPositionX: '100%' }}
                         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                         style={{
-                            backgroundImage: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
+                            backgroundImage: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))',
                             backgroundSize: '160% 100%',
-                            boxShadow: '0 10px 30px -10px rgba(137,31,251,0.55), 0 6px 20px -8px rgba(27,226,235,0.45)',
+                            boxShadow: '0 10px 30px -10px rgba(var(--brand-1-rgb),0.55), 0 6px 20px -8px rgba(var(--brand-3-rgb),0.45)',
                         }}
                     />
                 )}

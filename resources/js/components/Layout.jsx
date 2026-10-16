@@ -33,8 +33,8 @@ function MobileProjectButton() {
             onClick={navigateToContact}
             data-cursor="cta"
             aria-label="Start a project"
-            className="btn-press fixed right-2 top-1/2 z-[120] flex w-10 -translate-y-1/2 flex-col items-center rounded-full py-3.5 text-white shadow-[0_10px_28px_-12px_rgba(80,122,244,0.75)] lg:hidden"
-            style={{ background: 'linear-gradient(180deg,#891FFB,#507AF4,#1BE2EB)' }}
+            className="btn-press fixed right-2 top-1/2 z-[120] flex w-10 -translate-y-1/2 flex-col items-center rounded-full py-3.5 text-white shadow-[0_10px_28px_-12px_rgba(var(--brand-2-rgb),0.75)] lg:hidden"
+            style={{ background: 'linear-gradient(180deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
         >
             <span className="rotate-180 text-[9px] font-extrabold uppercase leading-none tracking-[0.16em] [writing-mode:vertical-rl]">
                 Start a Project

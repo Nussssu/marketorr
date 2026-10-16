@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\MenuLocation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateMenuRequest;
+use App\Http\Requests\Admin\UpdateMenusRequest;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use Illuminate\Http\RedirectResponse;
@@ -22,14 +23,22 @@ class MenuController extends Controller
             // Every location is listed, including any that has no row yet, so
             // an editor can fill an empty menu without creating it first.
             'menus' => collect(MenuLocation::cases())
+                // Social links are site-wide and edited under Settings.
+                ->reject(fn (MenuLocation $location): bool => $location === MenuLocation::FooterSocial)
+                ->values()
                 ->map(function (MenuLocation $location) use ($menus): array {
                     $menu = $menus->get($location->value);
                     $items = $menu?->items ?? collect();
 
                     return [
                         'location' => $location->value,
-                        'label' => $location->label(),
+                        'label' => $menu !== null ? $menu->name : $location->label(),
                         'group' => $location->group(),
+                        'note' => $location->note(),
+                        'content' => [
+                            ...$location->defaultContent(),
+                            ...($menu?->content ?? []),
+                        ],
                         'items' => $items
                             ->whereNull('parent_id')
                             ->map(fn (MenuItem $item) => [
@@ -58,37 +67,20 @@ class MenuController extends Controller
         $menuLocation = MenuLocation::tryFrom($location);
         abort_if($menuLocation === null, 404);
 
-        $menu = Menu::query()->updateOrCreate(
-            ['location' => $menuLocation],
-            ['name' => $menuLocation->label()],
-        );
+        $menu = DB::transaction(fn (): Menu => $this->persistMenu($menuLocation, $request->validated()));
 
-        DB::transaction(function () use ($menu, $request): void {
-            $menu->items()->delete();
+        return back()->with('success', $menu->name.' saved.');
+    }
 
-            foreach ($request->validated('items') as $order => $item) {
-                $parent = $menu->items()->create([
-                    'label' => $item['label'],
-                    'url' => $item['url'],
-                    'opens_in_new_tab' => $item['opens_in_new_tab'],
-                    'enabled' => $item['enabled'],
-                    'sort_order' => $order,
-                ]);
-
-                foreach ($item['children'] ?? [] as $childOrder => $child) {
-                    $menu->items()->create([
-                        'parent_id' => $parent->id,
-                        'label' => $child['label'],
-                        'url' => $child['url'],
-                        'opens_in_new_tab' => $child['opens_in_new_tab'],
-                        'enabled' => $child['enabled'],
-                        'sort_order' => $childOrder,
-                    ]);
-                }
+    public function updateAll(UpdateMenusRequest $request): RedirectResponse
+    {
+        DB::transaction(function () use ($request): void {
+            foreach ($request->validated('menus') as $menuData) {
+                $this->persistMenu(MenuLocation::from($menuData['location']), $menuData);
             }
         });
 
-        return back()->with('success', $menuLocation->label().' saved.');
+        return back()->with('success', 'All menu changes saved.');
     }
 
     /**
@@ -100,8 +92,60 @@ class MenuController extends Controller
             'id' => $item->id,
             'label' => $item->label,
             'url' => $item->url,
+            'description' => $item->description,
             'opens_in_new_tab' => $item->opens_in_new_tab,
             'enabled' => $item->enabled,
+            'show_on_desktop' => $item->show_on_desktop,
+            'show_on_mobile' => $item->show_on_mobile,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function persistMenu(MenuLocation $location, array $data): Menu
+    {
+        $menu = Menu::query()->updateOrCreate(
+            ['location' => $location],
+            [
+                'name' => $data['name'] ?? $location->label(),
+                'content' => $location->defaultContent() === []
+                    ? null
+                    : [...$location->defaultContent(), ...($data['content'] ?? [])],
+            ],
+        );
+
+        $menu->items()->delete();
+
+        foreach ($data['items'] as $order => $item) {
+            $parent = $menu->items()->create($this->itemAttributes($item, $order));
+
+            foreach ($item['children'] ?? [] as $childOrder => $child) {
+                $menu->items()->create([
+                    ...$this->itemAttributes($child, $childOrder),
+                    'parent_id' => $parent->id,
+                ]);
+            }
+        }
+
+        return $menu;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function itemAttributes(array $item, int $sortOrder): array
+    {
+        return [
+            'label' => $item['label'],
+            'url' => $item['url'],
+            'description' => $item['description'] ?? null,
+            'opens_in_new_tab' => $item['opens_in_new_tab'],
+            'enabled' => $item['enabled'],
+            'show_on_desktop' => $item['show_on_desktop'],
+            'show_on_mobile' => $item['show_on_mobile'],
+            'sort_order' => $sortOrder,
         ];
     }
 }

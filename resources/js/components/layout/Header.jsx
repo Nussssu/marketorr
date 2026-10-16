@@ -18,6 +18,7 @@ const FALLBACK_LINKS = [
     { label: 'About', href: '/about' },
     { label: 'Services', href: '/services' },
     { label: 'Our Work', href: '/work' },
+    { label: 'Contact', href: '/contact' },
 ];
 
 function menuTreeToMegaGroups(items, fallbackGroups) {
@@ -33,6 +34,7 @@ function menuTreeToMegaGroups(items, fallbackGroups) {
             slug: fallback?.slug ?? `menu-${parent.id}`,
             name: parent.label,
             href: parent.url,
+            short: parent.description ?? fallback?.short,
             newTab: parent.newTab,
             items: (parent.children ?? []).map((child) => {
                 const fallbackItem = fallback?.items?.find((item) =>
@@ -619,10 +621,21 @@ function ServicesMegaMenu({
                 <span
                     aria-hidden
                     className="absolute inset-x-0 bottom-0 h-px opacity-90"
-                    style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                    style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                 />
             </motion.div>
         </div>
+    );
+}
+
+function MegaMenuHeadline({ before = '', highlight = '', after = '' }) {
+    return (
+        <>
+            {before}
+            {before && highlight ? ' ' : ''}
+            {highlight && <span className="text-gradient">{highlight}</span>}
+            {after}
+        </>
     );
 }
 
@@ -735,32 +748,24 @@ export default function Header() {
     const workMegaGroups = Object.prototype.hasOwnProperty.call(props.menus ?? {}, 'mega_work')
         ? menuTreeToMegaGroups(props.menus.mega_work, workGroups)
         : workGroups;
+    const serviceMenuContent = props.menuContent?.mega_services ?? {};
+    const workMenuContent = props.menuContent?.mega_work ?? {};
     // Editor-managed navigation; `/services` still opens the mega menu.
-    // On desktop Contact is reached through the header CTA, so it is not a nav
-    // link there; the mobile menu lists it after the rest.
+    // Device visibility is controlled independently for each header item.
     const hasManagedHeader = Object.prototype.hasOwnProperty.call(props.menus ?? {}, 'header');
     const managedHeaderItems = props.menus?.header ?? [];
-    const menuLinks = managedHeaderItems
-        .filter((item) => item.url !== '/contact')
-        .map((item) => ({
+    const mapMenuLink = (item) => ({
             label: item.label,
             href: item.url,
             newTab: item.newTab,
             children: item.children ?? [],
-        }));
-    const LINKS = hasManagedHeader ? menuLinks : FALLBACK_LINKS;
-    const managedContact = managedHeaderItems.find((item) => item.url === '/contact');
-    const MOBILE_LINKS = [
-        ...LINKS,
-        ...(managedContact
-            ? [{
-                label: managedContact.label,
-                href: managedContact.url,
-                newTab: managedContact.newTab,
-                children: managedContact.children ?? [],
-            }]
-            : hasManagedHeader ? [] : [{ label: 'Contact', href: '/contact' }]),
-    ];
+        });
+    const LINKS = hasManagedHeader
+        ? managedHeaderItems.filter((item) => item.showOnDesktop !== false).map(mapMenuLink)
+        : FALLBACK_LINKS;
+    const MOBILE_LINKS = hasManagedHeader
+        ? managedHeaderItems.filter((item) => item.showOnMobile !== false).map(mapMenuLink)
+        : FALLBACK_LINKS;
     const settings = props.settings;
     const isSticky = settings?.headerSticky !== false;
     const ctaLink = settings?.headerCtaLink || '/contact';
@@ -998,7 +1003,7 @@ export default function Header() {
                                     data-cursor="cta"
                                     className="btn-press inline-flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-3 text-[12px] xl:px-6 font-bold uppercase tracking-[0.16em] text-white"
                                     style={{
-                                        background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)',
+                                        background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))',
                                     }}
                                 >
                                     {ctaText} <span aria-hidden>↗</span>
@@ -1034,6 +1039,18 @@ export default function Header() {
                         onNavigate={() => setMega(false)}
                         onPointerOpen={openMega}
                         onPointerClose={scheduleMegaClose}
+                        eyebrow={serviceMenuContent.eyebrow ?? ''}
+                        headline={(
+                            <MegaMenuHeadline
+                                before={serviceMenuContent.headline_before ?? ''}
+                                highlight={serviceMenuContent.headline_highlight ?? ''}
+                                after={serviceMenuContent.headline_after ?? ''}
+                            />
+                        )}
+                        blurb={serviceMenuContent.blurb ?? ''}
+                        allLabel={serviceMenuContent.all_label ?? ''}
+                        allHref={serviceMenuContent.all_url ?? ''}
+                        showAllLink={Boolean(serviceMenuContent.all_label && serviceMenuContent.all_url)}
                     />
                 )}
             </AnimatePresence>
@@ -1047,9 +1064,15 @@ export default function Header() {
                         onPointerClose={scheduleWorkMegaClose}
                         Section={WorkMegaSection}
                         ariaLabel="Our Work menu"
-                        eyebrow="Selected work"
-                        headline={<>Work that <span className="text-gradient">creates impact</span>.</>}
-                        blurb="Two practices, one standard. Pick a discipline, or go straight to the project you want to see."
+                        eyebrow={workMenuContent.eyebrow ?? ''}
+                        headline={(
+                            <MegaMenuHeadline
+                                before={workMenuContent.headline_before ?? ''}
+                                highlight={workMenuContent.headline_highlight ?? ''}
+                                after={workMenuContent.headline_after ?? ''}
+                            />
+                        )}
+                        blurb={workMenuContent.blurb ?? ''}
                         showAllLink={false}
                     />
                 )}

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContentStatus;
+use App\Models\Service;
 use App\Models\ServiceGroup;
 use App\Models\SubService;
 use App\Models\User;
@@ -97,6 +99,39 @@ class AdminSubServiceCatalogueTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('item.name', 'Brand Strategy Plus'));
     }
 
+    public function test_an_admin_can_copy_a_sub_service_as_a_draft(): void
+    {
+        $group = ServiceGroup::query()->create($this->validTab());
+        $item = SubService::query()->create([...$this->validItem($group->id), 'service_group_id' => $group->id]);
+
+        $this->actingAs($this->admin)
+            ->post("/admin/sub-services/{$item->id}/duplicate")
+            ->assertRedirectContains('/edit')
+            ->assertSessionHas('success');
+
+        $copy = SubService::query()->where('id', '!=', $item->id)->sole();
+
+        $this->assertSame('brand-strategy-copy', $copy->slug);
+        $this->assertSame('Brand Strategy (Copy)', $copy->name);
+        $this->assertSame(ContentStatus::Draft, $copy->status);
+        $this->assertSame($item->deliverables, $copy->deliverables);
+        $this->get('/services/branding/brand-strategy-copy')->assertNotFound();
+    }
+
+    public function test_deleting_a_sub_service_removes_its_public_page_and_directory_entry(): void
+    {
+        $group = ServiceGroup::query()->create($this->validTab());
+        $item = SubService::query()->create([...$this->validItem($group->id), 'service_group_id' => $group->id]);
+
+        $this->actingAs($this->admin)
+            ->delete("/admin/sub-services/{$item->id}")
+            ->assertSessionHas('success');
+
+        $this->get('/services/branding/brand-strategy')->assertNotFound();
+        $this->get('/services')->assertInertia(fn ($page) => $page
+            ->has('subservices.0.items', 0));
+    }
+
     public function test_deleting_a_tab_removes_its_public_pages(): void
     {
         $group = ServiceGroup::query()->create($this->validTab());
@@ -137,5 +172,20 @@ class AdminSubServiceCatalogueTest extends TestCase
     public function test_guests_cannot_create_tabs(): void
     {
         $this->post('/admin/service-groups', $this->validTab())->assertRedirect('/admin/login');
+    }
+
+    public function test_a_tab_cannot_take_the_slug_of_a_service_but_an_unchanged_one_still_saves(): void
+    {
+        Service::factory()->create(['slug' => 'branding']);
+
+        $this->actingAs($this->admin)
+            ->post('/admin/service-groups', $this->validTab())
+            ->assertSessionHasErrors('slug');
+
+        $group = ServiceGroup::query()->create([...$this->validTab(), 'slug' => 'ui-ux']);
+
+        $this->actingAs($this->admin)
+            ->put("/admin/service-groups/{$group->id}", [...$this->validTab(), 'slug' => 'ui-ux', 'name' => 'UI/UX'])
+            ->assertSessionHasNoErrors();
     }
 }

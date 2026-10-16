@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\EmailTemplateKey;
+use App\Enums\MenuLocation;
 use App\Mail\TemplatedMail;
+use App\Models\Menu;
+use App\Models\MenuItem;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,6 +58,8 @@ class AdminSettingsTest extends TestCase
                 'header_sticky' => false,
                 'header_cta_text' => 'Let us Talk',
                 'header_cta_link' => '/get-in-touch',
+                'footer_logo_visible' => false,
+                'footer_motto_items' => ['THINK', 'CREATE', 'GROW'],
             ]))
             ->assertSessionHas('success');
 
@@ -62,30 +67,30 @@ class AdminSettingsTest extends TestCase
 
         $this->assertSame('studio@marketorr.com', $settings->contact_email);
         $this->assertSame('+880 1234 567890', $settings->contact_phone);
-        $this->assertSame(['We build', 'what converts.'], $settings->hero_heading_lines);
+        // Hero and About copy is edited under Pages now; saving Settings leaves it alone.
+        $this->assertSame(Setting::defaults()['hero_heading_lines'], $settings->hero_heading_lines);
         $this->assertFalse($settings->header_sticky);
         $this->assertSame('Let us Talk', $settings->header_cta_text);
         $this->assertSame('/get-in-touch', $settings->header_cta_link);
+        $this->assertFalse($settings->footer_logo_visible);
+        $this->assertSame(['THINK', 'CREATE', 'GROW'], $settings->footer_motto_items);
     }
 
     public function test_saved_settings_reach_the_public_site_immediately(): void
     {
         $this->actingAs($this->superAdmin)->put('/admin/settings', $this->validPayload([
-            'hero_eyebrow' => 'Studio for ambitious brands',
-            'social_dribbble' => null,
             'header_sticky' => false,
             'header_cta_text' => 'Get Started',
+            'footer_motto_items' => ['IDEA', 'IMPACT'],
         ]));
 
         $this->get('/')
             ->assertInertia(fn ($page) => $page
                 ->where('settings.contactEmail', 'studio@marketorr.com')
                 ->where('settings.contactPhone', '+880 1234 567890')
-                ->where('settings.hero.eyebrow', 'Studio for ambitious brands')
-                ->where('settings.hero.headingLines', ['We build', 'what converts.'])
-                ->where('settings.socials.dribbble', null)
                 ->where('settings.headerSticky', false)
-                ->where('settings.headerCtaText', 'Get Started'));
+                ->where('settings.headerCtaText', 'Get Started')
+                ->where('settings.footerMottoItems', ['IDEA', 'IMPACT']));
     }
 
     public function test_the_contact_email_is_where_inquiry_notifications_are_sent(): void
@@ -134,13 +139,6 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('hello@marketorr.com', Setting::current()->contact_email);
     }
 
-    public function test_an_invalid_social_url_is_rejected(): void
-    {
-        $this->actingAs($this->superAdmin)
-            ->put('/admin/settings', $this->validPayload(['social_linkedin' => 'not a url']))
-            ->assertSessionHasErrors('social_linkedin');
-    }
-
     public function test_an_editor_cannot_save_settings(): void
     {
         $this->actingAs(User::factory()->editor()->create())
@@ -148,5 +146,42 @@ class AdminSettingsTest extends TestCase
             ->assertStatus(403);
 
         $this->assertSame('hello@marketorr.com', Setting::current()->contact_email);
+    }
+
+    public function test_the_settings_page_lists_the_site_wide_social_links(): void
+    {
+        $menu = Menu::query()->firstOrCreate(['location' => MenuLocation::FooterSocial], ['name' => 'Social']);
+        $menu->items()->delete();
+        MenuItem::query()->create(['menu_id' => $menu->id, 'label' => 'LinkedIn', 'url' => 'https://linkedin.com/company/acme', 'enabled' => true, 'sort_order' => 0]);
+        MenuItem::query()->create(['menu_id' => $menu->id, 'label' => 'Behance', 'url' => 'https://behance.net/acme', 'enabled' => false, 'sort_order' => 1]);
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/settings')
+            ->assertInertia(fn ($page) => $page
+                ->has('socials', 2)
+                ->where('socials.1.label', 'Behance')
+                ->where('socials.1.enabled', false));
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/menus')
+            ->assertInertia(fn ($page) => $page->where('menus', fn ($menus) => ! collect($menus)->pluck('location')->contains('footer_social')));
+    }
+
+    public function test_custom_code_is_saved_from_its_own_page(): void
+    {
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/custom-code')
+            ->assertInertia(fn ($page) => $page->component('Admin/CustomCode'));
+
+        $this->actingAs($this->superAdmin)
+            ->put('/admin/custom-code', [
+                'head_scripts' => '<script>window.head = true;</script>',
+                'body_scripts' => '<script>window.body = true;</script>',
+            ])
+            ->assertSessionHas('success');
+
+        $settings = Setting::query()->sole();
+        $this->assertSame('<script>window.head = true;</script>', $settings->head_scripts);
+        $this->assertSame('<script>window.body = true;</script>', $settings->body_scripts);
     }
 }

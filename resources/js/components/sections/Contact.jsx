@@ -7,7 +7,7 @@ import OfficeMap from '../ui/OfficeMap';
 import { useThemeMotion } from '../../lib/theme';
 import InkField from '../decor/InkField';
 
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
 
 /**
  * A blank inquiry: the form's starting state, and what "Send another message"
@@ -292,7 +292,7 @@ function ThemedSelect({ value, onChange, options, placeholder, label }) {
                 onClick={() => (open ? setOpen(false) : openList())}
                 onKeyDown={onKeyDown}
                 className={`field-box flex h-12 w-full items-center justify-between gap-3 rounded-xl px-4 text-left text-[14px] ${value ? '' : 'is-empty'}`.trimEnd()}
-                style={open ? { borderColor: 'transparent', boxShadow: '0 0 0 1px #507af4' } : undefined}
+                style={open ? { borderColor: 'transparent', boxShadow: '0 0 0 1px var(--brand-2)' } : undefined}
             >
                 <span className="min-w-0 truncate">{value || placeholder}</span>
                 <svg
@@ -401,14 +401,14 @@ export default function Contact({ content = {} }) {
                     viewport={{ once: false, margin: '10% 0px' }}
                     transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
                     className="absolute -left-32 top-[8%] h-[26rem] w-[26rem] rounded-full blur-3xl"
-                    style={{ background: 'radial-gradient(circle, rgba(137,31,251,0.12), transparent 65%)' }}
+                    style={{ background: 'radial-gradient(circle, rgba(var(--brand-1-rgb),0.12), transparent 65%)' }}
                 />
                 <motion.span
                     whileInView={reduce ? undefined : { x: [0, -44, 0], opacity: [0.45, 0.7, 0.45] }}
                     viewport={{ once: false, margin: '10% 0px' }}
                     transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
                     className="absolute -right-32 bottom-[4%] h-[28rem] w-[28rem] rounded-full blur-3xl"
-                    style={{ background: 'radial-gradient(circle, rgba(27,226,235,0.10), transparent 65%)' }}
+                    style={{ background: 'radial-gradient(circle, rgba(var(--brand-3-rgb),0.10), transparent 65%)' }}
                 />
             </div>
 
@@ -440,8 +440,8 @@ export default function Contact({ content = {} }) {
                         {/* Email / Phone / Location, each behind a tinted glyph tile. */}
                         <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="mt-9 grid gap-6 sm:grid-cols-3">
                             <div className="flex items-start gap-3">
-                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #891FFB 14%, transparent)' }} aria-hidden>
-                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#891FFB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, var(--brand-1) 14%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" style={{ stroke: 'var(--brand-1)' }} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
                                         <path d="m3 6.5 9 6 9-6" />
                                     </svg>
@@ -454,8 +454,8 @@ export default function Contact({ content = {} }) {
 
                             {contactPhone && (
                                 <div className="flex items-start gap-3">
-                                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #507AF4 14%, transparent)' }} aria-hidden>
-                                        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#507AF4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, var(--brand-2) 14%, transparent)' }} aria-hidden>
+                                        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" style={{ stroke: 'var(--brand-2)' }} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M5 3.5h3.2l1.6 4.3-2.1 1.4a11 11 0 0 0 5.1 5.1l1.4-2.1 4.3 1.6V17a2.5 2.5 0 0 1-2.7 2.5A15.5 15.5 0 0 1 2.5 6.2 2.5 2.5 0 0 1 5 3.5Z" />
                                         </svg>
                                     </span>
@@ -467,8 +467,8 @@ export default function Contact({ content = {} }) {
                             )}
 
                             <div className="flex items-start gap-3">
-                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, #1BE2EB 16%, transparent)' }} aria-hidden>
-                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="#1BE2EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, var(--brand-3) 16%, transparent)' }} aria-hidden>
+                                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" style={{ stroke: 'var(--brand-3)' }} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
                                         <circle cx="12" cy="10" r="2.6" />
                                     </svg>
@@ -735,8 +735,16 @@ export function ContactFaq({ content = {} }) {
  */
 export function ContactConnect({ content = {} }) {
     const { reduce, scrollReveal } = useSectionReveal();
-    const { settings } = usePage().props;
-    const { socials } = settings;
+    const { settings, menus } = usePage().props;
+    // The same site-wide social links the footer shows, managed under Settings.
+    const socialLinks = Object.prototype.hasOwnProperty.call(menus ?? {}, 'footer_social')
+        ? menus.footer_social.map((item) => ({ label: item.label, href: item.url }))
+        : [
+            { label: 'LinkedIn', href: settings.socials.linkedin },
+            { label: 'Behance', href: settings.socials.behance },
+            { label: 'Dribbble', href: settings.socials.dribbble },
+            { label: 'Instagram', href: settings.socials.instagram },
+        ];
 
     return (
         <section className="noise relative overflow-hidden bg-[var(--bg)] pb-16 pt-28 lg:pb-20 lg:pt-32">
@@ -765,12 +773,7 @@ export function ContactConnect({ content = {} }) {
 
                     <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8 lg:mt-[44px]">
                         <ul className="list-none border-b border-[var(--line)]">
-                            {[
-                                { label: 'LinkedIn', href: socials.linkedin },
-                                { label: 'Behance', href: socials.behance },
-                                { label: 'Dribbble', href: socials.dribbble },
-                                { label: 'Instagram', href: socials.instagram },
-                            ].filter((row) => row.href).map((row) => (
+                            {socialLinks.filter((row) => row.href).map((row) => (
                                 <li key={row.label} className="border-b border-[var(--line)] last:border-b-0">
                                     <a
                                         href={row.href}
@@ -805,6 +808,9 @@ export function ContactConnect({ content = {} }) {
                                                         <circle cx="12" cy="12" r="4" />
                                                         <circle cx="17.4" cy="6.7" r=".8" fill="currentColor" stroke="none" />
                                                     </>
+                                                )}
+                                                {!['LinkedIn', 'Behance', 'Dribbble', 'Instagram'].includes(row.label) && (
+                                                    <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
                                                 )}
                                             </svg>
                                         </span>

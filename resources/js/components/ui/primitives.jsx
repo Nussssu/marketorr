@@ -35,7 +35,7 @@ export function GradientTitle({ text, highlightWords = 1 }) {
     );
 }
 
-export function Tag({ children, accent = '#891FFB' }) {
+export function Tag({ children, accent = 'var(--brand-1)' }) {
     return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--chip)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)]">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} aria-hidden />
@@ -62,7 +62,7 @@ export function GradientButton({ href, children, variant = 'primary' }) {
             href={href}
             data-cursor="cta"
             className="btn-press group relative inline-flex items-center gap-3 overflow-hidden rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.18em] text-white"
-            style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+            style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
         >
             <span className="absolute inset-0 bg-white/0 transition-colors duration-300 group-hover:bg-white/15" aria-hidden />
             <span className="relative">{children}</span>

@@ -7,11 +7,125 @@ import {
     Input,
     MediaPickerField,
     PageHeader,
-    RepeatableList,
-    RepeatableRows,
     Textarea,
     Toggle,
 } from '../../components/admin/ui';
+
+const TABS = [
+    { id: 'general', label: 'General' },
+    { id: 'social', label: 'Social links' },
+    { id: 'seo', label: 'SEO' },
+];
+
+/** Platforms the site has an icon for; any other name still works as a text link. */
+const PLATFORMS = ['LinkedIn', 'Facebook', 'Behance', 'Dribbble', 'Instagram', 'X', 'YouTube'];
+
+/**
+ * The site-wide social links — one list for the footer and the Contact page.
+ * Each link can be edited, reordered, shown or hidden, or removed, and new
+ * ones added. Saved on its own, as the "Footer: Social links" menu.
+ */
+function SocialLinks({ socials }) {
+    const blank = { label: '', url: '', enabled: true };
+    const { data, setData, transform, put, processing, errors, isDirty } = useForm({
+        items: socials.length ? socials : [blank],
+    });
+
+    const update = (index, patch) => setData('items', data.items.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    const move = (index, delta) => {
+        const target = index + delta;
+        if (target < 0 || target >= data.items.length) return;
+        const next = [...data.items];
+        [next[index], next[target]] = [next[target], next[index]];
+        setData('items', next);
+    };
+
+    transform((current) => ({
+        items: current.items
+            .filter((row) => row.label.trim() !== '' || row.url.trim() !== '')
+            .map((row) => ({
+                label: row.label,
+                url: row.url,
+                opens_in_new_tab: true,
+                enabled: row.enabled,
+                show_on_desktop: true,
+                show_on_mobile: true,
+                children: [],
+            })),
+    }));
+
+    const submit = (e) => {
+        e.preventDefault();
+        put('/admin/menus/footer_social', { preserveScroll: true, preserveState: true });
+    };
+
+    const shown = data.items.filter((row) => row.enabled && row.url).length;
+
+    return (
+        <form onSubmit={submit} className="space-y-5">
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
+                <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink-strong)]">Social links</h2>
+                <p className="mt-1 text-[12px] text-[var(--mute)]">
+                    Used across the whole site: the footer's &ldquo;Follow us&rdquo; and the Contact page. {shown} shown on the site.
+                    Use a platform name ({PLATFORMS.join(', ')}) so the link gets its icon.
+                </p>
+
+                <datalist id="social-platforms">
+                    {PLATFORMS.map((platform) => <option key={platform} value={platform} />)}
+                </datalist>
+
+                <ol className="mt-5 space-y-3">
+                    {data.items.map((row, index) => (
+                        <li key={index} className={`grid gap-3 rounded-lg border border-[var(--field-line)] p-4 sm:grid-cols-[auto_minmax(0,0.7fr)_minmax(0,1.3fr)_auto] sm:items-end ${row.enabled ? '' : 'opacity-60'}`}>
+                            <span className="flex h-7 w-7 items-center justify-center self-center rounded-md border border-[var(--field-line)] font-mono text-[12px] font-bold text-[var(--ink)]">{index + 1}</span>
+                            <Field label="Platform" error={errors[`items.${index}.label`]}>
+                                <Input list="social-platforms" value={row.label} onChange={(e) => update(index, { label: e.target.value })} placeholder="LinkedIn" />
+                            </Field>
+                            <Field label="Link" error={errors[`items.${index}.url`]}>
+                                <Input value={row.url} onChange={(e) => update(index, { url: e.target.value })} placeholder="https://" />
+                            </Field>
+                            <div className="flex flex-wrap items-center gap-2 pb-0.5">
+                                <button
+                                    type="button"
+                                    onClick={() => update(index, { enabled: !row.enabled })}
+                                    aria-pressed={row.enabled}
+                                    className={`rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
+                                        row.enabled
+                                            ? 'border-[var(--field-line)] text-[var(--ink)] hover:bg-[var(--chip)]'
+                                            : 'border-[#ff6b6b]/40 text-[#ff6b6b] hover:bg-[#ff6b6b]/10'
+                                    }`}
+                                    title={row.enabled ? 'Shown on the site — click to hide' : 'Hidden from the site — click to show'}
+                                >
+                                    {row.enabled ? 'Shown' : 'Hidden'}
+                                </button>
+                                <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up" className="rounded-lg border border-[var(--field-line)] px-2.5 py-2 text-[11px] text-[var(--ink-faint)] hover:text-[var(--ink)] disabled:opacity-30">▲</button>
+                                <button type="button" onClick={() => move(index, 1)} disabled={index === data.items.length - 1} aria-label="Move down" className="rounded-lg border border-[var(--field-line)] px-2.5 py-2 text-[11px] text-[var(--ink-faint)] hover:text-[var(--ink)] disabled:opacity-30">▼</button>
+                                <button type="button" onClick={() => setData('items', data.items.filter((_, i) => i !== index))} className="rounded-lg px-2.5 py-2 text-[12px] text-[#ff6b6b] hover:opacity-80">Remove</button>
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+
+                <button
+                    type="button"
+                    onClick={() => setData('items', [...data.items, blank])}
+                    className="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                >
+                    + Add social link
+                </button>
+            </div>
+
+            <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur-md">
+                <p className="text-[12px] text-[var(--mute)]">
+                    {isDirty ? 'You have unsaved changes.' : 'Social links update the footer and the Contact page as soon as they are saved.'}
+                </p>
+                <Button type="submit" disabled={processing} className="min-w-[140px]">
+                    {processing ? 'Saving…' : 'Save social links'}
+                </Button>
+            </div>
+        </form>
+    );
+}
 
 /** Upload field wired to its own live preview using Media Library. */
 function ImageField({ label, hint, error, preview, onChange, className = '' }) {
@@ -90,20 +204,28 @@ function AccordionWidget({ id, title, subtitle, badge, icon, isOpen, onToggle, c
     );
 }
 
-export default function Settings({ settings }) {
+export default function Settings({ settings, socials = [] }) {
+    const [tab, setTab] = useState(() => {
+        const fromHash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+
+        return TABS.some((item) => item.id === fromHash) ? fromHash : 'general';
+    });
+    const chooseTab = (id) => {
+        setTab(id);
+        if (typeof window !== 'undefined') window.history.replaceState(null, '', `#${id}`);
+    };
     const [ogPreview, setOgPreview] = useState(settings.og_image_url);
     const [logoPreview, setLogoPreview] = useState(settings.logo_url);
     const [logoDarkPreview, setLogoDarkPreview] = useState(settings.logo_dark_url);
     const [faviconPreview, setFaviconPreview] = useState(settings.favicon_url);
+    const [footerLogoPreview, setFooterLogoPreview] = useState(settings.footer_logo_url);
 
     // Initial state: Top widget (general) open by default, all others collapsed
     const [openSections, setOpenSections] = useState({
         general: true,
         header_branding: false,
         footer_social: false,
-        seo_meta: false,
-        custom_scripts: false,
-        hero_about: false,
+        seo_meta: true,
     });
 
     const toggleSection = (key) => {
@@ -119,8 +241,6 @@ export default function Settings({ settings }) {
             header_branding: true,
             footer_social: true,
             seo_meta: true,
-            custom_scripts: true,
-            hero_about: true,
         });
     };
 
@@ -130,8 +250,6 @@ export default function Settings({ settings }) {
             header_branding: false,
             footer_social: false,
             seo_meta: false,
-            custom_scripts: false,
-            hero_about: false,
         });
     };
 
@@ -151,23 +269,12 @@ export default function Settings({ settings }) {
         directions_url: settings.directions_url ?? '',
         copyright_text: settings.copyright_text ?? '',
         footer_intro: settings.footer_intro ?? '',
-        social_linkedin: settings.social_linkedin ?? '',
-        social_facebook: settings.social_facebook ?? '',
-        social_behance: settings.social_behance ?? '',
-        social_dribbble: settings.social_dribbble ?? '',
-        social_instagram: settings.social_instagram ?? '',
-        social_x: settings.social_x ?? '',
-        social_youtube: settings.social_youtube ?? '',
-        hero_eyebrow: settings.hero_eyebrow ?? '',
-        hero_heading_lines: settings.hero_heading_lines?.length ? settings.hero_heading_lines : [''],
-        hero_subtext: settings.hero_subtext ?? '',
-        about_text: settings.about_text ?? '',
-        about_metrics: settings.about_metrics?.length ? settings.about_metrics : [{ value: '', suffix: '', label: '' }],
+        footer_logo: null,
+        footer_logo_visible: settings.footer_logo_visible ?? true,
+        footer_motto_items: settings.footer_motto_items ?? ['IDEA', 'EXPERIENCE', 'RESULT'],
         meta_default_title: settings.meta_default_title ?? '',
         meta_default_description: settings.meta_default_description ?? '',
         meta_default_og_image: null,
-        head_scripts: settings.head_scripts ?? '',
-        body_scripts: settings.body_scripts ?? '',
         robots_txt: settings.robots_txt ?? '',
         schema_markup: settings.schema_markup ?? '',
         sitemap_enabled: settings.sitemap_enabled ?? true,
@@ -198,7 +305,7 @@ export default function Settings({ settings }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post('/admin/settings', { forceFormData: true, preserveScroll: true });
+        post('/admin/settings', { forceFormData: true, preserveScroll: true, preserveState: true });
     };
 
     return (
@@ -207,10 +314,10 @@ export default function Settings({ settings }) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
                 <PageHeader
                     title="Site settings"
-                    subtitle="Global site configuration, header/footer branding, SEO directives and custom script injection."
+                    subtitle="Site-wide configuration: general details and branding, social links and SEO. Page content is edited under Pages."
                 />
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className={`flex items-center gap-2 shrink-0 ${tab === 'social' ? 'invisible' : ''}`}>
                     <button
                         type="button"
                         onClick={expandAll}
@@ -228,7 +335,29 @@ export default function Settings({ settings }) {
                 </div>
             </div>
 
-            <form onSubmit={submit} className="space-y-5">
+            <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1" role="tablist" aria-label="Settings sections">
+                {TABS.map((item) => (
+                    <button
+                        key={item.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === item.id}
+                        onClick={() => chooseTab(item.id)}
+                        className={`rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${
+                            tab === item.id ? 'text-white shadow-sm' : 'text-[var(--mute)] hover:text-[var(--ink)]'
+                        }`}
+                        style={tab === item.id ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
+                    >
+                        {item.label}
+                    </button>
+                ))}
+            </div>
+
+            {tab === 'social' && <SocialLinks socials={socials} />}
+
+            {/* General and SEO share one form, so a save keeps both tabs' values. */}
+            <form onSubmit={submit} className={`space-y-5 ${tab === 'social' ? 'hidden' : ''}`}>
+                <div className={tab === 'general' ? 'space-y-5' : 'hidden'}>
                 {/* 1. General / Site Info (Open by default) */}
                 <AccordionWidget
                     id="general"
@@ -361,11 +490,11 @@ export default function Settings({ settings }) {
                     </div>
                 </AccordionWidget>
 
-                {/* 3. Footer & Social Links (Collapsed by default) */}
+                {/* 3. Footer branding (footer copy and links live in Menus) */}
                 <AccordionWidget
                     id="footer_social"
-                    title="Footer & Social Links"
-                    subtitle="Footer description, dynamic copyright statement, and public social profiles."
+                    title="Footer Branding"
+                    subtitle="Footer logo controls. Edit all footer text and links from Menus."
                     badge="Footer"
                     isOpen={openSections.footer_social}
                     onToggle={toggleSection}
@@ -376,74 +505,35 @@ export default function Settings({ settings }) {
                         </svg>
                     )}
                 >
-                    <div className="space-y-6">
-                        <div>
+                    <div>
                             <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-strong)] mb-4">
                                 Footer Content
                             </h3>
                             <div className="grid gap-5 sm:grid-cols-2">
-                                <Field
-                                    label="Copyright line"
-                                    error={errors.copyright_text}
-                                    hint="Use {year} and {site} as automatic replacement variables."
-                                    className="sm:col-span-2"
-                                >
-                                    <Input
-                                        value={data.copyright_text ?? ''}
-                                        onChange={(e) => setData('copyright_text', e.target.value)}
-                                        placeholder="© {year} {site}. All rights reserved."
+                                <div className="sm:col-span-2 rounded-xl border border-[var(--line)] bg-[var(--bg)] p-4">
+                                    <Toggle
+                                        checked={data.footer_logo_visible}
+                                        onChange={(value) => setData('footer_logo_visible', value)}
+                                        label="Show footer logo"
+                                        hint="Turn off to remove the Marketorr logo from the footer without affecting the header logo."
                                     />
-                                </Field>
-                                <Field
-                                    label="Footer bio / intro text"
-                                    error={errors.footer_intro}
+                                </div>
+                                <ImageField
+                                    label="Footer logo"
+                                    error={errors.footer_logo}
+                                    preview={footerLogoPreview}
+                                    onChange={onImageChange('footer_logo', setFooterLogoPreview, settings.footer_logo_url)}
+                                    hint="Optional footer-only logo. Leave empty to use the main Marketorr logo."
                                     className="sm:col-span-2"
-                                    hint="Displayed in the main agency overview column of the footer."
-                                >
-                                    <Textarea
-                                        rows={3}
-                                        value={data.footer_intro ?? ''}
-                                        onChange={(e) => setData('footer_intro', e.target.value)}
-                                    />
-                                </Field>
+                                />
                             </div>
                         </div>
-
-                        <div className="border-t border-[var(--line)] pt-6">
-                            <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-strong)] mb-2">
-                                Social Profile Links
-                            </h3>
-                            <p className="text-[12px] text-[var(--mute)] mb-4">
-                                Empty URLs are automatically hidden from the public footer and contact section.
-                            </p>
-                            <div className="grid gap-5 sm:grid-cols-2">
-                                <Field label="LinkedIn URL" error={errors.social_linkedin}>
-                                    <Input type="url" value={data.social_linkedin ?? ''} onChange={(e) => setData('social_linkedin', e.target.value)} placeholder="https://www.linkedin.com/company/..." />
-                                </Field>
-                                <Field label="Facebook URL" error={errors.social_facebook}>
-                                    <Input type="url" value={data.social_facebook ?? ''} onChange={(e) => setData('social_facebook', e.target.value)} placeholder="https://www.facebook.com/..." />
-                                </Field>
-                                <Field label="Instagram URL" error={errors.social_instagram}>
-                                    <Input type="url" value={data.social_instagram ?? ''} onChange={(e) => setData('social_instagram', e.target.value)} placeholder="https://www.instagram.com/..." />
-                                </Field>
-                                <Field label="X (Twitter) URL" error={errors.social_x}>
-                                    <Input type="url" value={data.social_x ?? ''} onChange={(e) => setData('social_x', e.target.value)} placeholder="https://x.com/..." />
-                                </Field>
-                                <Field label="YouTube URL" error={errors.social_youtube}>
-                                    <Input type="url" value={data.social_youtube ?? ''} onChange={(e) => setData('social_youtube', e.target.value)} placeholder="https://www.youtube.com/@..." />
-                                </Field>
-                                <Field label="Behance URL" error={errors.social_behance}>
-                                    <Input type="url" value={data.social_behance ?? ''} onChange={(e) => setData('social_behance', e.target.value)} placeholder="https://www.behance.net/..." />
-                                </Field>
-                                <Field label="Dribbble URL" error={errors.social_dribbble} className="sm:col-span-2">
-                                    <Input type="url" value={data.social_dribbble ?? ''} onChange={(e) => setData('social_dribbble', e.target.value)} placeholder="https://dribbble.com/..." />
-                                </Field>
-                            </div>
-                        </div>
-                    </div>
                 </AccordionWidget>
 
-                {/* 4. SEO & Meta Defaults (Collapsed by default) */}
+                </div>
+
+                <div className={tab === 'seo' ? 'space-y-5' : 'hidden'}>
+                {/* 4. SEO & Meta Defaults */}
                 <AccordionWidget
                     id="seo_meta"
                     title="SEO & Meta Defaults"
@@ -526,123 +616,7 @@ export default function Settings({ settings }) {
                     </div>
                 </AccordionWidget>
 
-                {/* 5. Custom Code & Script Injection (Collapsed by default) */}
-                <AccordionWidget
-                    id="custom_scripts"
-                    title="Custom Code & Script Injection"
-                    subtitle="Direct <head> and <body> code injection for analytics, Meta Pixel and live chat."
-                    badge="Scripts"
-                    isOpen={openSections.custom_scripts}
-                    onToggle={toggleSection}
-                    icon={(
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="16 18 22 12 16 6"/>
-                            <polyline points="8 6 2 12 8 18"/>
-                        </svg>
-                    )}
-                >
-                    <div className="space-y-6">
-                        <div className="rounded-xl border border-[#507AF4]/30 bg-[#507AF4]/10 p-4 text-[12px] text-[var(--ink)]">
-                            <strong className="font-bold text-[#6F91FF]">Caution:</strong> Injected code runs verbatim in public visitor browsers. Only paste trusted verification tags and tracking scripts.
-                        </div>
-
-                        <Field
-                            label="<head> Code Injection (Google Analytics, GTM, Meta Pixel)"
-                            error={errors.head_scripts}
-                            hint="Rendered inside the HTML <head> section of every page immediately before the closing </head> tag."
-                        >
-                            <Textarea
-                                rows={6}
-                                className="font-mono text-[12px]"
-                                value={data.head_scripts ?? ''}
-                                onChange={(e) => setData('head_scripts', e.target.value)}
-                                placeholder="<!-- Google tag (gtag.js) -->\n<script async src='https://www.googletagmanager.com/gtag/js?id=G-XXXXX'></script>"
-                            />
-                        </Field>
-
-                        <Field
-                            label="<body> / Footer Code Injection (Chat Widgets, Conversion Pixels)"
-                            error={errors.body_scripts}
-                            hint="Rendered immediately before the closing </body> tag. Ideal for Intercom, Crisp, Drift or performance tracking scripts."
-                        >
-                            <Textarea
-                                rows={6}
-                                className="font-mono text-[12px]"
-                                value={data.body_scripts ?? ''}
-                                onChange={(e) => setData('body_scripts', e.target.value)}
-                                placeholder="<!-- Live Chat Widget -->\n<script>window.$crisp=[];window.CRISP_WEBSITE_ID='...';</script>"
-                            />
-                        </Field>
-                    </div>
-                </AccordionWidget>
-
-                {/* 6. Hero & About Content (Collapsed by default) */}
-                <AccordionWidget
-                    id="hero_about"
-                    title="Hero & About Content"
-                    subtitle="Homepage showcase typography, animated statistics, and agency narrative."
-                    badge="Content"
-                    isOpen={openSections.hero_about}
-                    onToggle={toggleSection}
-                    icon={(
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                            <path d="M6 6h10"/>
-                            <path d="M6 10h10"/>
-                        </svg>
-                    )}
-                >
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-strong)] mb-4">
-                                Homepage Hero
-                            </h3>
-                            <div className="grid gap-5">
-                                <Field label="Hero Eyebrow" error={errors.hero_eyebrow} required>
-                                    <Input value={data.hero_eyebrow} onChange={(e) => setData('hero_eyebrow', e.target.value)} />
-                                </Field>
-                                <Field label="Heading Lines" error={errors.hero_heading_lines} required hint="One line per row, the last line gets the brand gradient.">
-                                    <RepeatableList
-                                        values={data.hero_heading_lines}
-                                        onChange={(v) => setData('hero_heading_lines', v)}
-                                        placeholder="We turn"
-                                        addLabel="Add line"
-                                        errors={errors}
-                                        name="hero_heading_lines"
-                                    />
-                                </Field>
-                                <Field label="Hero Subtext" error={errors.hero_subtext} required>
-                                    <Textarea rows={3} value={data.hero_subtext} onChange={(e) => setData('hero_subtext', e.target.value)} />
-                                </Field>
-                            </div>
-                        </div>
-
-                        <div className="border-t border-[var(--line)] pt-6">
-                            <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-strong)] mb-4">
-                                Agency About & Stats
-                            </h3>
-                            <div className="grid gap-5">
-                                <Field label="About narrative text" error={errors.about_text} required>
-                                    <Textarea rows={4} value={data.about_text} onChange={(e) => setData('about_text', e.target.value)} />
-                                </Field>
-                                <Field label="Numerical Metrics" error={errors.about_metrics} required hint="Number counts up on viewport scroll; suffix is attached after (e.g. 120 + '+').">
-                                    <RepeatableRows
-                                        values={data.about_metrics}
-                                        onChange={(v) => setData('about_metrics', v)}
-                                        fields={[
-                                            { key: 'value', placeholder: '120', type: 'number' },
-                                            { key: 'suffix', placeholder: '+' },
-                                            { key: 'label', placeholder: 'Projects delivered' },
-                                        ]}
-                                        addLabel="Add metric"
-                                        errors={errors}
-                                        name="about_metrics"
-                                    />
-                                </Field>
-                            </div>
-                        </div>
-                    </div>
-                </AccordionWidget>
+                </div>
 
                 {/* Sticky / Dedicated Save Bar */}
                 <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur-md">

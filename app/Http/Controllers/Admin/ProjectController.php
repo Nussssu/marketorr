@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,6 +36,7 @@ class ProjectController extends Controller
             'project' => null,
             'statuses' => ContentStatus::values(),
             'categories' => $this->categoryOptions(),
+            'categoriesHref' => CategoryController::manageUrl(),
         ]);
     }
 
@@ -50,12 +52,18 @@ class ProjectController extends Controller
             $data['image_path'] = $val;
         }
         $data['sort_order'] = $data['sort_order'] ?? ((int) Project::query()->max('sort_order') + 1);
+        if (array_key_exists('meta_og_image', $data)) {
+            $data['meta_og_image'] = filled($data['meta_og_image'])
+                ? preg_replace('#^(https?://[^/]+)?/storage/#', '', $data['meta_og_image'])
+                : null;
+        }
+        $data['brief'] = $this->normaliseBrief($data['brief'] ?? null);
         $data['case_study'] = $this->buildCaseStudy(null, $request->input('gallery_images'));
 
-        Project::query()->create($data);
+        $project = Project::query()->create($data);
 
         return redirect()
-            ->route('admin.projects.index')
+            ->route('admin.projects.edit', $project)
             ->with('success', 'Project created.');
     }
 
@@ -65,6 +73,7 @@ class ProjectController extends Controller
             'project' => $this->toAdminArray($project),
             'statuses' => ContentStatus::values(),
             'categories' => $this->categoryOptions(),
+            'categoriesHref' => CategoryController::manageUrl(),
         ]);
     }
 
@@ -82,6 +91,15 @@ class ProjectController extends Controller
             $data['image_path'] = $val;
         }
 
+        if (array_key_exists('meta_og_image', $data)) {
+            $data['meta_og_image'] = filled($data['meta_og_image'])
+                ? preg_replace('#^(https?://[^/]+)?/storage/#', '', $data['meta_og_image'])
+                : null;
+        }
+        if (array_key_exists('brief', $data)) {
+            $data['brief'] = $this->normaliseBrief($data['brief']);
+        }
+
         // Only touch the visual story when the gallery field was submitted,
         // so older forms and API clients never wipe it by omission.
         if ($request->exists('gallery_images')) {
@@ -91,8 +109,8 @@ class ProjectController extends Controller
         $project->update($data);
 
         return redirect()
-            ->route('admin.projects.index')
-            ->with('success', 'Project updated.');
+            ->route('admin.projects.edit', $project)
+            ->with('success', 'Project saved.');
     }
 
     public function destroy(Project $project): RedirectResponse
@@ -100,6 +118,21 @@ class ProjectController extends Controller
         $project->delete();
 
         return back()->with('success', 'Project deleted.');
+    }
+
+    public function duplicate(Project $project): RedirectResponse
+    {
+        $copy = $project->replicate();
+        $copy->slug = $this->uniqueSlug($project->slug.'-copy');
+        $copy->title = $project->title.' (Copy)';
+        $copy->status = ContentStatus::Draft;
+        $copy->featured = false;
+        $copy->sort_order = (int) Project::query()->max('sort_order') + 1;
+        $copy->save();
+
+        return redirect()
+            ->route('admin.projects.edit', $copy)
+            ->with('success', 'Project copied.');
     }
 
     /**
@@ -127,6 +160,59 @@ class ProjectController extends Controller
         $project->update(['featured' => ! $project->featured]);
 
         return back()->with('success', $project->featured ? 'Project featured.' : 'Project unfeatured.');
+    }
+
+    public function updateStatus(Request $request, Project $project): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::enum(ContentStatus::class)],
+        ]);
+
+        $project->update(['status' => $validated['status']]);
+
+        return back()->with('success', 'Project status updated.');
+    }
+
+    /**
+     * The project brief as submitted, trimmed, with empty list rows and empty
+     * highlight rows dropped. A brief with nothing left in it is stored as
+     * null, so the project page shows no brief rather than an empty one.
+     *
+     * @param  array<string, mixed>|null  $brief
+     * @return array<string, mixed>|null
+     */
+    private function normaliseBrief(?array $brief): ?array
+    {
+        if ($brief === null) {
+            return null;
+        }
+
+        $text = fn (string $key): string => trim((string) ($brief[$key] ?? ''));
+        $list = fn (string $key): array => collect($brief[$key] ?? [])
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter()
+            ->values()
+            ->all();
+
+        $clean = [
+            'overview' => $text('overview'),
+            'worked_on' => $list('worked_on'),
+            'services' => $list('services'),
+            'highlights' => collect($brief['highlights'] ?? [])
+                ->map(fn ($row): array => [
+                    'label' => trim((string) ($row['label'] ?? '')),
+                    'value' => trim((string) ($row['value'] ?? '')),
+                ])
+                ->filter(fn (array $row): bool => $row['label'] !== '' && $row['value'] !== '')
+                ->values()
+                ->all(),
+            'client' => $text('client'),
+            'website' => $text('website'),
+            'behance_url' => $text('behance_url'),
+            'source_url' => $text('source_url'),
+        ];
+
+        return collect($clean)->filter(fn ($value): bool => filled($value))->isEmpty() ? null : $clean;
     }
 
     /**
@@ -162,6 +248,7 @@ class ProjectController extends Controller
             ->map(fn (array $image): array => [
                 'src' => trim((string) $image['src']),
                 'alt' => trim((string) ($image['alt'] ?? '')),
+                'hidden' => filter_var($image['hidden'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 'wide' => false,
                 'video' => str_ends_with(strtolower(parse_url(trim((string) $image['src']), PHP_URL_PATH) ?? ''), '.mp4'),
             ])
@@ -195,6 +282,7 @@ class ProjectController extends Controller
             ->map(fn (array $image): array => [
                 'src' => (string) $image['src'],
                 'alt' => (string) ($image['alt'] ?? ''),
+                'hidden' => (bool) ($image['hidden'] ?? false),
             ])
             ->values()
             ->all();
@@ -210,6 +298,18 @@ class ProjectController extends Controller
         }
 
         Storage::disk('public')->delete($path);
+    }
+
+    private function uniqueSlug(string $base): string
+    {
+        $slug = $base;
+        $suffix = 2;
+
+        while (Project::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 
     /**
@@ -261,6 +361,22 @@ class ProjectController extends Controller
             'status' => $project->status->value,
             'sort_order' => $project->sort_order,
             'gallery_images' => $this->galleryImages($project->case_study),
+            'work_group' => $project->work_group,
+            'meta_title' => $project->meta_title ?? '',
+            'meta_description' => $project->meta_description ?? '',
+            'meta_og_image' => $project->meta_og_image ?? '',
+            'meta_robots' => $project->meta_robots ?: 'index,follow',
+            'canonical_url' => $project->canonical_url ?? '',
+            'brief' => [
+                'overview' => $project->brief['overview'] ?? '',
+                'worked_on' => $project->brief['worked_on'] ?? [],
+                'services' => $project->brief['services'] ?? [],
+                'highlights' => $project->brief['highlights'] ?? [],
+                'client' => $project->brief['client'] ?? '',
+                'website' => $project->brief['website'] ?? '',
+                'behance_url' => $project->brief['behance_url'] ?? '',
+                'source_url' => $project->brief['source_url'] ?? '',
+            ],
         ];
     }
 }

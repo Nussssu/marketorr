@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion, transform, useMotionValue, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { MARK } from '../../lib/tokens';
+import { MARK, withAlpha } from '../../lib/tokens';
 import { useThemeMotion } from '../../lib/theme';
 import MagneticButton from '../motion/MagneticButton';
 import ScrollHeading from '../motion/ScrollHeading';
@@ -45,7 +45,7 @@ function BarColumn({ bar, glow }) {
                     borderRadius: `calc(var(--bar-h) * ${BAR_WIDTH}) 0 0 0`,
                     background: `linear-gradient(180deg, ${bar.color}, ${bar.color}55)`,
                     boxShadow: `${glow(bar.color, 42)}, ${glow(bar.color, 90)}`.replace(/, $/, ''),
-                    border: `1px solid ${bar.color}66`,
+                    border: `1px solid ${withAlpha(bar.color, '66')}`,
                 }}
             />
             <span
@@ -222,7 +222,7 @@ export default function Hero({ content }) {
 
                 <div
                     className="enter enter--scale-x mt-6 h-[3px] w-full max-w-xl origin-left sm:mt-8"
-                    style={{ '--enter-dur': '0.42s', '--enter-delay': '0.48s', background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                    style={{ '--enter-dur': '0.42s', '--enter-delay': '0.48s', background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                     aria-hidden
                 />
 
@@ -238,7 +238,7 @@ export default function Hero({ content }) {
                         className="enter enter--fade-up flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-4"
                     >
                         <MagneticButton className="w-full sm:w-auto">
-                            <Link href="/work" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white sm:w-auto" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            <Link href="/work" data-cursor="cta" className="btn-press group inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white sm:w-auto" style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}>
                                 View our work <span data-arrow aria-hidden>↗</span>
                             </Link>
                         </MagneticButton>
@@ -263,7 +263,7 @@ export default function Hero({ content }) {
                         className="btn-press flex flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
                     >
                         Scroll to explore
-                        <span className="block h-10 w-[1px] bg-gradient-to-b from-[#891FFB] via-[#507AF4] to-[#1BE2EB]" aria-hidden />
+                        <span className="block h-10 w-[1px] bg-gradient-to-b from-[var(--brand-1)] via-[var(--brand-2)] to-[var(--brand-3)]" aria-hidden />
                     </Link>
                 </div>
             </motion.div>

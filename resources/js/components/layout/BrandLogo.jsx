@@ -27,27 +27,33 @@ const NATURAL_HEIGHT = 118;
  * been uploaded it is used for both themes, so a half-finished upload never
  * leaves one theme with no logo at all.
  *
- * @param {{ className?: string, height?: number, draggable?: boolean }} props
+ * @param {{ className?: string, height?: number, draggable?: boolean, source?: string|null }} props
  *   `height` is the rendered height in px; the width follows the artwork's
  *   own aspect ratio. `priority` marks the header instance, which is often
  *   the first image on screen, for an early high-priority fetch. `draggable`
  *   false stops the browser lifting a ghost copy of the logo on drag.
  */
-export default function BrandLogo({ className = '', height = 26, priority = false, draggable }) {
+export default function BrandLogo({ className = '', height = 26, priority = false, draggable, source = null }) {
     const { settings } = usePage().props;
     const style = { height, width: 'auto' };
 
-    const uploadedLight = settings?.logo ?? settings?.logoDark ?? null;
-    const uploadedDark = settings?.logoDark ?? settings?.logo ?? null;
+    // A shipped Marketorr lockup picked for one spot (the footer) still means
+    // "the Marketorr logo", so each theme keeps its own lockup.
+    const isLockup = (url) => [ON_LIGHT, ON_DARK].some((path) => String(url ?? '').endsWith(path));
+    const override = source && !isLockup(source) ? source : null;
+    const uploadedLight = override ?? settings?.logo ?? settings?.logoDark ?? null;
+    const uploadedDark = override ?? settings?.logoDark ?? settings?.logo ?? null;
     const onLight = uploadedLight ?? assetUrl(ON_LIGHT);
     const onDark = uploadedDark ?? assetUrl(ON_DARK);
     const siteName = settings?.siteName ?? 'Marketorr';
 
     // An uploaded file has its own proportions, so the intrinsic size of the
-    // shipped artwork must not be imposed on it.
-    const intrinsic = uploadedLight
-        ? {}
-        : { width: NATURAL_WIDTH, height: NATURAL_HEIGHT };
+    // shipped artwork must not be imposed on it. The shipped lockups chosen in
+    // Settings keep it, so the header reserves the same box as before.
+    const isShipped = (url) => !url || [ON_LIGHT, ON_DARK].some((path) => String(url).endsWith(path));
+    const intrinsic = isShipped(onLight) && isShipped(onDark)
+        ? { width: NATURAL_WIDTH, height: NATURAL_HEIGHT }
+        : {};
 
     return (
         <span className={`brand-logo inline-flex items-center ${className}`.trimEnd()}>

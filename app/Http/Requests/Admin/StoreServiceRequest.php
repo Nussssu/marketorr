@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\ContentStatus;
+use App\Http\Requests\Admin\Concerns\NormalisesSlug;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
 class StoreServiceRequest extends FormRequest
 {
+    use NormalisesSlug;
+
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() ?? false;
@@ -20,7 +23,7 @@ class StoreServiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slug' => ['required', 'string', 'max:190', 'alpha_dash', $this->slugRule()],
+            'slug' => ['required', 'string', 'max:190', 'regex:'.self::SLUG_PATTERN, $this->slugRule(), $this->tabSlugRule()],
             'index_label' => ['required', 'string', 'max:10'],
             'name' => ['required', 'string', 'max:190'],
             'short' => ['required', 'string', 'max:190'],
@@ -50,6 +53,7 @@ class StoreServiceRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->slugMessages(),
             'accent.regex' => 'The accent must be a 6-digit hex color, for example #891FFB.',
             'accent_to.regex' => 'The gradient end must be a 6-digit hex color, for example #507AF4.',
         ];
@@ -58,6 +62,7 @@ class StoreServiceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            ...$this->normalisedSlug(),
             'capabilities' => $this->filledStrings('capabilities'),
             'deliverables' => $this->filledStrings('deliverables'),
             'outcomes' => array_values(array_filter(
@@ -78,5 +83,14 @@ class StoreServiceRequest extends FormRequest
             (array) $this->input($key, []),
             static fn ($value) => filled($value),
         ));
+    }
+
+    /**
+     * A service lives at /services/{slug}, and that address opens a Services
+     * tab of the same slug instead, so the two may not share one.
+     */
+    protected function tabSlugRule(): Unique
+    {
+        return Rule::unique('service_groups', 'slug');
     }
 }

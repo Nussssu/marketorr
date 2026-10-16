@@ -16,9 +16,10 @@ import { projectCardMedia } from '../../lib/projectHeroMedia';
 import MediaPlaceholder from '../media/MediaPlaceholder';
 import { GradientTitle, Tag } from '../ui/primitives';
 import { useMediaQuery } from '../../lib/useMediaQuery';
+import { withAlpha } from '../../lib/tokens';
 
 const EASE = [0.22, 1, 0.36, 1];
-const BRAND_GRADIENT = 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)';
+const BRAND_GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
 const RICH_QUERY = '(min-width: 1024px)';
 const COMPACT_QUERY = '(max-width: 1023px)';
 
@@ -173,7 +174,7 @@ function FlowItem({ project, index, rich, reduce, onFocus }) {
                     {!isCharukothon(project.slug) && (
                     <div
                         className="pointer-events-none absolute inset-0 transition-opacity duration-500 group-hover:opacity-70"
-                        style={{ background: `radial-gradient(120% 100% at 20% 10%, ${project.accent}1a, transparent 58%), linear-gradient(180deg, rgba(8,8,10,0.34) 0%, transparent 26%, transparent 56%, rgba(8,8,10,0.26) 80%, rgba(8,8,10,0.56) 100%)` }}
+                        style={{ background: `radial-gradient(120% 100% at 20% 10%, ${withAlpha(project.accent, '1a')}, transparent 58%), linear-gradient(180deg, rgba(8,8,10,0.34) 0%, transparent 26%, transparent 56%, rgba(8,8,10,0.26) 80%, rgba(8,8,10,0.56) 100%)` }}
                         aria-hidden
                     />
                     )}

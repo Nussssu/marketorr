@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { SectionLabel, Tag } from '../../components/ui/primitives';
 import MagneticButton from '../../components/motion/MagneticButton';
-import { MARK, markBarStyle, markGap } from '../../lib/tokens';
+import { MARK, markBarStyle, markGap, withAlpha } from '../../lib/tokens';
 
 /** Height of the progression visual's tallest bar, in the logo's proportions. */
 const PROGRESSION_SIZE = 'clamp(190px, 20vw, 260px)';
@@ -19,7 +19,7 @@ export default function ServicePage({ service: s, services }) {
                     <p className="mt-6 max-w-2xl text-lg text-[var(--mute)]">{s.description}</p>
                     <div className="mt-8 flex flex-wrap gap-4">
                         <MagneticButton>
-                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}>
+                            <Link href="/#contact" data-cursor="cta" className="btn-press inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.16em] text-white" style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}>
                                 Start a project ↗
                             </Link>
                         </MagneticButton>
@@ -31,7 +31,7 @@ export default function ServicePage({ service: s, services }) {
                     {/* progression visual */}
                     <div className="mt-14 flex items-end" style={{ gap: markGap(PROGRESSION_SIZE) }} aria-hidden>
                         {MARK.colors.map((c, i) => (
-                            <span key={c} className="border" style={{ ...markBarStyle(PROGRESSION_SIZE, i), background: `linear-gradient(180deg, ${c}66, transparent)`, borderColor: `${c}44` }} />
+                            <span key={c} className="border" style={{ ...markBarStyle(PROGRESSION_SIZE, i), background: `linear-gradient(180deg, ${withAlpha(c, '66')}, transparent)`, borderColor: `${withAlpha(c, '44')}` }} />
                         ))}
                         <span className="mb-2 ml-2 h-[3px] flex-1" style={{ background: grad }} />
                     </div>

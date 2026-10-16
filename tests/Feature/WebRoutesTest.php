@@ -136,15 +136,58 @@ class WebRoutesTest extends TestCase
                 ]));
     }
 
-    public function test_the_home_carousel_only_shows_featured_branding_projects(): void
+    public function test_the_home_carousel_shows_featured_projects_from_every_portfolio(): void
     {
         $uiuxProject = Project::query()->where('slug', 'animateuix-brand-design')->sole();
         $uiuxProject->update(['work_group' => 'uiux']);
 
         $this->get('/')
             ->assertInertia(fn ($page) => $page
-                ->has('featuredProjects', 6)
-                ->where('featuredProjects', fn ($projects) => ! $projects->pluck('slug')->contains('animateuix-brand-design')));
+                ->has('featuredProjects', 7)
+                ->where('featuredProjects', fn ($projects) => $projects->pluck('slug')->contains('animateuix-brand-design')));
+    }
+
+    public function test_project_featured_and_status_changes_reach_every_public_project_listing(): void
+    {
+        $project = Project::factory()->create([
+            'slug' => 'synced-interface-project',
+            'work_group' => 'uiux',
+            'featured' => true,
+            'status' => 'published',
+            'sort_order' => -1,
+        ]);
+
+        $this->get('/')
+            ->assertInertia(fn ($page) => $page
+                ->where('featuredProjects', fn ($projects) => $projects->pluck('slug')->contains($project->slug)));
+
+        $this->get('/work')
+            ->assertInertia(fn ($page) => $page
+                ->where('groups.1.items', fn ($projects) => $projects->pluck('slug')->contains($project->slug)));
+
+        $this->get('/work/portfolio/uiux')
+            ->assertInertia(fn ($page) => $page
+                ->where('projects', fn ($projects) => $projects->pluck('slug')->contains($project->slug)));
+
+        $project->update(['featured' => false]);
+
+        $this->get('/')
+            ->assertInertia(fn ($page) => $page
+                ->where('featuredProjects', fn ($projects) => ! $projects->pluck('slug')->contains($project->slug)));
+
+        $project->update(['featured' => true, 'status' => 'draft']);
+
+        $this->get('/')
+            ->assertInertia(fn ($page) => $page
+                ->where('featuredProjects', fn ($projects) => ! $projects->pluck('slug')->contains($project->slug)));
+
+        $this->get('/work')
+            ->assertInertia(fn ($page) => $page
+                ->where('groups.1.items', fn ($projects) => ! $projects->pluck('slug')->contains($project->slug)));
+
+        $this->get('/work/portfolio/uiux')
+            ->assertInertia(fn ($page) => $page
+                ->where('projects', fn ($projects) => ! $projects->pluck('slug')->contains($project->slug)));
     }
 
     public function test_the_branding_portfolio_uses_the_curated_project_order(): void

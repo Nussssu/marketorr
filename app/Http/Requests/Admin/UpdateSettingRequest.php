@@ -31,29 +31,13 @@ class UpdateSettingRequest extends FormRequest
             'directions_url' => ['nullable', 'url', 'max:2048'],
             'copyright_text' => ['nullable', 'string', 'max:255'],
             'footer_intro' => ['nullable', 'string', 'max:1000'],
-            'social_linkedin' => ['nullable', 'url', 'max:255'],
-            'social_facebook' => ['nullable', 'url', 'max:255'],
-            'social_behance' => ['nullable', 'url', 'max:255'],
-            'social_dribbble' => ['nullable', 'url', 'max:255'],
-            'social_instagram' => ['nullable', 'url', 'max:255'],
-            'social_x' => ['nullable', 'url', 'max:255'],
-            'social_youtube' => ['nullable', 'url', 'max:255'],
-            'hero_eyebrow' => ['required', 'string', 'max:190'],
-            'hero_heading_lines' => ['required', 'array', 'min:1', 'max:4'],
-            'hero_heading_lines.*' => ['required', 'string', 'max:120'],
-            'hero_subtext' => ['required', 'string', 'max:1000'],
-            'about_text' => ['required', 'string', 'max:2000'],
-            'about_metrics' => ['required', 'array', 'min:1', 'max:8'],
-            'about_metrics.*.value' => ['required', 'numeric', 'min:0'],
-            'about_metrics.*.suffix' => ['nullable', 'string', 'max:10'],
-            'about_metrics.*.label' => ['required', 'string', 'max:120'],
+            'footer_logo' => ['nullable'],
+            'footer_logo_visible' => ['required', 'boolean'],
+            'footer_motto_items' => ['present', 'array', 'max:8'],
+            'footer_motto_items.*' => ['required', 'string', 'max:60'],
             'meta_default_title' => ['required', 'string', 'max:190'],
             'meta_default_description' => ['required', 'string', 'max:255'],
             'meta_default_og_image' => ['nullable'],
-            // Rendered verbatim into the page head and body, so only a super
-            // admin can reach this form at all.
-            'head_scripts' => ['nullable', 'string', 'max:20000'],
-            'body_scripts' => ['nullable', 'string', 'max:20000'],
             'robots_txt' => ['nullable', 'string', 'max:10000'],
             'schema_markup' => ['nullable', 'string', 'max:20000', 'json'],
             'sitemap_enabled' => ['required', 'boolean'],
@@ -79,7 +63,7 @@ class UpdateSettingRequest extends FormRequest
     public function settingAttributes(): array
     {
         $data = $this->safe()->except([
-            'logo', 'logo_dark', 'favicon', 'meta_default_og_image', 'schema_markup',
+            'logo', 'logo_dark', 'favicon', 'footer_logo', 'meta_default_og_image', 'schema_markup',
         ]);
 
         $data['schema_markup'] = filled($this->input('schema_markup'))
@@ -94,13 +78,10 @@ class UpdateSettingRequest extends FormRequest
         $this->merge([
             'sitemap_enabled' => $this->boolean('sitemap_enabled'),
             'header_sticky' => $this->boolean('header_sticky'),
-            'hero_heading_lines' => array_values(array_filter(
-                (array) $this->input('hero_heading_lines', []),
-                static fn ($line) => filled($line),
-            )),
-            'about_metrics' => array_values(array_filter(
-                (array) $this->input('about_metrics', []),
-                static fn ($metric) => filled($metric['label'] ?? null) || filled($metric['value'] ?? null),
+            'footer_logo_visible' => $this->boolean('footer_logo_visible'),
+            'footer_motto_items' => array_values(array_filter(
+                (array) $this->input('footer_motto_items', []),
+                static fn ($item) => filled($item),
             )),
         ]);
     }

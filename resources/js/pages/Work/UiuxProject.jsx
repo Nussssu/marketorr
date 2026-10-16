@@ -5,7 +5,7 @@ import UiuxPrinter from '../../components/sections/UiuxPrinter';
 import BounceTitle from '../../components/motion/BounceTitle';
 
 /** The UI/UX accent, matching the portfolio's purple. */
-const ACCENT = '#891FFB';
+const ACCENT = 'var(--brand-1)';
 
 /**
  * One UI/UX project's own page, opened from "See all pages" in the portfolio.

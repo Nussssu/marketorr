@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\ContentStatus;
+use App\Http\Requests\Admin\Concerns\NormalisesSlug;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
 class StoreSubServiceRequest extends FormRequest
 {
+    use NormalisesSlug;
+
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() ?? false;
@@ -21,7 +24,7 @@ class StoreSubServiceRequest extends FormRequest
     {
         return [
             'service_group_id' => ['required', 'integer', 'exists:service_groups,id'],
-            'slug' => ['required', 'string', 'max:190', 'alpha_dash', $this->slugRule()],
+            'slug' => ['required', 'string', 'max:190', 'regex:'.self::SLUG_PATTERN, $this->slugRule()],
             'name' => ['required', 'string', 'max:190'],
             'short' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -51,6 +54,7 @@ class StoreSubServiceRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->slugMessages(),
             'accent.regex' => 'The accent must be a 6-digit hex color, for example #891FFB.',
             'case_study.json' => 'The case study must be valid JSON.',
         ];
@@ -59,6 +63,7 @@ class StoreSubServiceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            ...$this->normalisedSlug(),
             'deliverables' => $this->filledStrings('deliverables'),
             'related_match' => $this->filledStrings('related_match'),
             'related_pin' => $this->filledStrings('related_pin'),

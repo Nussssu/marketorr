@@ -13,6 +13,27 @@ export const PIGMENTS = [
     [27, 226, 235], // #1BE2EB
 ];
 
+/**
+ * The brand colours as raw channels, read from the CSS variables the Brand
+ * Styling setting writes, so canvas drawing follows a colour changed there.
+ * Falls back to the shipped pigments wherever the variables are unavailable.
+ *
+ * @return {Array<[number, number, number]>}
+ */
+export function brandPigments() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return PIGMENTS;
+    }
+
+    const styles = getComputedStyle(document.documentElement);
+
+    return PIGMENTS.map((fallback, index) => {
+        const channels = styles.getPropertyValue(`--brand-${index + 1}-rgb`).split(',').map((value) => Number(value.trim()));
+
+        return channels.length === 3 && channels.every((value) => Number.isFinite(value)) ? channels : fallback;
+    });
+}
+
 export const GLOW = {
     /** Tight radius: the colour stays near the cursor instead of washing the section. */
     radius: 150,

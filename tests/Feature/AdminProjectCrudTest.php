@@ -52,7 +52,7 @@ class AdminProjectCrudTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->post('/admin/projects', $this->validPayload())
-            ->assertRedirect('/admin/projects')
+            ->assertRedirectContains('/edit')
             ->assertSessionHas('success');
 
         $project = Project::query()->sole();
@@ -87,7 +87,7 @@ class AdminProjectCrudTest extends TestCase
                 'title' => 'Renamed Project',
                 'image' => UploadedFile::fake()->image('replacement.jpg'),
             ]))
-            ->assertRedirect('/admin/projects');
+            ->assertRedirectContains('/edit');
 
         $project->refresh();
 
@@ -107,7 +107,7 @@ class AdminProjectCrudTest extends TestCase
 
         $this->actingAs($this->admin)
             ->put("/admin/projects/{$project->id}", $payload)
-            ->assertRedirect('/admin/projects');
+            ->assertRedirectContains('/edit');
 
         $this->assertSame('projects/keep.jpg', $project->refresh()->image_path);
         Storage::disk('public')->assertExists('projects/keep.jpg');
@@ -123,6 +123,30 @@ class AdminProjectCrudTest extends TestCase
 
         $this->assertSoftDeleted($project);
         $this->get("/work/{$project->slug}")->assertStatus(404);
+    }
+
+    public function test_an_admin_can_copy_a_project_as_a_draft(): void
+    {
+        $project = Project::factory()->create([
+            'slug' => 'brand-refresh',
+            'title' => 'Brand Refresh',
+            'featured' => true,
+            'status' => ContentStatus::Published,
+            'case_study' => [['label' => 'Gallery', 'images' => [['src' => '/images/work/example.jpg']]]],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post("/admin/projects/{$project->id}/duplicate")
+            ->assertRedirectContains('/edit')
+            ->assertSessionHas('success');
+
+        $copy = Project::query()->where('id', '!=', $project->id)->sole();
+
+        $this->assertSame('brand-refresh-copy', $copy->slug);
+        $this->assertSame('Brand Refresh (Copy)', $copy->title);
+        $this->assertSame(ContentStatus::Draft, $copy->status);
+        $this->assertFalse($copy->featured);
+        $this->assertSame($project->case_study, $copy->case_study);
     }
 
     public function test_an_admin_can_reorder_projects(): void
@@ -147,6 +171,38 @@ class AdminProjectCrudTest extends TestCase
 
         $this->actingAs($this->admin)->patch("/admin/projects/{$project->id}/featured");
         $this->assertFalse($project->refresh()->featured);
+    }
+
+    public function test_an_admin_can_publish_and_draft_a_project_from_the_index(): void
+    {
+        $project = Project::factory()->create(['status' => ContentStatus::Draft]);
+
+        $this->get("/work/{$project->slug}")->assertNotFound();
+
+        $this->actingAs($this->admin)
+            ->patch("/admin/projects/{$project->id}/status", ['status' => 'published'])
+            ->assertSessionHas('success');
+
+        $this->assertSame(ContentStatus::Published, $project->refresh()->status);
+        $this->get("/work/{$project->slug}")->assertOk();
+
+        $this->actingAs($this->admin)
+            ->patch("/admin/projects/{$project->id}/status", ['status' => 'draft'])
+            ->assertSessionHas('success');
+
+        $this->assertSame(ContentStatus::Draft, $project->refresh()->status);
+        $this->get("/work/{$project->slug}")->assertNotFound();
+    }
+
+    public function test_an_invalid_inline_project_status_is_rejected(): void
+    {
+        $project = Project::factory()->create(['status' => ContentStatus::Draft]);
+
+        $this->actingAs($this->admin)
+            ->patch("/admin/projects/{$project->id}/status", ['status' => 'archived'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(ContentStatus::Draft, $project->refresh()->status);
     }
 
     public function test_a_duplicate_slug_is_rejected_on_create(): void
@@ -212,5 +268,118 @@ class AdminProjectCrudTest extends TestCase
         $this->post('/admin/projects', $this->validPayload())->assertRedirect('/admin/login');
 
         $this->assertSame(0, Project::query()->count());
+    }
+
+    public function test_an_admin_can_set_the_portfolio_and_the_project_brief(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload([
+                'work_group' => 'uiux',
+                'brief' => [
+                    'overview' => '  A full identity system.  ',
+                    'worked_on' => ['Logo', '', 'Packaging'],
+                    'services' => ['Brand Identity Design'],
+                    'highlights' => [
+                        ['label' => 'Timeline', 'value' => '6 weeks'],
+                        ['label' => '', 'value' => ''],
+                    ],
+                    'client' => 'Acme',
+                    'website' => 'https://acme.test',
+                    'behance_url' => '',
+                    'source_url' => '',
+                ],
+            ]))
+            ->assertRedirectContains('/edit');
+
+        $project = Project::query()->sole();
+
+        $this->assertSame('uiux', $project->work_group);
+        $this->assertSame('A full identity system.', $project->brief['overview']);
+        $this->assertSame(['Logo', 'Packaging'], $project->brief['worked_on']);
+        $this->assertSame([['label' => 'Timeline', 'value' => '6 weeks']], $project->brief['highlights']);
+    }
+
+    public function test_an_empty_brief_and_portfolio_are_stored_as_none(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload([
+                'work_group' => '',
+                'brief' => ['overview' => '', 'worked_on' => [], 'client' => ''],
+            ]));
+
+        $project = Project::query()->sole();
+
+        $this->assertNull($project->work_group);
+        $this->assertNull($project->brief);
+    }
+
+    public function test_a_typed_slug_is_saved_in_its_url_form(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload(['slug' => '  My New_Project  ']))
+            ->assertRedirectContains('/edit');
+
+        $this->assertSame('my-new-project', Project::query()->sole()->slug);
+    }
+
+    public function test_a_hidden_gallery_image_stays_in_the_admin_but_not_on_the_project_page(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload([
+                'gallery_images' => [
+                    ['src' => '/images/work/one.jpg', 'alt' => 'One', 'hidden' => '0'],
+                    ['src' => '/images/work/two.jpg', 'alt' => 'Two', 'hidden' => '1'],
+                ],
+            ]))
+            ->assertRedirectContains('/edit');
+
+        $project = Project::query()->sole();
+
+        $this->actingAs($this->admin)
+            ->get("/admin/projects/{$project->id}/edit")
+            ->assertInertia(fn ($page) => $page
+                ->has('project.gallery_images', 2)
+                ->where('project.gallery_images.1.hidden', true));
+
+        $this->get("/work/{$project->slug}")
+            ->assertInertia(fn ($page) => $page
+                ->has('project.caseStudy.0.images', 1)
+                ->where('project.caseStudy.0.images.0.alt', 'One'));
+    }
+
+    public function test_project_seo_reaches_the_project_page_and_falls_back_when_empty(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload([
+                'meta_title' => 'Custom title',
+                'meta_description' => 'Custom description',
+                'meta_robots' => 'noindex,follow',
+            ]));
+
+        $this->get('/work/new-case-study')
+            ->assertInertia(fn ($page) => $page
+                ->where('project.meta.title', 'Custom title')
+                ->where('project.meta.description', 'Custom description')
+                ->where('project.meta.robots', 'noindex,follow'));
+
+        Project::query()->sole()->update(['meta_title' => null, 'meta_description' => null]);
+
+        $this->get('/work/new-case-study')
+            ->assertInertia(fn ($page) => $page
+                ->where('project.meta.title', 'New Case Study | Marketorr')
+                ->where('project.meta.description', 'A short description of the engagement.'));
+    }
+
+    public function test_saving_a_project_stays_on_its_form(): void
+    {
+        $this->actingAs($this->admin)->post('/admin/projects', $this->validPayload());
+        $project = Project::query()->sole();
+
+        $this->actingAs($this->admin)
+            ->put("/admin/projects/{$project->id}", $this->validPayload(['title' => 'Renamed', 'image' => null]))
+            ->assertRedirect("/admin/projects/{$project->id}/edit")
+            ->assertSessionHas('success');
+
+        $this->assertSame('Renamed', $project->fresh()->title);
     }
 }

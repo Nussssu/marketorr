@@ -1,5 +1,5 @@
 import { useThemeMotion } from '../../lib/theme';
-import { MARK, markBarStyle, markGap } from '../../lib/tokens';
+import { MARK, markBarStyle, markGap, withAlpha } from '../../lib/tokens';
 
 /**
  * Reusable cinematic background stage.
@@ -56,7 +56,7 @@ function Motif({ cls = '' }) {
                 <span
                     key={color}
                     className="motif-bar"
-                    style={{ ...markBarStyle(MOTIF_SIZE, index), background: `linear-gradient(180deg, ${color}59, transparent)` }}
+                    style={{ ...markBarStyle(MOTIF_SIZE, index), background: `linear-gradient(180deg, ${withAlpha(color, '59')}, transparent)` }}
                 />
             ))}
         </div>
@@ -89,7 +89,7 @@ export default function Stage({ variant = 'about', atmo = null, atmoKey = 'base'
                 <div
                     key={atmoKey}
                     className="atmo-wash absolute inset-0"
-                    style={{ background: `radial-gradient(55% 45% at 72% 18%, ${atmo}2e, transparent 70%)` }}
+                    style={{ background: `radial-gradient(55% 45% at 72% 18%, ${withAlpha(atmo, '2e')}, transparent 70%)` }}
                 />
             )}
             {v.motif && <Motif cls={v.motif} />}

@@ -71,7 +71,7 @@ export default function ServiceForm({ service, statuses }) {
                             <Field label="Display index" error={errors.index_label} required hint="Shown beside the name, e.g. 02">
                                 <Input value={data.index_label} onChange={(e) => setData('index_label', e.target.value)} placeholder="02" />
                             </Field>
-                            <Field label="Slug" error={errors.slug} required hint="Used in the URL: /services/your-slug" className="sm:col-span-2">
+                            <Field label="Slug" error={errors.slug} required hint={`Live address: /services/${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`} className="sm:col-span-2">
                                 <Input
                                     value={data.slug}
                                     onChange={(e) => {
@@ -156,10 +156,10 @@ export default function ServiceForm({ service, statuses }) {
                         </div>
                     </Panel>
 
-                    <Button type="submit" disabled={processing} className="w-full">
-                        {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create service'}
-                    </Button>
                 </div>
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create service'}
+                </Button>
             </form>
         </>
     );

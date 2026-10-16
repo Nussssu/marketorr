@@ -127,4 +127,51 @@ class Category extends Model
                 : [],
         ];
     }
+
+    /**
+     * Every category as the admin lists it: top-level categories, each with
+     * its children nested one level, in their sort order.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function adminTree(): array
+    {
+        $categories = static::query()
+            ->withCount('projects')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return $categories
+            ->whereNull('parent_id')
+            ->map(fn (self $parent): array => [
+                ...$parent->toAdminArray(),
+                'children' => $categories
+                    ->where('parent_id', $parent->id)
+                    ->map(fn (self $child): array => $child->toAdminArray())
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toAdminArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'parent_id' => $this->parent_id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'description' => $this->description,
+            'thumbnail_url' => $this->thumbnailUrl(),
+            'accent' => $this->accent,
+            'status' => $this->status->value,
+            'sort_order' => $this->sort_order,
+            'projects_count' => $this->projects_count ?? 0,
+        ];
+    }
 }

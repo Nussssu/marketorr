@@ -274,4 +274,27 @@ class PageBuilderTest extends TestCase
         $this->get('/admin/pages')->assertRedirect('/admin/login');
         $this->get("/admin/pages/{$page->id}/builder")->assertRedirect('/admin/login');
     }
+
+    public function test_a_custom_page_cannot_take_an_address_the_site_already_routes(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/pages', [
+                'slug' => 'admin',
+                'title' => 'Admin',
+                'status' => 'published',
+                'meta_robots' => 'index,follow',
+            ])
+            ->assertSessionHasErrors('slug');
+
+        $this->actingAs($this->admin)
+            ->post('/admin/pages', [
+                'slug' => 'Our Process',
+                'title' => 'Our Process',
+                'status' => 'published',
+                'meta_robots' => 'index,follow',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('pages', ['slug' => 'our-process']);
+    }
 }

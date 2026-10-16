@@ -17,7 +17,7 @@ function AwaitingVisuals({ title }) {
             className="absolute inset-0 overflow-hidden"
             role="img"
             aria-label={`${title} - visuals coming soon`}
-            style={{ background: 'radial-gradient(120% 90% at 85% 15%, rgba(80, 122, 244, 0.28), transparent 60%), radial-gradient(90% 80% at 10% 100%, rgba(137, 31, 251, 0.3), transparent 60%), var(--bg-soft)' }}
+            style={{ background: 'radial-gradient(120% 90% at 85% 15%, rgba(var(--brand-2-rgb), 0.28), transparent 60%), radial-gradient(90% 80% at 10% 100%, rgba(var(--brand-1-rgb), 0.3), transparent 60%), var(--bg-soft)' }}
         >
             <div className="grid-bg absolute inset-0" aria-hidden />
             <span

@@ -14,4 +14,13 @@ class UpdateServiceGroupRequest extends StoreServiceGroupRequest
     {
         return Rule::unique('service_groups', 'slug')->ignore($this->route('service_group'));
     }
+
+    /**
+     * Only a changed slug is checked against the services, so a record saved
+     * before this rule existed can still be edited.
+     */
+    protected function serviceSlugRule(): Unique
+    {
+        return Rule::unique('services', 'slug')->whereNot('slug', $this->route('service_group')?->slug);
+    }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { COLORS } from '../../lib/tokens';
+import { COLORS, withAlpha } from '../../lib/tokens';
 
 const { grape: PURPLE, iris: BLUE, frost: CYAN } = COLORS;
 const SWATCHES = [PURPLE, BLUE, CYAN];
@@ -71,7 +71,7 @@ function BrandStrategy() {
             ))}
             <span
                 className="scene-in absolute left-[74cqw] top-[27cqw] h-[7cqw] w-[7cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ background: `linear-gradient(135deg, ${PURPLE}, ${CYAN})`, boxShadow: `0 0 5cqw ${BLUE}88`, ...t(6, 0.9) }}
+                style={{ background: `linear-gradient(135deg, ${PURPLE}, ${CYAN})`, boxShadow: `0 0 5cqw ${withAlpha(BLUE, '88')}`, ...t(6, 0.9) }}
             />
             <span className="scene-in scene-chip absolute left-[64cqw] top-[35cqw]" style={t(6, 1.2)}>Your brand</span>
         </>
@@ -85,9 +85,9 @@ function BrandIdentity() {
             <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
                 <defs>
                     <linearGradient id="scene-identity-fill" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0" stopColor={PURPLE} />
-                        <stop offset="0.55" stopColor={BLUE} />
-                        <stop offset="1" stopColor={CYAN} />
+                        <stop offset="0" style={{ stopColor: PURPLE }} />
+                        <stop offset="0.55" style={{ stopColor: BLUE }} />
+                        <stop offset="1" style={{ stopColor: CYAN }} />
                     </linearGradient>
                 </defs>
                 {[
@@ -106,7 +106,7 @@ function BrandIdentity() {
                     className="scene-in"
                     style={{ ...t(7, 1.6), transformOrigin: '50% 60%' }}
                 />
-                <circle cx="50" cy="26" r="5" fill={CYAN} className="scene-in" style={{ ...t(7, 1.9), transformOrigin: '50% 26%' }} />
+                <circle cx="50" cy="26" r="5" className="scene-in" style={{ ...t(7, 1.9), fill: CYAN, transformOrigin: '50% 26%' }} />
             </svg>
             <div className="absolute bottom-[5cqw] left-1/2 flex -translate-x-1/2 gap-[2cqw]">
                 {SWATCHES.map((color, index) => (
@@ -216,7 +216,7 @@ function MotionBranding() {
             </svg>
             <span
                 className="scene-motion-shape absolute left-[12cqw] top-[46cqw] h-[9cqw] w-[9cqw] rounded-[2.4cqw]"
-                style={{ background: `linear-gradient(135deg, ${PURPLE}, ${CYAN})`, boxShadow: `0 0 5cqw ${BLUE}88`, ...t(4) }}
+                style={{ background: `linear-gradient(135deg, ${PURPLE}, ${CYAN})`, boxShadow: `0 0 5cqw ${withAlpha(BLUE, '88')}`, ...t(4) }}
             />
             <Panel className="bottom-[6cqw] left-[6cqw] right-[6cqw] h-[30cqw] p-[3cqw]">
                 <div className="relative h-full">
@@ -299,11 +299,11 @@ function WebsiteDesign() {
                         {[6, 6, 6].map((width, index) => <Bone key={index} width={`${width}cqw`} />)}
                     </div>
                 </div>
-                <div className="h-[16cqw] rounded-[2cqw]" style={{ background: `linear-gradient(120deg, ${PURPLE}66, ${BLUE}55 55%, ${CYAN}44)` }} />
+                <div className="h-[16cqw] rounded-[2cqw]" style={{ background: `linear-gradient(120deg, ${withAlpha(PURPLE, '66')}, ${withAlpha(BLUE, '55')} 55%, ${withAlpha(CYAN, '44')})` }} />
                 <div className="mt-[3cqw] flex flex-wrap gap-[2cqw]">
                     {[0, 1, 2].map((index) => (
                         <div key={index} className="scene-card min-w-[20cqw] flex-1 rounded-[1.6cqw] p-[2cqw]">
-                            <span className="block h-[6cqw] rounded-[1cqw]" style={{ background: `${SWATCHES[index]}55` }} />
+                            <span className="block h-[6cqw] rounded-[1cqw]" style={{ background: `${withAlpha(SWATCHES[index], '55')}` }} />
                             <Bone width="80%" className="mt-[1.6cqw]" />
                             <Bone width="55%" className="mt-[1.2cqw]" />
                         </div>
@@ -338,7 +338,7 @@ function MobileApp() {
             <Bone width="50%" className="mt-[3cqw] !h-[2.4cqw]" />
             <div className="mt-[4cqw] grid w-full grid-cols-3 gap-[1.6cqw]">
                 {Array.from({ length: 6 }, (_, index) => (
-                    <span key={index} className="aspect-square rounded-[1.2cqw]" style={{ background: `${SWATCHES[index % 3]}55` }} />
+                    <span key={index} className="aspect-square rounded-[1.2cqw]" style={{ background: `${withAlpha(SWATCHES[index % 3], '55')}` }} />
                 ))}
             </div>
         </div>,
@@ -374,7 +374,7 @@ function SaasProduct() {
             <div className="w-[18cqw] shrink-0 space-y-[2.4cqw] border-r border-[var(--line)] p-[3cqw]">
                 <span className="block h-[3cqw] w-[10cqw] rounded-full" style={{ background: COLORS.gradient }} />
                 {[80, 64, 72, 56].map((width, index) => (
-                    <Bone key={index} width={`${width}%`} style={index === 1 ? { background: `${BLUE}aa` } : undefined} />
+                    <Bone key={index} width={`${width}%`} style={index === 1 ? { background: `${withAlpha(BLUE, 'aa')}` } : undefined} />
                 ))}
             </div>
             <div className="flex-1 p-[3cqw]">
@@ -397,7 +397,7 @@ function SaasProduct() {
                 </div>
                 <div className="scene-card mt-[2.4cqw] h-[18cqw] rounded-[1.6cqw] p-[2cqw]">
                     <svg viewBox="0 0 100 22" preserveAspectRatio="none" className="h-full w-full">
-                        <path d="M0 18 C12 17 16 10 28 11 S46 19 58 12 S80 3 100 5" pathLength="1" className="scene-draw" fill="none" stroke={BLUE} strokeWidth="1.2" strokeLinecap="round" style={t(7, 1.2)} />
+                        <path d="M0 18 C12 17 16 10 28 11 S46 19 58 12 S80 3 100 5" pathLength="1" className="scene-draw" fill="none" strokeWidth="1.2" strokeLinecap="round" style={{ ...t(7, 1.2), stroke: BLUE }} />
                     </svg>
                 </div>
             </div>
@@ -425,8 +425,8 @@ function UxResearch() {
                     <path d="M12 20 C20 7 30 6 38 10 S55 27 62 24 S80 4 88 6" pathLength="1" className="scene-draw" fill="none" stroke="url(#scene-ux-line)" strokeWidth="1.2" strokeLinecap="round" style={t(7)} />
                     <defs>
                         <linearGradient id="scene-ux-line" x1="0" x2="1" y1="0" y2="0">
-                            <stop offset="0" stopColor={PURPLE} />
-                            <stop offset="1" stopColor={CYAN} />
+                            <stop offset="0" style={{ stopColor: PURPLE }} />
+                            <stop offset="1" style={{ stopColor: CYAN }} />
                         </linearGradient>
                     </defs>
                 </svg>
@@ -435,7 +435,7 @@ function UxResearch() {
                 <div
                     key={x}
                     className="scene-in absolute top-[66cqw] h-[20cqw] w-[18cqw] rounded-[1cqw] p-[2cqw]"
-                    style={{ left: `${x}cqw`, rotate: `${rotate}deg`, background: `${color}33`, border: `1px solid ${color}88`, ...t(7, 1.4 + index * 0.25) }}
+                    style={{ left: `${x}cqw`, rotate: `${rotate}deg`, background: `${withAlpha(color, '33')}`, border: `1px solid ${withAlpha(color, '88')}`, ...t(7, 1.4 + index * 0.25) }}
                 >
                     <Bone width="90%" />
                     <Bone width="70%" className="mt-[1.4cqw]" />
@@ -455,7 +455,7 @@ function Wireframing() {
             <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
                 <defs>
                     <marker id="scene-arrow" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
-                        <path d="M0 0 L6 3 L0 6 Z" fill={CYAN} />
+                        <path d="M0 0 L6 3 L0 6 Z" style={{ fill: CYAN }} />
                     </marker>
                 </defs>
                 <path d="M22 68 C26 80 32 80 36 66" pathLength="1" className="scene-draw scene-flow" markerEnd="url(#scene-arrow)" style={t(6, 0.4)} />
@@ -509,7 +509,7 @@ function DesignSystem() {
             <div className={`${tile} left-[52cqw] top-[36cqw] h-[26cqw] w-[42cqw]`} style={t(7, 0.6)}>
                 <Label>Controls</Label>
                 <div className="mt-[3cqw] flex items-center gap-[4cqw]">
-                    <span className="relative h-[6cqw] w-[11cqw] rounded-full" style={{ background: `${BLUE}55` }}>
+                    <span className="relative h-[6cqw] w-[11cqw] rounded-full" style={{ background: `${withAlpha(BLUE, '55')}` }}>
                         <span className="scene-toggle absolute left-[0.8cqw] top-[0.8cqw] h-[4.4cqw] w-[4.4cqw] rounded-full bg-white" style={t(3)} />
                     </span>
                     <span className="grid h-[6cqw] w-[6cqw] place-items-center rounded-[1.4cqw]" style={{ background: CYAN }}>

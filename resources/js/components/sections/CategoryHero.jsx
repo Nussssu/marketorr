@@ -4,6 +4,7 @@ import { transitionTo } from '../motion/PageTransition';
 import { enter } from '../../lib/motion';
 import { useTapIntent } from '../../lib/tapIntent';
 import ServiceScene from '../decor/ServiceScene';
+import { withAlpha } from '../../lib/tokens';
 
 /**
  * Column spans of the six tiles on the desktop bento: two rows of twelve,
@@ -88,7 +89,7 @@ export default function CategoryHero({ category, blendTop = false }) {
             <div
                 className="pointer-events-none absolute left-1/2 top-[-260px] h-[560px] w-[min(1100px,140vw)] -translate-x-1/2 rounded-full"
                 style={{
-                    background: `radial-gradient(closest-side, ${category.accent}2e, transparent)`,
+                    background: `radial-gradient(closest-side, ${withAlpha(category.accent, '2e')}, transparent)`,
                     ...(blendTop ? { maskImage: 'linear-gradient(to bottom, transparent 46%, black 78%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 46%, black 78%)' } : {}),
                 }}
                 aria-hidden

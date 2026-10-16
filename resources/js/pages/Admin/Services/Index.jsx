@@ -82,7 +82,7 @@ export default function ServicesIndex({ services }) {
                                         <td className="py-3 pr-4 font-display font-bold text-[var(--ink-faint)]">{service.index_label}</td>
                                         <td className="py-3 pr-4">
                                             <p className="font-semibold text-[var(--ink)]">{service.name}</p>
-                                            <p className="text-[12px] text-[var(--ink-faint)]">/{service.slug}</p>
+                                            <a href={`/services/${service.slug}`} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">/services/{service.slug} ↗</a>
                                         </td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{service.short}</td>
                                         <td className="py-3 pr-4">

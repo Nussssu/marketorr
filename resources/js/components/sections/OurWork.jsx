@@ -11,6 +11,7 @@ import { GradientTitle, SectionLabel, Tag } from '../ui/primitives';
 import RevealText from '../motion/RevealText';
 import ProgressionBands from './ProgressionBands';
 import { gradientLines } from '../../lib/headingLines';
+import { withAlpha } from '../../lib/tokens';
 
 /** Every project card shares this ratio, so the strip is one set of equal objects. */
 const CARD_RATIO = 16 / 10;
@@ -99,7 +100,7 @@ function ProjectCover({ p, glow, rich, progress }) {
             {!branded && (
             <div
                 className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-200 group-hover:opacity-70"
-                style={{ background: `radial-gradient(120% 100% at 20% 10%, ${p.accent}1f, transparent 58%), linear-gradient(180deg, transparent 0%, transparent 50%, rgba(8,8,10,0.34) 76%, rgba(8,8,10,0.72) 100%)` }}
+                style={{ background: `radial-gradient(120% 100% at 20% 10%, ${withAlpha(p.accent, '1f')}, transparent 58%), linear-gradient(180deg, transparent 0%, transparent 50%, rgba(8,8,10,0.34) 76%, rgba(8,8,10,0.72) 100%)` }}
                 aria-hidden
             />
             )}
@@ -122,7 +123,7 @@ function ProjectCover({ p, glow, rich, progress }) {
             </div>
 
             <span className="absolute inset-0 rounded-[inherit] border border-transparent transition-colors duration-200 group-hover:border-white/20" aria-hidden />
-            <span className="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 transition-transform duration-200 group-hover:scale-x-100" style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }} aria-hidden />
+            <span className="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 transition-transform duration-200 group-hover:scale-x-100" style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }} aria-hidden />
         </div>
     );
 }
@@ -300,12 +301,12 @@ function SeeAllWorkCard({ focus }) {
                 data-cursor="view"
                 data-see-all-work
                 {...tapIntent}
-                className="group relative flex h-[var(--mq-h)] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 transition-[transform,border-color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1 hover:border-[#507AF4]/50 focus-visible:-translate-y-1 sm:p-8"
+                className="group relative flex h-[var(--mq-h)] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 transition-[transform,border-color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1 hover:border-[var(--brand-2)]/50 focus-visible:-translate-y-1 sm:p-8"
                 aria-label="See all branding work"
             >
                 <span
                     className="absolute inset-x-0 top-0 h-[2px] origin-left scale-x-[0.18] transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
-                    style={{ background: 'linear-gradient(90deg,#891FFB,#507AF4,#1BE2EB)' }}
+                    style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
                     aria-hidden
                 />
 
@@ -314,9 +315,9 @@ function SeeAllWorkCard({ focus }) {
                         Branding portfolio
                     </span>
                     <span className="flex gap-1.5" aria-hidden>
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#891FFB]" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#507AF4]" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#1BE2EB]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-2)]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-3)]" />
                     </span>
                 </span>
 
@@ -329,7 +330,7 @@ function SeeAllWorkCard({ focus }) {
                         See all branding
                         <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </span>
-                    <span className="see-all-work__arrow flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-base text-[var(--ink)] transition-[opacity,transform,background-color,color,border-color] duration-300 group-hover:border-transparent group-hover:bg-[#507AF4] group-hover:text-white group-focus-visible:border-transparent group-focus-visible:bg-[#507AF4] group-focus-visible:text-white sm:h-12 sm:w-12 sm:text-lg" aria-hidden>
+                    <span className="see-all-work__arrow flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-base text-[var(--ink)] transition-[opacity,transform,background-color,color,border-color] duration-300 group-hover:border-transparent group-hover:bg-[var(--brand-2)] group-hover:text-white group-focus-visible:border-transparent group-focus-visible:bg-[var(--brand-2)] group-focus-visible:text-white sm:h-12 sm:w-12 sm:text-lg" aria-hidden>
                         ↗
                     </span>
                 </span>

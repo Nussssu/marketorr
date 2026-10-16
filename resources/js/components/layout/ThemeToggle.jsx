@@ -19,14 +19,14 @@ export default function ThemeToggle({ compact = false }) {
             <span className="relative block h-4 w-4" aria-hidden>
                 {/* sun */}
                 <motion.span
-                    className="absolute inset-0 rounded-full bg-[#1BE2EB]"
+                    className="absolute inset-0 rounded-full bg-[var(--brand-3)]"
                     initial={false}
                     animate={{ scale: dark ? 0 : 1, opacity: dark ? 0 : 1 }}
                     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 />
                 {/* moon */}
                 <motion.span
-                    className="absolute inset-0 rounded-full bg-[#891FFB]"
+                    className="absolute inset-0 rounded-full bg-[var(--brand-1)]"
                     initial={false}
                     animate={{ scale: dark ? 1 : 0, opacity: dark ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}

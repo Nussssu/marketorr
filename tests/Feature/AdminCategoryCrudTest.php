@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Page;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,7 +42,7 @@ class AdminCategoryCrudTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->post('/admin/categories', $this->validPayload())
-            ->assertRedirect('/admin/categories');
+            ->assertRedirect('/admin/pages');
 
         $this->assertDatabaseHas('categories', [
             'slug' => 'brand-design',
@@ -60,7 +61,7 @@ class AdminCategoryCrudTest extends TestCase
                 'name' => 'Packaging',
                 'parent_id' => $parent->id,
             ]))
-            ->assertRedirect('/admin/categories');
+            ->assertRedirect('/admin/pages');
 
         $this->assertDatabaseHas('categories', [
             'slug' => 'packaging',
@@ -98,7 +99,7 @@ class AdminCategoryCrudTest extends TestCase
                 'slug' => 'my-slug',
                 'name' => 'Renamed',
             ]))
-            ->assertRedirect('/admin/categories');
+            ->assertRedirect('/admin/pages');
 
         $this->assertSame('Renamed', $category->fresh()->name);
     }
@@ -144,5 +145,23 @@ class AdminCategoryCrudTest extends TestCase
     {
         $this->get('/admin/categories')->assertRedirect('/admin/login');
         $this->post('/admin/categories', $this->validPayload())->assertRedirect('/admin/login');
+    }
+
+    public function test_categories_are_managed_on_the_our_work_page(): void
+    {
+        $work = Page::factory()->system()->create(['slug' => 'work']);
+        Category::factory()->create(['name' => 'Branding']);
+
+        $this->actingAs($this->admin)
+            ->post('/admin/categories', $this->validPayload())
+            ->assertRedirect("/admin/pages/{$work->id}/builder#categories");
+
+        $this->actingAs($this->admin)
+            ->get('/admin/categories')
+            ->assertRedirect("/admin/pages/{$work->id}/builder#categories");
+
+        $this->actingAs($this->admin)
+            ->get("/admin/pages/{$work->id}/builder")
+            ->assertInertia(fn ($page) => $page->has('categories', 2));
     }
 }
