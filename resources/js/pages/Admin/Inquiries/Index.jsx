@@ -541,7 +541,7 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                     <th className="pb-3 pr-4 font-bold">Source</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
                                     <th className="pb-3 pr-4 font-bold">Submitted</th>
-                                    <th className="pb-3 font-bold" />
+                                    <th className="pb-3 font-bold">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -560,7 +560,7 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                             <StatusSelect inquiry={inquiry} statuses={statuses} />
                                         </td>
                                         <td className="py-3 pr-4 whitespace-nowrap text-[var(--mute)]">{inquiry.createdAt}</td>
-                                        <td className="py-3 text-right whitespace-nowrap">
+                                        <td className="py-3 whitespace-nowrap">
                                             <button
                                                 type="button"
                                                 onClick={() => setSelectedInquiry(inquiry)}

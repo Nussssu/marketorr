@@ -45,7 +45,7 @@ const NAV = [
                 label: 'Email & SMTP',
                 href: '/admin/email-smtp',
                 superAdminOnly: true,
-                matches: ['/admin/email-smtp', '/admin/mail', '/admin/email-templates', '/admin/settings/email'],
+                matches: ['/admin/email-smtp', '/admin/mail', '/admin/email-templates', '/admin/email-logs', '/admin/settings/email'],
             },
             { label: 'Settings', href: '/admin/settings', superAdminOnly: true },
             { label: 'Custom Code', href: '/admin/custom-code', superAdminOnly: true },
@@ -99,6 +99,19 @@ export default function AdminLayout({ children }) {
         .filter((group) => group.items.length > 0);
 
     const logout = () => router.post('/admin/logout');
+
+    // Back steps through the browser history once the editor has moved inside
+    // the panel; on the first page loaded (a fresh tab or a pasted link) there
+    // is nothing of ours to go back to, so it falls back to the dashboard.
+    const [firstUrl] = useState(url);
+    const isDashboard = ['/admin', '/admin/dashboard'].includes(url.split('?')[0]);
+    const goBack = () => {
+        if (url !== firstUrl && window.history.length > 1) {
+            window.history.back();
+        } else {
+            router.visit('/admin/dashboard');
+        }
+    };
 
     return (
         <div className="min-h-svh bg-[var(--bg)] text-[var(--ink)]">
@@ -233,7 +246,18 @@ export default function AdminLayout({ children }) {
 
             {/* Main content wrapper: offset with lg:pl-64 to accommodate the fixed sidebar */}
             <div className="flex min-h-screen flex-col lg:pl-64">
-                <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10">{children}</main>
+                <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10">
+                    {!isDashboard && (
+                        <button
+                            type="button"
+                            onClick={goBack}
+                            className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--surface)] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] transition-all duration-200 ease-out hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                        >
+                            <span aria-hidden>←</span> Back
+                        </button>
+                    )}
+                    {children}
+                </main>
             </div>
 
             {/* Toast: floats clear of the page so a save never shifts the form

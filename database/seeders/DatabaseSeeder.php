@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             SubServiceCatalogueSeeder::class,
             ProjectSeeder::class,
+            UiuxShowcaseSeeder::class,
             MenuSeeder::class,
             MediaSeeder::class,
         ]);

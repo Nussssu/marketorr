@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { transitionTo } from '../motion/PageTransition';
 import { EASE } from '../../lib/motion';
+import { fillPageText } from '../../lib/subServicePage';
 import { useTapIntent } from '../../lib/tapIntent';
 
 /**
@@ -80,9 +81,9 @@ export default function SubServiceWork({ item }) {
         <section className="mt-14" aria-labelledby="related-work-heading">
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">Related work</p>
+                    <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--ink-faint)]">{fillPageText(item.page?.work_label, item)}</p>
                     <h2 id="related-work-heading" className="mt-3 font-display text-2xl font-bold uppercase text-[var(--ink-strong)] md:text-3xl">
-                        {item.name} in practice
+                        {fillPageText(item.page?.work_heading, item)}
                     </h2>
                 </div>
                 <Link
@@ -93,7 +94,7 @@ export default function SubServiceWork({ item }) {
                     onClick={(event) => open(event, portfolioHref)}
                     className="btn-press inline-flex items-center gap-2 rounded-full border border-[var(--field-line)] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink)] hover:bg-[var(--invert-btn-hover)] hover:text-[var(--bg)]"
                 >
-                    Full {item.category.name} portfolio →
+                    {fillPageText(item.page?.portfolio_label, item)} →
                 </Link>
             </div>
 

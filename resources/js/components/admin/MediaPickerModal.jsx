@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { TAB_GRADIENT } from './ui';
 
 /**
  * Helper to determine whether an asset is an image based on mime_type or file extension.
@@ -238,26 +239,28 @@ export default function MediaPickerModal({
 
                     {/* Header Tabs & Close */}
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center rounded-lg bg-slate-900/90 p-1 border border-slate-800">
+                        <div className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/90 p-1">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('browse')}
-                                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
                                     activeTab === 'browse'
-                                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                                        : 'text-slate-400 hover:text-slate-200'
+                                        ? 'text-white shadow-sm'
+                                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                                 }`}
+                                style={activeTab === 'browse' ? TAB_GRADIENT : undefined}
                             >
                                 Browse Assets
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('upload')}
-                                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
                                     activeTab === 'upload'
-                                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                                        : 'text-slate-400 hover:text-slate-200'
+                                        ? 'text-white shadow-sm'
+                                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                                 }`}
+                                style={activeTab === 'upload' ? TAB_GRADIENT : undefined}
                             >
                                 + Upload New
                             </button>

@@ -25,7 +25,7 @@
     {{-- Self-hosted fonts (declared in app.css): preload the Latin files the first paint uses. --}}
     <link rel="preload" href="{{ Vite::asset('resources/fonts/sora-latin.woff2') }}" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="{{ Vite::asset('resources/fonts/manrope-latin.woff2') }}" as="font" type="font/woff2" crossorigin />
-    <script>
+    <script @if ($cspNonce = Vite::cspNonce()) nonce="{{ $cspNonce }}" @endif>
         // Apply theme before paint: saved choice wins (legacy key migrated), otherwise light.
         (function () {
             try {
@@ -50,18 +50,15 @@
          alongside the app instead of being discovered only after app.js runs. --}}
     @vite(['resources/css/app.css', 'resources/js/app.jsx', "resources/js/pages/{$page['component']}.jsx"])
     @inertiaHead
-    {{-- Editor-managed tracking snippets, rendered verbatim. --}}
-    @if (filled($siteSettings?->head_scripts))
-        {!! $siteSettings->head_scripts !!}
-    @endif
+    {{-- Site-wide custom code snippets (Admin > Custom Code), never on admin pages. --}}
+    {!! app(\App\Services\CodeInjector::class)->render('head', request()) !!}
     @if (filled($siteSettings?->schema_markup))
         <script type="application/ld+json">{!! json_encode($siteSettings->schema_markup) !!}</script>
     @endif
 </head>
 <body>
+    {!! app(\App\Services\CodeInjector::class)->render('body_start', request()) !!}
     @inertia
-    @if (filled($siteSettings?->body_scripts))
-        {!! $siteSettings->body_scripts !!}
-    @endif
+    {!! app(\App\Services\CodeInjector::class)->render('body_end', request()) !!}
 </body>
 </html>

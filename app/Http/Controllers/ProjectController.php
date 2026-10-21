@@ -40,6 +40,7 @@ class ProjectController extends Controller
 
         $projects = Project::query()
             ->published()
+            ->caseStudies()
             ->with('category.parent')
             ->orderBy('sort_order')
             ->get()
@@ -77,6 +78,7 @@ class ProjectController extends Controller
     {
         $project = Project::query()
             ->published()
+            ->caseStudies()
             ->where('slug', $slug)
             ->firstOrFail();
 

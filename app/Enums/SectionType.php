@@ -103,11 +103,11 @@ enum SectionType: string
     /**
      * The editable fields for this widget, as the admin builder's form schema.
      *
-     * @return array<int, array{name: string, label: string, type: string, item_fields?: array<int, array{name: string, label: string, type: string}>}>
+     * @return array<int, array{name: string, label: string, type: string, default?: int, item_fields?: array<int, array{name: string, label: string, type: string}>}>
      */
     public function fields(): array
     {
-        return match ($this) {
+        $fields = match ($this) {
             self::Hero => [
                 ['name' => 'eyebrow', 'label' => 'Eyebrow', 'type' => 'text'],
                 ['name' => 'headingLines', 'label' => 'Heading lines', 'type' => 'list'],
@@ -313,6 +313,20 @@ enum SectionType: string
                 ['name' => 'buttonUrl', 'label' => 'Button URL', 'type' => 'text'],
             ],
         };
+
+        if ($this->hasHeading()) {
+            $fields[] = ['name' => 'headingScale', 'label' => 'Heading size (%)', 'type' => 'number', 'default' => 100];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Whether this widget shows a heading whose size an editor can scale.
+     */
+    public function hasHeading(): bool
+    {
+        return ! in_array($this, [self::Marquee, self::Features, self::Testimonials, self::Faq], true);
     }
 
     /**
@@ -325,7 +339,7 @@ enum SectionType: string
         $content = [];
 
         foreach ($this->fields() as $field) {
-            $content[$field['name']] = match ($field['type']) {
+            $content[$field['name']] = $field['default'] ?? match ($field['type']) {
                 'list', 'repeater' => [],
                 'number' => 0,
                 default => '',

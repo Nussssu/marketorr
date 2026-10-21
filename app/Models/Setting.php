@@ -27,6 +27,7 @@ class Setting extends Model
             'header_sticky' => 'boolean',
             'footer_logo_visible' => 'boolean',
             'footer_motto_items' => 'array',
+            'custom_code_enabled' => 'boolean',
         ];
     }
 
@@ -101,6 +102,7 @@ class Setting extends Model
             'meta_default_og_image' => null,
             'head_scripts' => null,
             'body_scripts' => null,
+            'custom_code_enabled' => true,
             'robots_txt' => null,
             'schema_markup' => null,
             'sitemap_enabled' => true,

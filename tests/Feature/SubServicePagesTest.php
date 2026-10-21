@@ -8,6 +8,7 @@ use App\Services\SubServiceRelatedWork;
 use Database\Seeders\ServiceSeeder;
 use Database\Seeders\SettingSeeder;
 use Database\Seeders\SubServiceCatalogueSeeder;
+use Database\Seeders\UiuxShowcaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -85,6 +86,8 @@ class SubServicePagesTest extends TestCase
 
     public function test_a_ui_ux_sub_service_draws_from_the_ui_ux_showcase(): void
     {
+        $this->seed(UiuxShowcaseSeeder::class);
+
         $this->get('/services/ui-ux/design-system')
             ->assertInertia(fn ($page) => $page
                 ->has('item.relatedWork', SubServiceRelatedWork::LIMIT)

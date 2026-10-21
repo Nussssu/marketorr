@@ -53,7 +53,23 @@ class SubServiceRelatedWork
                     ->take(self::LIMIT - $related->count())
                     ->map(fn (array $entry): array => [...$entry, 'related' => false])
             )
-            ->map(fn (array $entry): array => collect($entry)->except('terms')->all())
+            ->map(fn (array $entry): array => collect($entry)->except(['terms', 'tags'])->all())
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Every project a tab's sub-services can show as related work, for the
+     * admin's picker: what it is, its cover and the tags it matches on.
+     *
+     * @return array<int, array{slug: string, title: string, meta: string, image: string, tags: array<int, string>}>
+     */
+    public function options(string $categorySlug): array
+    {
+        $pool = $categorySlug === 'ui-ux' ? $this->uiuxPool() : $this->brandingPool();
+
+        return $pool
+            ->map(fn (array $entry): array => collect($entry)->only(['slug', 'title', 'meta', 'image', 'tags'])->all())
             ->values()
             ->all();
     }
@@ -77,6 +93,7 @@ class SubServiceRelatedWork
                 'image' => $project->thumbUrl(),
                 'imageAlt' => $project->image_alt ?: $project->title,
                 'href' => '/work/'.$project->slug,
+                'tags' => collect([...($project->tags ?? []), $project->category?->name])->filter()->values()->all(),
                 'terms' => collect([...($project->tags ?? []), $project->category?->name])
                     ->filter()
                     ->map(fn (string $term): string => Str::lower($term)),
@@ -101,6 +118,7 @@ class SubServiceRelatedWork
                 'image' => $project['cover']['thumb'],
                 'imageAlt' => $project['cover']['alt'] ?? $project['name'],
                 'href' => '/work/portfolio/uiux?project='.rawurlencode($project['slug']),
+                'tags' => [...$project['services'], $project['discipline']],
                 'terms' => collect([...$project['services'], $project['discipline']])
                     ->map(fn (string $term): string => Str::lower($term)),
             ])

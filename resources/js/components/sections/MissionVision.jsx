@@ -85,7 +85,7 @@ export default function MissionVision({ content = {} }) {
                             >
                                 <div>
                                     {card.label && <SectionLabel name={card.label} />}
-                                    <h3 className="mt-3 font-display text-3xl font-extrabold uppercase tracking-tight text-[var(--ink-strong)] md:text-5xl">
+                                    <h3 className="mt-3 font-display text-[calc(1.875rem*var(--heading-scale,1))] leading-9 font-extrabold uppercase tracking-tight text-[var(--ink-strong)] md:text-[calc(3rem*var(--heading-scale,1))] md:leading-none">
                                         <GradientTitle text={card.title} highlightWords={highlight} />
                                     </h3>
                                     <p className="mt-4 max-w-lg text-[15px] leading-[1.75] text-[var(--mute)] md:text-base">

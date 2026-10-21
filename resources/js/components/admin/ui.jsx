@@ -106,6 +106,20 @@ export function Field({ label, error, hint, required = false, children, classNam
     );
 }
 
+/**
+ * The admin's pill-style segmented tab bar: an auto-width track with a
+ * subtle border, neutral inactive pills and the brand gradient on the active
+ * one. Callers keep their own text classes, so typography stays per bar.
+ */
+export const TAB_BAR_CLASS = 'inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface)] p-1';
+export const TAB_GRADIENT = { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' };
+
+export function tabClass(active) {
+    return `rounded-full px-4 py-1.5 transition-all duration-200 ease-out ${
+        active ? 'text-white shadow-sm' : 'text-[var(--ink-faint)] hover:bg-[var(--chip)] hover:text-[var(--ink)]'
+    }`;
+}
+
 export const INPUT_CLASS =
     'w-full rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-3)] focus:border-[var(--brand-3)] transition-colors';
 

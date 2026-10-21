@@ -92,81 +92,149 @@ function Repeater({ field, values, onChange }) {
  * @param {{ fields: Array<object>, content: object, onChange: (content: object) => void, errors?: Record<string, string> }} props
  */
 export default function SectionFields({ fields, content, onChange, errors = {} }) {
-    const set = (name, value) => onChange({ ...content, [name]: value });
+    // The gradient line count can never exceed the heading lines written.
+    const headingLineCount = (lines) => (Array.isArray(lines) ? lines : []).filter((line) => String(line ?? '').trim() !== '').length;
+    const clampHighlight = (value, lines) => (value === '' ? '' : Math.min(Math.max(Math.trunc(Number(value) || 0), 0), headingLineCount(lines)));
+
+    const set = (name, value) => {
+        const next = { ...content, [name]: value };
+
+        if (name === 'titleLines' && next.titleHighlight !== undefined && next.titleHighlight !== '') {
+            next.titleHighlight = clampHighlight(next.titleHighlight, value);
+        }
+
+        onChange(next);
+    };
+
+    const renderField = (field) => {
+        const value = content?.[field.name];
+        const error = errors[`content.${field.name}`];
+
+        if (field.type === 'repeater') {
+            return (
+                <Field key={field.name} label={field.label} error={error}>
+                    <Repeater field={field} values={value} onChange={(next) => set(field.name, next)} />
+                </Field>
+            );
+        }
+
+        if (field.type === 'list') {
+            return (
+                <Field key={field.name} label={field.label} error={error}>
+                    <RepeatableList
+                        values={Array.isArray(value) ? value : []}
+                        onChange={(next) => set(field.name, next)}
+                        addLabel={`Add ${field.label.toLowerCase()}`}
+                    />
+                </Field>
+            );
+        }
+
+        if (field.type === 'textarea' || field.type === 'richtext') {
+            return (
+                <Field
+                    key={field.name}
+                    label={field.label}
+                    error={error}
+                    hint={field.type === 'richtext' ? 'HTML is allowed: use <p>, <strong>, <a> and lists.' : undefined}
+                >
+                    <Textarea
+                        rows={field.type === 'richtext' ? 8 : 4}
+                        className={field.type === 'richtext' ? 'font-mono text-[12px]' : ''}
+                        value={value ?? ''}
+                        onChange={(e) => set(field.name, e.target.value)}
+                    />
+                </Field>
+            );
+        }
+
+        if (field.type === 'image') {
+            return (
+                <MediaPickerField
+                    key={field.name}
+                    label={field.label}
+                    value={value ?? ''}
+                    error={error}
+                    onChange={(url) => set(field.name, url)}
+                />
+            );
+        }
+
+        if (field.type === 'color') {
+            return (
+                <Field key={field.name} label={field.label} error={error}>
+                    <ColorInput value={value ?? ''} onChange={(next) => set(field.name, next)} />
+                </Field>
+            );
+        }
+
+        if (field.name === 'headingScale') {
+            return (
+                <Field key={field.name} label={field.label} error={error}>
+                    <Input
+                        type="number"
+                        min={50}
+                        max={200}
+                        step={5}
+                        value={value ?? 100}
+                        onChange={(e) => set(field.name, e.target.value === '' ? '' : Math.trunc(Number(e.target.value) || 0))}
+                        onBlur={(e) => set(field.name, e.target.value === '' ? 100 : Math.min(Math.max(Math.trunc(Number(e.target.value) || 0), 50), 200))}
+                    />
+                </Field>
+            );
+        }
+
+        if (field.name === 'titleHighlight') {
+            const max = headingLineCount(content?.titleLines);
+
+            return (
+                <Field key={field.name} label={field.label} error={error} hint={`0 to ${max}, the number of heading lines.`}>
+                    <Input
+                        type="number"
+                        min={0}
+                        max={max}
+                        step={1}
+                        value={value ?? ''}
+                        onChange={(e) => set(field.name, clampHighlight(e.target.value, content?.titleLines))}
+                    />
+                </Field>
+            );
+        }
+
+        return (
+            <Field key={field.name} label={field.label} error={error}>
+                <Input
+                    type={field.type === 'number' ? 'number' : 'text'}
+                    value={value ?? ''}
+                    onChange={(e) => set(field.name, e.target.value)}
+                />
+            </Field>
+        );
+    };
+
+    // The heading size box sits beside the heading it scales: the heading
+    // lines, else the field labelled "Heading". With neither it keeps its
+    // own row.
+    const scaleField = fields.find((field) => field.name === 'headingScale');
+    const scaleAnchor = scaleField
+        ? fields.find((field) => ['headingLines', 'titleLines'].includes(field.name)) ?? fields.find((field) => field.label === 'Heading')
+        : undefined;
 
     return (
         <div className="grid gap-5">
             {fields.map((field) => {
-                const value = content?.[field.name];
-                const error = errors[`content.${field.name}`];
+                if (scaleAnchor && field === scaleField) return null;
 
-                if (field.type === 'repeater') {
+                if (scaleAnchor && field === scaleAnchor) {
                     return (
-                        <Field key={field.name} label={field.label} error={error}>
-                            <Repeater field={field} values={value} onChange={(next) => set(field.name, next)} />
-                        </Field>
+                        <div key={field.name} className="grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-3">
+                            {renderField(field)}
+                            {renderField({ ...scaleField, label: 'Size (%)' })}
+                        </div>
                     );
                 }
 
-                if (field.type === 'list') {
-                    return (
-                        <Field key={field.name} label={field.label} error={error}>
-                            <RepeatableList
-                                values={Array.isArray(value) ? value : []}
-                                onChange={(next) => set(field.name, next)}
-                                addLabel={`Add ${field.label.toLowerCase()}`}
-                            />
-                        </Field>
-                    );
-                }
-
-                if (field.type === 'textarea' || field.type === 'richtext') {
-                    return (
-                        <Field
-                            key={field.name}
-                            label={field.label}
-                            error={error}
-                            hint={field.type === 'richtext' ? 'HTML is allowed: use <p>, <strong>, <a> and lists.' : undefined}
-                        >
-                            <Textarea
-                                rows={field.type === 'richtext' ? 8 : 4}
-                                className={field.type === 'richtext' ? 'font-mono text-[12px]' : ''}
-                                value={value ?? ''}
-                                onChange={(e) => set(field.name, e.target.value)}
-                            />
-                        </Field>
-                    );
-                }
-
-                if (field.type === 'image') {
-                    return (
-                        <MediaPickerField
-                            key={field.name}
-                            label={field.label}
-                            value={value ?? ''}
-                            error={error}
-                            onChange={(url) => set(field.name, url)}
-                        />
-                    );
-                }
-
-                if (field.type === 'color') {
-                    return (
-                        <Field key={field.name} label={field.label} error={error}>
-                            <ColorInput value={value ?? ''} onChange={(next) => set(field.name, next)} />
-                        </Field>
-                    );
-                }
-
-                return (
-                    <Field key={field.name} label={field.label} error={error}>
-                        <Input
-                            type={field.type === 'number' ? 'number' : 'text'}
-                            value={value ?? ''}
-                            onChange={(e) => set(field.name, e.target.value)}
-                        />
-                    </Field>
-                );
+                return renderField(field);
             })}
         </div>
     );

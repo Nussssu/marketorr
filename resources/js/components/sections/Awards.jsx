@@ -19,7 +19,7 @@ export default function Awards({ content = {} }) {
         <section aria-labelledby="awards-title" className="relative overflow-hidden pb-[clamp(5rem,9vw,9rem)]">
             {content.heading && (
                 <div className="container-x text-center">
-                    <h3 id="awards-title" className="font-display text-lg font-extrabold uppercase tracking-[0.14em] text-[var(--ink-strong)] sm:text-xl md:text-2xl">
+                    <h3 id="awards-title" className="font-display text-[calc(1.125rem*var(--heading-scale,1))] leading-7 font-extrabold uppercase tracking-[0.14em] text-[var(--ink-strong)] sm:text-[calc(1.25rem*var(--heading-scale,1))] md:text-[calc(1.5rem*var(--heading-scale,1))] md:leading-8">
                         {content.heading}
                     </h3>
                 </div>

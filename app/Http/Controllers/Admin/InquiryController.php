@@ -58,7 +58,7 @@ class InquiryController extends Controller
                 'search' => $filters['search'] ?? '',
             ],
             'statuses' => InquiryStatus::values(),
-            'types' => InquiryType::values(),
+            'types' => [InquiryType::Branding->value, InquiryType::UiUx->value],
         ]);
     }
 

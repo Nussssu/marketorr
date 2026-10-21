@@ -24,6 +24,7 @@ class PageController extends Controller
             'page' => Page::forSlug('home')?->toPublicArray(),
             'featuredProjects' => Project::query()
                 ->published()
+                ->caseStudies()
                 ->featured()
                 ->with('category.parent')
                 ->orderBy('sort_order')
@@ -41,7 +42,7 @@ class PageController extends Controller
     }
 
     /**
-     * The UI/UX section's printed sheets: one per showcase project, showing the
+     * The UI/UX section's printed sheets: one per featured showcase project, showing the
      * first page its own page prints (falling back to the cover when it has no
      * pages yet), so the sheet matches what opens on the project's page.
      *
@@ -49,7 +50,7 @@ class PageController extends Controller
      */
     private function uiuxShowcaseCovers(UiuxShowcase $showcase): array
     {
-        return collect($showcase->projects())
+        return collect($showcase->projects(featuredOnly: true))
             ->filter(fn (array $project): bool => $project['cover'] !== null)
             ->map(fn (array $project): array => [
                 'slug' => $project['slug'],

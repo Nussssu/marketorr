@@ -8,8 +8,10 @@ use App\Http\Requests\Admin\StoreSubServiceRequest;
 use App\Http\Requests\Admin\UpdateSubServiceRequest;
 use App\Models\ServiceGroup;
 use App\Models\SubService;
+use App\Services\SubServiceRelatedWork;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,6 +42,8 @@ class SubServiceController extends Controller
             'item' => null,
             'groups' => $this->groupOptions(),
             'statuses' => ContentStatus::values(),
+            'relatedOptions' => $this->relatedOptions(),
+            'pageDefaults' => SubService::DEFAULT_PAGE_CONTENT,
         ]);
     }
 
@@ -63,6 +67,8 @@ class SubServiceController extends Controller
             'item' => $this->toAdminArray($subService),
             'groups' => $this->groupOptions(),
             'statuses' => ContentStatus::values(),
+            'relatedOptions' => $this->relatedOptions(),
+            'pageDefaults' => SubService::DEFAULT_PAGE_CONTENT,
         ]);
     }
 
@@ -82,6 +88,21 @@ class SubServiceController extends Controller
         ServiceGroup::forgetCatalogue();
 
         return back()->with('success', 'Sub-service deleted.');
+    }
+
+    /**
+     * Publish or unpublish a sub-service straight from the list.
+     */
+    public function updateStatus(Request $request, SubService $subService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::enum(ContentStatus::class)],
+        ]);
+
+        $subService->update(['status' => $validated['status']]);
+        ServiceGroup::forgetCatalogue();
+
+        return back()->with('success', 'Sub-service status updated.');
     }
 
     public function duplicate(SubService $subService): RedirectResponse
@@ -161,7 +182,33 @@ class SubServiceController extends Controller
             ? null
             : json_decode($data['case_study'], true);
 
+        // Only copy that differs from the page's default is stored, so an
+        // untouched field keeps following the default.
+        if (array_key_exists('page_content', $data)) {
+            $custom = collect($data['page_content'] ?? [])
+                ->only(array_keys(SubService::DEFAULT_PAGE_CONTENT))
+                ->filter(fn ($value, string $key): bool => filled($value) && trim($value) !== SubService::DEFAULT_PAGE_CONTENT[$key])
+                ->map(fn (string $value): string => trim($value));
+
+            $data['page_content'] = $custom->isEmpty() ? null : $custom->all();
+        }
+
         return $data;
+    }
+
+    /**
+     * The projects each tab's related-work picker can choose from, keyed by
+     * tab slug: Branding projects for Branding, the UI/UX showcase for UI/UX.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function relatedOptions(): array
+    {
+        $relatedWork = app(SubServiceRelatedWork::class);
+
+        return collect($this->groupOptions())
+            ->mapWithKeys(fn (array $group): array => [$group['slug'] => $relatedWork->options($group['slug'])])
+            ->all();
     }
 
     /**
@@ -185,6 +232,12 @@ class SubServiceController extends Controller
             'related_match' => $item->related_match ?? [],
             'related_pin' => $item->related_pin ?? [],
             'case_study' => $item->case_study,
+            'page_content' => $item->pageContent(),
+            'meta_title' => $item->meta_title,
+            'meta_description' => $item->meta_description,
+            'meta_og_image' => $item->meta_og_image,
+            'meta_robots' => $item->meta_robots,
+            'canonical_url' => $item->canonical_url,
             'status' => $item->status->value,
             'sort_order' => $item->sort_order,
         ];

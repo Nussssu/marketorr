@@ -22,7 +22,7 @@ class ProjectController extends Controller
     {
         return Inertia::render('Admin/Projects/Index', [
             'projects' => Project::query()
-                ->with('category')
+                ->with('category.parent')
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->get()
@@ -52,6 +52,8 @@ class ProjectController extends Controller
             $data['image_path'] = $val;
         }
         $data['sort_order'] = $data['sort_order'] ?? ((int) Project::query()->max('sort_order') + 1);
+        $data['image_path'] ??= '';
+        $data = $this->withoutNullText([...['client' => null, 'year' => null], ...$data]);
         if (array_key_exists('meta_og_image', $data)) {
             $data['meta_og_image'] = filled($data['meta_og_image'])
                 ? preg_replace('#^(https?://[^/]+)?/storage/#', '', $data['meta_og_image'])
@@ -81,6 +83,12 @@ class ProjectController extends Controller
     {
         $data = $request->safe()->except('image', 'gallery_images');
 
+        // An emptied sort order appends to the end, as on create, rather than
+        // storing null, which would sort the project first everywhere.
+        if (array_key_exists('sort_order', $data) && $data['sort_order'] === null) {
+            $data['sort_order'] = (int) Project::query()->whereKeyNot($project->id)->max('sort_order') + 1;
+        }
+
         if ($request->hasFile('image')) {
             $this->deleteImage($project->image_path);
             $data['image_path'] = $this->storeImage($request->file('image'));
@@ -99,6 +107,7 @@ class ProjectController extends Controller
         if (array_key_exists('brief', $data)) {
             $data['brief'] = $this->normaliseBrief($data['brief']);
         }
+        $data = $this->withoutNullText($data);
 
         // Only touch the visual story when the gallery field was submitted,
         // so older forms and API clients never wipe it by omission.
@@ -137,6 +146,10 @@ class ProjectController extends Controller
 
     /**
      * Persist a drag-and-drop ordering as a single pass of `sort_order` values.
+     *
+     * The full list is numbered from 0. A partial list (one portfolio tab) is
+     * reordered within the positions its projects already hold, so the other
+     * tab's projects keep their place everywhere they are listed together.
      */
     public function reorder(Request $request): RedirectResponse
     {
@@ -145,8 +158,17 @@ class ProjectController extends Controller
             'ids.*' => ['required', 'integer', 'exists:projects,id'],
         ]);
 
-        foreach ($validated['ids'] as $position => $id) {
-            Project::query()->whereKey($id)->update(['sort_order' => $position]);
+        $ids = array_values(array_unique($validated['ids']));
+        $positions = count($ids) === Project::query()->count()
+            ? array_keys($ids)
+            : Project::query()->whereKey($ids)->orderBy('sort_order')->orderBy('id')->pluck('sort_order')->all();
+
+        if (count(array_unique($positions)) !== count($positions)) {
+            $positions = range((int) min($positions), (int) min($positions) + count($ids) - 1);
+        }
+
+        foreach ($ids as $index => $id) {
+            Project::query()->whereKey($id)->update(['sort_order' => $positions[$index]]);
         }
 
         return back()->with('success', 'Order saved.');
@@ -213,6 +235,24 @@ class ProjectController extends Controller
         ];
 
         return collect($clean)->filter(fn ($value): bool => filled($value))->isEmpty() ? null : $clean;
+    }
+
+    /**
+     * Client and year are optional on a UI/UX showcase project, but their
+     * columns are not nullable, so an empty one is stored as "".
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withoutNullText(array $data): array
+    {
+        foreach (['client', 'year'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === null) {
+                $data[$field] = '';
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -345,6 +385,7 @@ class ProjectController extends Controller
             'id' => $project->id,
             'slug' => $project->slug,
             'title' => $project->title,
+            'heading_scale' => $project->heading_scale,
             'client' => $project->client,
             'category_id' => $project->category_id,
             'category' => $project->category?->name,
@@ -362,6 +403,10 @@ class ProjectController extends Controller
             'sort_order' => $project->sort_order,
             'gallery_images' => $this->galleryImages($project->case_study),
             'work_group' => $project->work_group,
+            'portfolio' => $project->workGroup(),
+            'layout' => $project->layout ?? '',
+            'discipline' => $project->discipline ?? '',
+            'public_url' => $project->publicPath(),
             'meta_title' => $project->meta_title ?? '',
             'meta_description' => $project->meta_description ?? '',
             'meta_og_image' => $project->meta_og_image ?? '',

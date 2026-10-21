@@ -89,6 +89,8 @@ class ServiceGroup extends Model
                         'pin' => $item->related_pin ?? [],
                     ],
                     'case_study' => $item->case_study,
+                    'page' => $item->pageContent(),
+                    'meta' => $item->publicMeta(),
                 ])->values()->all(),
             ])
             ->values()

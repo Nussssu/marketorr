@@ -75,6 +75,7 @@ class SeoController extends Controller
     {
         return Project::query()
             ->published()
+            ->caseStudies()
             ->get()
             ->map(fn (Project $project) => [
                 'loc' => route('work.show', $project->slug),
@@ -101,14 +102,15 @@ class SeoController extends Controller
             ->values()
             ->all();
 
+        // A sub-service page marked `noindex` in its SEO stays out, as pages do.
         $subservices = collect(ServiceGroup::catalogue())
-            ->flatMap(fn (array $category) => array_map(
-                fn (array $item) => [
+            ->flatMap(fn (array $category) => collect($category['items'] ?? [])
+                ->reject(fn (array $item) => str_starts_with($item['meta']['robots'] ?? '', 'noindex'))
+                ->map(fn (array $item) => [
                     'loc' => route('services.subshow', [$category['slug'], $item['slug']]),
                     'lastmod' => null,
-                ],
-                $category['items'] ?? [],
-            ))
+                ]))
+            ->values()
             ->all();
 
         return [...$services, ...$subservices];

@@ -7,8 +7,11 @@ import {
     Input,
     MediaPickerField,
     PageHeader,
+    TAB_BAR_CLASS,
+    TAB_GRADIENT,
     Textarea,
     Toggle,
+    tabClass,
 } from '../../components/admin/ui';
 
 const TABS = [
@@ -335,7 +338,7 @@ export default function Settings({ settings, socials = [] }) {
                 </div>
             </div>
 
-            <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1" role="tablist" aria-label="Settings sections">
+            <div className={`mb-6 ${TAB_BAR_CLASS}`} role="tablist" aria-label="Settings sections">
                 {TABS.map((item) => (
                     <button
                         key={item.id}
@@ -343,10 +346,8 @@ export default function Settings({ settings, socials = [] }) {
                         role="tab"
                         aria-selected={tab === item.id}
                         onClick={() => chooseTab(item.id)}
-                        className={`rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${
-                            tab === item.id ? 'text-white shadow-sm' : 'text-[var(--mute)] hover:text-[var(--ink)]'
-                        }`}
-                        style={tab === item.id ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
+                        className={`text-[11px] font-bold uppercase tracking-[0.14em] ${tabClass(tab === item.id)}`}
+                        style={tab === item.id ? TAB_GRADIENT : undefined}
                     >
                         {item.label}
                     </button>

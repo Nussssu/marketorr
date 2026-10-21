@@ -98,6 +98,22 @@ const WIDGETS = {
 };
 
 /**
+ * The editor's heading size, a percentage held to 50–200, as a multiplier
+ * for the `--heading-scale` the display heading classes read. Blank means
+ * the design's own size.
+ *
+ * @param {number|string|undefined|null} percent
+ * @return {number}
+ */
+function headingScale(percent) {
+    const value = Number(percent);
+
+    if (!percent || Number.isNaN(value)) return 1;
+
+    return Math.min(Math.max(value, 50), 200) / 100;
+}
+
+/**
  * Renders one page's widget stack.
  *
  * `appearance` chooses how a section arrives, and nothing else — every widget
@@ -133,7 +149,13 @@ export default function SectionRenderer({ sections = [], appearance = 'depth' })
         if (!widget) return;
 
         const compactTop = appearance === 'reveal' && sections[index - 1]?.type === 'marquee';
-        const element = <Fragment key={section.id}>{widget.render(section, { props, fx, standalone, compactTop })}</Fragment>;
+        const rendered = widget.render(section, { props, fx, standalone, compactTop });
+        const scale = headingScale(section.content?.headingScale);
+        // `display: contents` adds no box, so only the size variable reaches
+        // the section and its layout, sticky stages included, is untouched.
+        const element = scale === 1
+            ? <Fragment key={section.id}>{rendered}</Fragment>
+            : <div key={section.id} style={{ display: 'contents', '--heading-scale': scale }}>{rendered}</div>;
         const previous = runs[runs.length - 1];
 
         if (widget.group && previous?.group === widget.group) {

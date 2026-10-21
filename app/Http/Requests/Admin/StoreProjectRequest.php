@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\ContentStatus;
 use App\Http\Requests\Admin\Concerns\NormalisesSlug;
+use App\Models\Project;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
@@ -25,16 +26,17 @@ class StoreProjectRequest extends FormRequest
         return [
             'slug' => ['required', 'string', 'max:190', 'regex:'.self::SLUG_PATTERN, $this->slugRule()],
             'title' => ['required', 'string', 'max:190'],
-            'client' => ['required', 'string', 'max:190'],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
-            'year' => ['required', 'string', 'max:20'],
+            'heading_scale' => ['nullable', 'integer', 'min:50', 'max:200'],
+            'client' => [$this->unlessShowcase(), 'nullable', 'string', 'max:190'],
+            'category_id' => [$this->unlessShowcase(), 'nullable', 'integer', 'exists:categories,id'],
+            'year' => [$this->unlessShowcase(), 'nullable', 'string', 'max:20'],
             'description' => ['required', 'string', 'max:5000'],
             'metric' => ['nullable', 'string', 'max:60'],
             'metric_label' => ['nullable', 'string', 'max:120'],
             'accent' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'image' => $this->hasFile('image')
-                ? [$this->imageRequirement(), 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096']
-                : [$this->imageRequirement(), 'string'],
+                ? [$this->coverRequirement(), 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096']
+                : [$this->coverRequirement(), 'string'],
             'image_alt' => ['required', 'string', 'max:190'],
             'external_url' => ['nullable', 'url', 'max:500'],
             'tags' => ['required', 'array', 'min:1'],
@@ -43,6 +45,8 @@ class StoreProjectRequest extends FormRequest
             'status' => ['required', Rule::enum(ContentStatus::class)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'work_group' => ['nullable', Rule::in(['branding', 'uiux'])],
+            'layout' => ['nullable', Rule::in([Project::LAYOUT_SCREENS])],
+            'discipline' => ['nullable', 'string', 'max:120'],
             'brief' => ['nullable', 'array'],
             'brief.overview' => ['nullable', 'string', 'max:5000'],
             'brief.worked_on' => ['nullable', 'array', 'max:40'],
@@ -86,6 +90,25 @@ class StoreProjectRequest extends FormRequest
     }
 
     /**
+     * A UI/UX showcase project needs no client, year or category, and falls
+     * back to its first screen without a cover.
+     */
+    protected function isShowcase(): bool
+    {
+        return $this->input('layout') === Project::LAYOUT_SCREENS;
+    }
+
+    protected function unlessShowcase(): string
+    {
+        return $this->isShowcase() ? 'nullable' : 'required';
+    }
+
+    protected function coverRequirement(): string
+    {
+        return $this->isShowcase() ? 'nullable' : $this->imageRequirement();
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array
@@ -101,7 +124,8 @@ class StoreProjectRequest extends FormRequest
         $this->merge([
             ...$this->normalisedSlug(),
             // An empty choice means "follow the category", stored as null.
-            'work_group' => $this->input('work_group') ?: null,
+            'work_group' => $this->input('layout') === Project::LAYOUT_SCREENS ? 'uiux' : ($this->input('work_group') ?: null),
+            'layout' => $this->input('layout') ?: null,
             'featured' => $this->boolean('featured'),
             'tags' => array_values(array_filter(
                 (array) $this->input('tags', []),

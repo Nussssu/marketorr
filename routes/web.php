@@ -2,8 +2,9 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\CustomCodeController;
+use App\Http\Controllers\Admin\CodeSnippetController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailLogController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\GlobalBlockController;
 use App\Http\Controllers\Admin\InquiryController;
@@ -90,6 +91,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('service-groups', ServiceGroupController::class)->except('show');
 
         Route::patch('sub-services/reorder', [SubServiceController::class, 'reorder'])->name('sub-services.reorder');
+        Route::patch('sub-services/{sub_service}/status', [SubServiceController::class, 'updateStatus'])->name('sub-services.status');
         Route::post('sub-services/{sub_service}/duplicate', [SubServiceController::class, 'duplicate'])->name('sub-services.duplicate');
         Route::resource('sub-services', SubServiceController::class)->except('show');
 
@@ -132,8 +134,17 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
             Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
-            Route::get('custom-code', [CustomCodeController::class, 'edit'])->name('custom-code.edit');
-            Route::put('custom-code', [CustomCodeController::class, 'update'])->name('custom-code.update');
+            Route::get('custom-code', [CodeSnippetController::class, 'index'])->name('custom-code.index');
+            Route::get('custom-code/create', [CodeSnippetController::class, 'create'])->name('custom-code.create');
+            Route::post('custom-code', [CodeSnippetController::class, 'store'])->name('custom-code.store');
+            Route::patch('custom-code/master', [CodeSnippetController::class, 'master'])->name('custom-code.master');
+            Route::post('custom-code/check', [CodeSnippetController::class, 'check'])->name('custom-code.check');
+            Route::get('custom-code/{snippet}/edit', [CodeSnippetController::class, 'edit'])->name('custom-code.edit');
+            Route::put('custom-code/{snippet}', [CodeSnippetController::class, 'update'])->name('custom-code.update');
+            Route::delete('custom-code/{snippet}', [CodeSnippetController::class, 'destroy'])->name('custom-code.destroy');
+            Route::post('custom-code/{snippet}/duplicate', [CodeSnippetController::class, 'duplicate'])->name('custom-code.duplicate');
+            Route::patch('custom-code/{snippet}/toggle', [CodeSnippetController::class, 'toggle'])->name('custom-code.toggle');
+            Route::post('custom-code/{snippet}/versions/{version}/restore', [CodeSnippetController::class, 'restore'])->name('custom-code.restore');
 
             Route::get('email-smtp', [MailSettingController::class, 'edit'])->name('mail.smtp');
             Route::put('email-smtp', [MailSettingController::class, 'update']);
@@ -145,6 +156,9 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
             Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
             Route::put('email-templates/{template}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+
+            Route::get('email-logs', [EmailLogController::class, 'index'])->name('email-logs.index');
+            Route::get('email-logs/{emailLog}', [EmailLogController::class, 'show'])->name('email-logs.show');
 
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::post('users', [UserController::class, 'store'])->name('users.store');

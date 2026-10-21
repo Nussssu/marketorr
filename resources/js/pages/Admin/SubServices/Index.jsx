@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Badge, Button, ConfirmDialog, EmptyState, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
+import { Button, ConfirmDialog, EmptyState, PageHeader, Panel, TAB_BAR_CLASS, TAB_GRADIENT, tabClass, useConfirm } from '../../../components/admin/ui';
 
 const ICON_PATHS = {
     edit: <><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
@@ -59,6 +59,13 @@ export default function SubServicesIndex({ groups, items }) {
         });
     };
 
+    // Flips the row at once for instant feedback; the server response then
+    // resyncs the list to what was stored.
+    const setStatus = (item, status) => {
+        setRows((current) => current.map((row) => (row.id === item.id ? { ...row, status } : row)));
+        router.patch(`/admin/sub-services/${item.id}/status`, { status }, { preserveScroll: true });
+    };
+
     const duplicate = (item) => router.post(`/admin/sub-services/${item.id}/duplicate`, {}, { preserveScroll: true });
 
     return (
@@ -68,7 +75,7 @@ export default function SubServicesIndex({ groups, items }) {
                 <Button as="link" href="/admin/sub-services/create">New sub-service</Button>
             </PageHeader>
 
-            <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1">
+            <div className={`mb-6 ${TAB_BAR_CLASS}`}>
                 {groups.map((group) => {
                     const selected = String(activeGroup) === String(group.id);
 
@@ -77,10 +84,8 @@ export default function SubServicesIndex({ groups, items }) {
                             key={group.id}
                             type="button"
                             onClick={() => setActiveGroup(group.id)}
-                            className={`rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${
-                                selected ? 'text-white shadow-sm' : 'text-[var(--mute)] hover:text-[var(--ink)]'
-                            }`}
-                            style={selected ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
+                            className={`text-[11px] font-bold uppercase tracking-[0.14em] ${tabClass(selected)}`}
+                            style={selected ? TAB_GRADIENT : undefined}
                         >
                             {group.name}
                         </button>
@@ -102,7 +107,7 @@ export default function SubServicesIndex({ groups, items }) {
                                     <th className="pb-3 pr-4 font-bold">Tagline</th>
                                     <th className="pb-3 pr-4 font-bold">Accent</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
-                                    <th className="pb-3 font-bold" />
+                                    <th className="pb-3 font-bold">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -146,9 +151,24 @@ export default function SubServicesIndex({ groups, items }) {
                                                 <span className="text-[12px] text-[var(--ink-faint)]">{item.accent}</span>
                                             </span>
                                         </td>
-                                        <td className="py-3 pr-4"><Badge tone={item.status} /></td>
-                                        <td className="py-3 text-right whitespace-nowrap">
-                                            <div className="flex justify-end gap-1">
+                                        <td className="py-3 pr-4">
+                                            <span className="inline-flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={item.status === 'published'}
+                                                    aria-label={`${item.status === 'published' ? 'Unpublish' : 'Publish'} ${item.name}`}
+                                                    title={item.status === 'published' ? 'Published, click to set as draft' : 'Draft, click to publish'}
+                                                    onClick={() => setStatus(item, item.status === 'published' ? 'draft' : 'published')}
+                                                    className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200"
+                                                    style={{ background: item.status === 'published' ? 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' : 'var(--field-line)' }}
+                                                >
+                                                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${item.status === 'published' ? 'translate-x-[18px]' : 'translate-x-0.5'}`} aria-hidden />
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td className="py-3 whitespace-nowrap">
+                                            <div className="flex gap-1">
                                                 <Link href={`/admin/sub-services/${item.id}/edit`} className={NEUTRAL_ICON} title={`Edit ${item.name}`} aria-label={`Edit ${item.name}`}>
                                                     <ActionIcon name="edit" />
                                                 </Link>

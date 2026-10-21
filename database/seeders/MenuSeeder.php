@@ -89,7 +89,7 @@ class MenuSeeder extends Seeder
                 ->map(fn (array $category): array => [
                     $category['name'],
                     '/services#'.$category['slug'],
-                    collect($category['items'] ?? [])->map(fn (array $item): array => [
+                    collect($category['items'] ?? [])->take(6)->map(fn (array $item): array => [
                         $item['name'],
                         '/services/'.$category['slug'].'/'.$item['slug'],
                     ])->all(),
@@ -99,7 +99,7 @@ class MenuSeeder extends Seeder
                 ->map(fn (array $group): array => [
                     $group['name'],
                     $group['href'],
-                    collect($group['items'] ?? [])->map(fn (array $item): array => [
+                    collect($group['items'] ?? [])->take(6)->map(fn (array $item): array => [
                         $item['name'],
                         $item['href'],
                     ])->all(),

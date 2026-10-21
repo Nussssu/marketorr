@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CodeSnippetAuditLog;
 use App\Models\ContactSubmission;
 use App\Models\MailSetting;
 use App\Models\Media;
@@ -114,7 +115,32 @@ class AuditLogController extends Controller
             }
         }
 
-        // 5. System log parser (recent entries from laravel.log)
+        // 5. Custom code injection activity
+        if (in_array($category, ['all', 'system'])) {
+            CodeSnippetAuditLog::query()
+                ->with('user:id,name')
+                ->latest('id')
+                ->limit(40)
+                ->get()
+                ->each(function (CodeSnippetAuditLog $entry) use ($logs): void {
+                    $changes = $entry->changesLine();
+                    $logs->push([
+                        'id' => 'custom-code-'.$entry->id,
+                        'category' => 'system',
+                        'type' => 'Custom Code',
+                        'title' => "{$entry->actionLabel()}: ".($entry->snippet_name ?: 'Snippet'),
+                        'description' => $changes !== '' ? $changes : 'No field changes recorded.',
+                        'actor' => $entry->user?->name ?? 'Unknown admin',
+                        'ip' => $entry->ip_address ?? 'N/A',
+                        'status' => $entry->actionLabel(),
+                        'level' => in_array($entry->action, ['deleted', 'disabled', 'unpublished', 'master_disabled'], true) ? 'warning' : 'info',
+                        'timestamp' => $entry->created_at?->toIso8601String(),
+                        'time_for_humans' => $entry->created_at?->diffForHumans(),
+                    ]);
+                });
+        }
+
+        // 6. System log parser (recent entries from laravel.log)
         if (in_array($category, ['all', 'system'])) {
             $logFile = storage_path('logs/laravel.log');
             if (File::exists($logFile)) {

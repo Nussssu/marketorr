@@ -8,6 +8,7 @@ use App\Models\Menu;
 use App\Models\Project;
 use App\Models\ServiceGroup;
 use App\Models\Setting;
+use App\Services\CodeInjector;
 use App\Services\PublicAsset;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -53,6 +54,9 @@ class HandleInertiaRequests extends Middleware
             // The visitor's saved theme (cookie written by the theme script), so
             // server-rendered markup and hydration both start from it.
             'theme' => $request->cookie('theme') === 'dark' ? 'dark' : 'light',
+            // Custom code aimed at particular pages that applies to this one;
+            // site-wide snippets are written into the root view instead.
+            'codeSnippets' => fn () => app(CodeInjector::class)->pageSpecific($request),
             'settings' => fn () => Setting::current()->toPublicArray(),
             // The project types an inquiry may carry; the contact form offers
             // the ones its section lists, in that order.

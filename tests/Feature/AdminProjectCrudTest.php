@@ -382,4 +382,40 @@ class AdminProjectCrudTest extends TestCase
 
         $this->assertSame('Renamed', $project->fresh()->title);
     }
+
+    public function test_clearing_the_sort_order_on_edit_moves_the_project_to_the_end(): void
+    {
+        $this->actingAs($this->admin)->post('/admin/projects', $this->validPayload(['slug' => 'first-project']));
+        $this->actingAs($this->admin)->post('/admin/projects', $this->validPayload(['slug' => 'second-project']));
+        $first = Project::query()->where('slug', 'first-project')->sole();
+
+        $this->actingAs($this->admin)
+            ->put("/admin/projects/{$first->id}", $this->validPayload(['slug' => 'first-project', 'image' => null, 'sort_order' => '']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['second-project', 'first-project'],
+            Project::query()->published()->pluck('slug')->all(),
+        );
+    }
+
+    public function test_heading_size_is_saved_and_sent_to_the_project_page(): void
+    {
+        $this->actingAs($this->admin)->post('/admin/projects', $this->validPayload(['heading_scale' => 140]));
+        $project = Project::query()->sole();
+
+        $this->assertSame(140, $project->heading_scale);
+        $this->assertSame(140, $project->toPublicArray()['headingScale']);
+    }
+
+    public function test_heading_size_must_stay_between_50_and_200(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload(['heading_scale' => 250]))
+            ->assertSessionHasErrors('heading_scale');
+
+        $this->actingAs($this->admin)
+            ->post('/admin/projects', $this->validPayload(['heading_scale' => 20]))
+            ->assertSessionHasErrors('heading_scale');
+    }
 }

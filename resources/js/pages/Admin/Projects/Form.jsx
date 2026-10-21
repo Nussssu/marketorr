@@ -43,6 +43,11 @@ const PORTFOLIOS = [
     ['uiux', 'UI/UX Portfolio'],
 ];
 
+const LAYOUTS = [
+    ['', 'Case study page'],
+    ['screens', 'Screen-by-screen page (UI/UX showcase)'],
+];
+
 /**
  * One project, edited as a stack of widgets that map one-to-one onto the
  * public project page. Each widget opens and closes on its own.
@@ -58,9 +63,12 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
         _method: isEdit ? 'put' : 'post',
         slug: project?.slug ?? '',
         title: project?.title ?? '',
+        heading_scale: project?.heading_scale ?? 100,
         client: project?.client ?? '',
         category_id: project?.category_id ?? '',
         work_group: project?.work_group ?? '',
+        layout: project?.layout ?? '',
+        discipline: project?.discipline ?? '',
         year: project?.year ?? String(new Date().getFullYear()),
         description: project?.description ?? '',
         metric: project?.metric ?? '',
@@ -118,6 +126,8 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
         });
     };
 
+    const isShowcase = data.layout === 'screens';
+    const publicPath = isShowcase ? '/work/portfolio/uiux/' : '/work/';
     const categoryName = categories.find((category) => String(category.id) === String(data.category_id))?.label;
     const filledBrief = Object.values(data.brief).filter((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value))).length;
 
@@ -129,7 +139,7 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                 subtitle="Each widget maps onto the public project page. Tap a widget to open or close it."
             >
                 {isEdit && (
-                    <Button as="a" href={`/work/${project.slug}`} target="_blank" rel="noreferrer" variant="secondary">View page ↗</Button>
+                    <Button as="a" href={project.public_url ?? `/work/${project.slug}`} target="_blank" rel="noreferrer" variant="secondary">View page ↗</Button>
                 )}
                 <Button as="link" href="/admin/projects" variant="secondary">Cancel</Button>
             </PageHeader>
@@ -138,14 +148,27 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                 <div className="space-y-4 lg:col-span-2">
                     <WidgetPanel title="Basics" summary={data.title || 'Title, slug, client, year and description'} defaultOpen>
                         <div className="grid gap-5 sm:grid-cols-2">
-                            <Field label="Title" error={errors.title} required className="sm:col-span-2">
-                                <Input value={data.title} onChange={(e) => onTitleChange(e.target.value)} />
-                            </Field>
+                            <div className="grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-3 sm:col-span-2">
+                                <Field label="Title" error={errors.title} required>
+                                    <Input value={data.title} onChange={(e) => onTitleChange(e.target.value)} />
+                                </Field>
+                                <Field label="Size (%)" error={errors.heading_scale}>
+                                    <Input
+                                        type="number"
+                                        min={50}
+                                        max={200}
+                                        step={5}
+                                        value={data.heading_scale}
+                                        onChange={(e) => setData('heading_scale', e.target.value === '' ? '' : Math.trunc(Number(e.target.value) || 0))}
+                                        onBlur={(e) => setData('heading_scale', e.target.value === '' ? 100 : Math.min(Math.max(Math.trunc(Number(e.target.value) || 0), 50), 200))}
+                                    />
+                                </Field>
+                            </div>
                             <Field
                                 label="Slug"
                                 error={errors.slug}
                                 required
-                                hint={`Live address: /work/${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`}
+                                hint={`Live address: ${publicPath}${slugify(data.slug) || 'your-slug'} · lowercase letters, numbers and hyphens`}
                                 className="sm:col-span-2"
                             >
                                 <Input
@@ -156,10 +179,10 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                                     }}
                                 />
                             </Field>
-                            <Field label="Client" error={errors.client} required>
+                            <Field label="Client" error={errors.client} required={!isShowcase}>
                                 <Input value={data.client} onChange={(e) => setData('client', e.target.value)} placeholder="Acme Co · Manufacturer" />
                             </Field>
-                            <Field label="Year" error={errors.year} required>
+                            <Field label="Year" error={errors.year} required={!isShowcase}>
                                 <Input value={data.year} onChange={(e) => setData('year', e.target.value)} />
                             </Field>
                             <Field label="Accent colour" error={errors.accent} required>
@@ -180,7 +203,7 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                             <Field
                                 label="Category"
                                 error={errors.category_id}
-                                required
+                                required={!isShowcase}
                                 hint={
                                     <>
                                         Categories are managed on the Our Work page.{' '}
@@ -195,13 +218,25 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                                     ))}
                                 </Select>
                             </Field>
-                            <Field label="Portfolio" error={errors.work_group} hint="Leave on “Follow the category” unless this project belongs with the other portfolio.">
-                                <Select value={data.work_group ?? ''} onChange={(e) => setData('work_group', e.target.value)}>
+                            <Field label="Portfolio" error={errors.work_group} hint={isShowcase ? 'Screen-by-screen projects always sit in the UI/UX Portfolio.' : 'Leave on “Follow the category” unless this project belongs with the other portfolio.'}>
+                                <Select value={isShowcase ? 'uiux' : (data.work_group ?? '')} disabled={isShowcase} onChange={(e) => setData('work_group', e.target.value)}>
                                     {PORTFOLIOS.map(([value, label]) => (
                                         <option key={value || 'auto'} value={value}>{label}</option>
                                     ))}
                                 </Select>
                             </Field>
+                            <Field label="Page type" error={errors.layout} hint="A screen-by-screen page prints every gallery image as one page of the design, labelled by its alt text.">
+                                <Select value={data.layout ?? ''} onChange={(e) => setData('layout', e.target.value)}>
+                                    {LAYOUTS.map(([value, label]) => (
+                                        <option key={value || 'case-study'} value={value}>{label}</option>
+                                    ))}
+                                </Select>
+                            </Field>
+                            {isShowcase && (
+                                <Field label="Discipline" error={errors.discipline} hint="Shown under the project name, e.g. Website UI/UX Design.">
+                                    <Input value={data.discipline ?? ''} onChange={(e) => setData('discipline', e.target.value)} placeholder="Website UI/UX Design" />
+                                </Field>
+                            )}
                         </div>
                     </WidgetPanel>
 
@@ -297,8 +332,8 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                             <MediaPickerField
                                 label="Cover Image"
                                 error={errors.image}
-                                required={!isEdit}
-                                hint={isEdit ? 'Leave empty to keep the current image.' : 'Choose an asset from library or upload new.'}
+                                required={!isEdit && !isShowcase}
+                                hint={isEdit ? 'Leave empty to keep the current image.' : isShowcase ? 'Optional: without a cover, the first screen is used.' : 'Choose an asset from library or upload new.'}
                                 preview={preview}
                                 value={typeof data.image === 'string' ? data.image : ''}
                                 onChange={(url, asset) => onImageChange(url, asset)}
@@ -311,7 +346,9 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
 
                     <WidgetPanel
                         title="Project gallery"
-                        description="Dedicated-page images in exact display order, first row renders first. Add from the Media Library, reorder with ↑ ↓, or remove."
+                        description={isShowcase
+                            ? 'The design’s screens in exact page order. Each image’s alt text is its page name (e.g. Home, About Us). Add from the Media Library, reorder with ↑ ↓, hide or remove.'
+                            : 'Dedicated-page images in exact display order, first row renders first. Add from the Media Library, reorder with ↑ ↓, or remove.'}
                         summary={`${(data.gallery_images ?? []).length} image${(data.gallery_images ?? []).length === 1 ? '' : 's'}`}
                     >
                         <ProjectGalleryManager
@@ -339,7 +376,7 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                                     onChange={(e) => setData('featured', e.target.checked)}
                                     className="h-4 w-4 rounded border-[var(--field-line)]"
                                 />
-                                Feature on the home page
+                                {isShowcase ? 'Show in the home page’s UI/UX section' : 'Feature on the home page'}
                             </label>
                             <Field label="Sort order" error={errors.sort_order} hint="Leave empty to append to the end.">
                                 <Input

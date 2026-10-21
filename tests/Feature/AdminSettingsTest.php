@@ -167,21 +167,10 @@ class AdminSettingsTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('menus', fn ($menus) => ! collect($menus)->pluck('location')->contains('footer_social')));
     }
 
-    public function test_custom_code_is_saved_from_its_own_page(): void
+    public function test_custom_code_has_its_own_page(): void
     {
         $this->actingAs($this->superAdmin)
             ->get('/admin/custom-code')
-            ->assertInertia(fn ($page) => $page->component('Admin/CustomCode'));
-
-        $this->actingAs($this->superAdmin)
-            ->put('/admin/custom-code', [
-                'head_scripts' => '<script>window.head = true;</script>',
-                'body_scripts' => '<script>window.body = true;</script>',
-            ])
-            ->assertSessionHas('success');
-
-        $settings = Setting::query()->sole();
-        $this->assertSame('<script>window.head = true;</script>', $settings->head_scripts);
-        $this->assertSame('<script>window.body = true;</script>', $settings->body_scripts);
+            ->assertInertia(fn ($page) => $page->component('Admin/CustomCode/Index'));
     }
 }

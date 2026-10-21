@@ -1,7 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, ConfirmDialog, EmptyState, PageHeader, Panel, useConfirm } from '../../../components/admin/ui';
+import { Button, ConfirmDialog, EmptyState, PageHeader, Panel, TAB_BAR_CLASS, TAB_GRADIENT, tabClass, useConfirm } from '../../../components/admin/ui';
+
+/** The two Our Work portfolios, each project listed under the one it shows in. */
+const PORTFOLIO_TABS = [
+    { key: 'branding', label: 'Branding' },
+    { key: 'uiux', label: 'UI/UX' },
+];
 
 const ICON_PATHS = {
     edit: <><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
@@ -25,6 +31,8 @@ export default function ProjectsIndex({ projects }) {
     // Local copy so the up/down buttons reorder instantly, then persist.
     const [rows, setRows] = useState(projects);
     const [request, confirm, cancel, run] = useConfirm();
+    const [activeTab, setActiveTab] = useState('branding');
+    const visible = rows.filter((row) => row.portfolio === activeTab);
 
     // Reorder updates local state first for instant feedback; every server
     // response (reorder, feature toggle, delete) then resyncs it to the truth.
@@ -32,15 +40,22 @@ export default function ProjectsIndex({ projects }) {
         setRows(projects);
     }, [projects]);
 
+    // Moves within the open tab; the server keeps the other tab's places.
     const move = (index, direction) => {
         const target = index + direction;
-        if (target < 0 || target >= rows.length) return;
+        if (target < 0 || target >= visible.length) return;
 
+        const order = [...visible];
+        [order[index], order[target]] = [order[target], order[index]];
+
+        const slots = rows.map((row, position) => (row.portfolio === activeTab ? position : null)).filter((position) => position !== null);
         const next = [...rows];
-        [next[index], next[target]] = [next[target], next[index]];
+        slots.forEach((position, i) => {
+            next[position] = order[i];
+        });
         setRows(next);
 
-        router.patch('/admin/projects/reorder', { ids: next.map((r) => r.id) }, { preserveScroll: true });
+        router.patch('/admin/projects/reorder', { ids: order.map((r) => r.id) }, { preserveScroll: true });
     };
 
     const toggleFeatured = (project) => {
@@ -76,13 +91,34 @@ export default function ProjectsIndex({ projects }) {
     return (
         <>
             <Head title="Projects | Marketorr Admin" />
-            <PageHeader title="Projects" subtitle={`${rows.length} case studies. Order here is the order on the public site.`}>
+            <PageHeader title="Projects" subtitle={`${rows.length} projects. Order here is the order on the public site.`}>
                 <Button as="link" href="/admin/projects/create">New project</Button>
             </PageHeader>
 
+            <div className={`mb-6 ${TAB_BAR_CLASS}`} role="tablist" aria-label="Portfolio">
+                {PORTFOLIO_TABS.map((tab) => {
+                    const selected = activeTab === tab.key;
+                    const count = rows.filter((row) => row.portfolio === tab.key).length;
+
+                    return (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`text-[11px] font-bold uppercase tracking-[0.14em] ${tabClass(selected)}`}
+                            style={selected ? TAB_GRADIENT : undefined}
+                        >
+                            {tab.label} <span className="opacity-70">({count})</span>
+                        </button>
+                    );
+                })}
+            </div>
+
             <Panel className="overflow-hidden">
-                {rows.length === 0 ? (
-                    <EmptyState>No projects yet, create the first one.</EmptyState>
+                {visible.length === 0 ? (
+                    <EmptyState>No {PORTFOLIO_TABS.find((tab) => tab.key === activeTab)?.label} projects yet, create the first one.</EmptyState>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[820px] text-left text-[13px]">
@@ -94,11 +130,11 @@ export default function ProjectsIndex({ projects }) {
                                     <th className="pb-3 pr-4 font-bold">Year</th>
                                     <th className="pb-3 pr-4 font-bold">Featured</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
-                                    <th className="pb-3 font-bold" />
+                                    <th className="pb-3 font-bold">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map((project, index) => (
+                                {visible.map((project, index) => (
                                     <tr key={project.id} className="border-t border-[var(--line)]">
                                         <td className="py-3 pr-3">
                                             <div className="flex flex-col gap-1">
@@ -112,7 +148,7 @@ export default function ProjectsIndex({ projects }) {
                                                 </button>
                                                 <button
                                                     onClick={() => move(index, 1)}
-                                                    disabled={index === rows.length - 1}
+                                                    disabled={index === visible.length - 1}
                                                     aria-label={`Move ${project.title} down`}
                                                     className="rounded border border-[var(--line)] px-2 text-[11px] leading-5 text-[var(--ink-faint)] hover:text-[var(--ink)] disabled:opacity-30"
                                                 >
@@ -130,7 +166,7 @@ export default function ProjectsIndex({ projects }) {
                                                 />
                                                 <div className="min-w-0">
                                                     <p className="truncate font-semibold text-[var(--ink)]">{project.title}</p>
-                                                    <a href={`/work/${project.slug}`} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">/work/{project.slug} ↗</a>
+                                                    <a href={project.public_url} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">{project.public_url} ↗</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -178,12 +214,12 @@ export default function ProjectsIndex({ projects }) {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="py-3 text-right whitespace-nowrap">
-                                            <div className="flex justify-end gap-1">
+                                        <td className="py-3 whitespace-nowrap">
+                                            <div className="flex gap-1">
                                                 <Link href={`/admin/projects/${project.id}/edit`} className={NEUTRAL_ICON} title={`Edit ${project.title}`} aria-label={`Edit ${project.title}`}>
                                                     <ActionIcon name="edit" />
                                                 </Link>
-                                                <a href={`/work/${project.slug}`} target="_blank" rel="noreferrer" className={NEUTRAL_ICON} title={`View ${project.title}`} aria-label={`View ${project.title}`}>
+                                                <a href={project.public_url} target="_blank" rel="noreferrer" className={NEUTRAL_ICON} title={`View ${project.title}`} aria-label={`View ${project.title}`}>
                                                     <ActionIcon name="view" />
                                                 </a>
                                                 <button type="button" onClick={() => duplicate(project)} className={NEUTRAL_ICON} title={`Copy ${project.title}`} aria-label={`Copy ${project.title}`}>

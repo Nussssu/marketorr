@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EmailLogSource;
 use App\Enums\EmailTemplateKey;
 use App\Mail\TemplatedMail;
 use App\Models\ContactSubmission;
@@ -18,6 +19,8 @@ use Throwable;
  */
 class LeadNotifier
 {
+    public function __construct(private readonly EmailLogger $logger) {}
+
     public function send(ContactSubmission $submission): void
     {
         MailSetting::current()->applyConfig();
@@ -29,6 +32,7 @@ class LeadNotifier
             EmailTemplateKey::AdminLeadNotification,
             $adminRecipients,
             $placeholders,
+            $submission,
             replyTo: $submission->email,
         );
 
@@ -36,6 +40,7 @@ class LeadNotifier
             EmailTemplateKey::LeadAutoResponder,
             $submission->email,
             $placeholders,
+            $submission,
         );
     }
 
@@ -43,14 +48,17 @@ class LeadNotifier
      * @param  string|list<string>  $recipient
      * @param  array<string, string|null>  $placeholders
      */
-    private function dispatch(EmailTemplateKey $key, string|array $recipient, array $placeholders, ?string $replyTo = null): void
+    private function dispatch(EmailTemplateKey $key, string|array $recipient, array $placeholders, ContactSubmission $submission, ?string $replyTo = null): void
     {
         $template = EmailTemplate::forKey($key);
+        $source = EmailLogSource::forTemplate($key);
+        $context = ['contact_submission_id' => $submission->id];
 
         if (! $template->enabled) {
             Log::debug('Lead notification email skipped: template is disabled', [
                 'template' => $key->value,
             ]);
+            $this->logger->skipped($source, 'The "'.$key->label().'" template is switched off.', $context);
 
             return;
         }
@@ -59,6 +67,7 @@ class LeadNotifier
             Log::warning('Lead notification email skipped: recipient address is missing or blank', [
                 'template' => $key->value,
             ]);
+            $this->logger->skipped($source, 'No recipient address is set.', $context);
 
             return;
         }
@@ -74,14 +83,21 @@ class LeadNotifier
                 'reply_to' => $replyTo,
             ]);
 
-            Mail::to($recipient)->send(new TemplatedMail($template, $placeholders, $replyTo));
+            $sent = Mail::to($recipient)->send(new TemplatedMail($template, $placeholders, $replyTo));
 
             Log::debug('Lead notification email sent successfully', [
                 'template' => $key->value,
                 'recipient' => $recipientList,
                 'mailer' => $activeMailer,
             ]);
+            $this->logger->sent($source, $sent, ['recipients' => $recipientList, ...$context]);
         } catch (Throwable $exception) {
+            $this->logger->failed($source, $exception, [
+                'recipients' => $recipientList,
+                'subject' => $template->renderSubject($placeholders),
+                ...$context,
+            ]);
+
             // The lead is already stored; a broken mailer must not 500 the form.
             Log::error('Lead notification email failed to send', [
                 'template' => $key->value,

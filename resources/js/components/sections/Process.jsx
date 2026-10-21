@@ -81,7 +81,7 @@ function PinnedProcess({ heading, items }) {
                                 <motion.p
                                     key={active}
                                     {...swap}
-                                    className="absolute inset-0 whitespace-nowrap font-display text-[clamp(3.5rem,7.2vw,7.25rem)] font-extrabold uppercase leading-[1] tracking-[-0.045em]"
+                                    className="absolute inset-0 whitespace-nowrap font-display text-[calc(clamp(3.5rem,7.2vw,7.25rem)*var(--heading-scale,1))] font-extrabold uppercase leading-[1] tracking-[-0.045em]"
                                     style={{ color }}
                                 >
                                     {item.stage}
@@ -162,7 +162,7 @@ function StackedProcess({ heading, items }) {
                                     style={{ ...markBarStyle(STACKED_MARK_SIZE, index), background: stageColor(index) }}
                                 />
                                 <p
-                                    className="min-w-0 whitespace-nowrap font-display text-[clamp(2.25rem,11.5vw,5.5rem)] font-extrabold uppercase leading-[0.85] tracking-[-0.045em]"
+                                    className="min-w-0 whitespace-nowrap font-display text-[calc(clamp(2.25rem,11.5vw,5.5rem)*var(--heading-scale,1))] font-extrabold uppercase leading-[0.85] tracking-[-0.045em]"
                                     style={{ color: stageColor(index) }}
                                 >
                                     {item.stage}

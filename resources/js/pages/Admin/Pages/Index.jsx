@@ -61,7 +61,7 @@ export default function PagesIndex({ pages }) {
                                     <th className="pb-3 pr-4 font-bold">Sections</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
                                     <th className="pb-3 pr-4 font-bold">Visibility</th>
-                                    <th className="pb-3 font-bold" />
+                                    <th className="pb-3 font-bold">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -99,8 +99,8 @@ export default function PagesIndex({ pages }) {
                                                 />
                                             </button>
                                         </td>
-                                        <td className="py-3 text-right">
-                                            <div className="flex justify-end gap-1">
+                                        <td className="py-3">
+                                            <div className="flex gap-1">
                                                 <Link href={`/admin/pages/${page.id}/builder`} className={NEUTRAL_ICON} title={`Edit ${page.title}`} aria-label={`Edit ${page.title}`}>
                                                     <ActionIcon name="edit" />
                                                 </Link>

@@ -38,6 +38,13 @@ class StoreSubServiceRequest extends FormRequest
             'related_pin' => ['nullable', 'array'],
             'related_pin.*' => ['required', 'string', 'max:190'],
             'case_study' => ['nullable', 'string', 'json'],
+            'page_content' => ['nullable', 'array'],
+            'page_content.*' => ['nullable', 'string', 'max:500'],
+            'meta_title' => ['nullable', 'string', 'max:190'],
+            'meta_description' => ['nullable', 'string', 'max:500'],
+            'meta_og_image' => ['nullable', 'string', 'max:1000'],
+            'meta_robots' => ['nullable', 'string', Rule::in(['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'])],
+            'canonical_url' => ['nullable', 'url', 'max:2048'],
             'status' => ['required', Rule::enum(ContentStatus::class)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ];

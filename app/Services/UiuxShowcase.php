@@ -2,23 +2,23 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\File;
+use App\Models\Project;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * The UI/UX Portfolio's six projects and the Figma screens exported for each.
+ * The UI/UX Portfolio's showcase projects and the Figma screens exported for
+ * each.
  *
- * Screens are discovered on disk rather than listed, so dropping a new export
- * into a project's folder is all it takes to show and print it. Dimensions are
- * read up front so the page can size every frame before its image arrives,
- * and each screen is labelled from its file name (`03-contact-us.webp` is the
- * "Contact Us" page).
+ * Each showcase project is a CMS project with the screen-by-screen layout,
+ * managed under the admin panel's UI/UX tab: its gallery is its screens, in
+ * order, each labelled by its alt text (or, without one, by its file name:
+ * `03-contact-us.webp` is the "Contact Us" page), and only published ones are
+ * shown. Dimensions are read up front so the page can size every frame before
+ * its image arrives.
  */
 class UiuxShowcase
 {
-    /** File types treated as exported screens. */
-    private const EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'avif'];
-
     /** Words that read as acronyms rather than title-cased words in a page label. */
     private const ACRONYMS = ['ai' => 'AI', 'csr' => 'CSR', 'it' => 'IT', 'seo' => 'SEO', 'ui' => 'UI', 'ux' => 'UX'];
 
@@ -26,6 +26,9 @@ class UiuxShowcase
     private const MINOR_WORDS = ['a', 'an', 'and', 'for', 'of', 'the', 'to'];
 
     /**
+     * Published showcase projects in admin order; `$featuredOnly` keeps just
+     * those featured for the home page.
+     *
      * @return array<int, array{
      *     slug: string,
      *     name: string,
@@ -36,16 +39,20 @@ class UiuxShowcase
      *     screens: array<int, array{src: string, thumb: string, width: int, height: int, alt: string, label: string}>
      * }>
      */
-    public function projects(): array
+    public function projects(bool $featuredOnly = false): array
     {
-        return collect(config('uiux_showcase.projects', []))
-            ->map(fn (array $project): array => $this->build($project))
+        return Project::query()
+            ->published()
+            ->showcase()
+            ->when($featuredOnly, fn ($query) => $query->featured())
+            ->get()
+            ->map(fn (Project $project): array => $this->build($project))
             ->values()
             ->all();
     }
 
     /**
-     * One project by slug, or null when it is not one of the six.
+     * One published showcase project by slug, or null when there is none.
      *
      * @return array{
      *     slug: string,
@@ -59,29 +66,24 @@ class UiuxShowcase
      */
     public function find(string $slug): ?array
     {
-        $project = collect(config('uiux_showcase.projects', []))->firstWhere('slug', $slug);
+        $project = Project::query()->published()->showcase()->where('slug', $slug)->first();
 
         return $project === null ? null : $this->build($project);
     }
 
     /**
-     * @param  array{slug: string, name: string, discipline: string, summary?: string, services?: array<int, string>}  $project
      * @return array<string, mixed>
      */
-    private function build(array $project): array
+    private function build(Project $project): array
     {
-        $directory = trim((string) config('uiux_showcase.directory'), '/').'/'.$project['slug'];
-        $files = $this->imageFiles(public_path($directory));
+        $discipline = (string) $project->discipline;
 
-        $coverFile = collect($files)->first(
-            fn (string $file): bool => strtolower(pathinfo($file, PATHINFO_FILENAME)) === 'cover'
-        );
-        $screenFiles = array_values(array_filter($files, fn (string $file): bool => $file !== $coverFile));
-
-        $screens = collect($screenFiles)
-            ->map(function (string $file) use ($directory, $project): ?array {
-                $label = $this->label($file);
-                $screen = $this->describe($file, $directory, sprintf('%s %s page design', $project['name'], $label));
+        $screens = collect($project->case_study ?? [])
+            ->flatMap(fn ($section): array => $section['images'] ?? [])
+            ->filter(fn ($image): bool => filled($image['src'] ?? null) && blank($image['vimeo'] ?? null) && ! ($image['hidden'] ?? false))
+            ->map(function (array $image) use ($project): ?array {
+                $label = filled($image['alt'] ?? null) ? trim((string) $image['alt']) : $this->label((string) $image['src']);
+                $screen = $this->describe((string) $image['src'], sprintf('%s %s page design', $project->title, $label));
 
                 return $screen === null ? null : [...$screen, 'label' => $label];
             })
@@ -89,16 +91,16 @@ class UiuxShowcase
             ->values()
             ->all();
 
-        $cover = $coverFile !== null
-            ? $this->describe($coverFile, $directory, $project['name'].' '.$project['discipline'])
+        $cover = filled($project->image_path)
+            ? $this->describe($project->image_path, $project->image_alt ?: $project->title.' '.$discipline)
             : null;
 
         return [
-            'slug' => $project['slug'],
-            'name' => $project['name'],
-            'discipline' => $project['discipline'],
-            'summary' => $project['summary'] ?? null,
-            'services' => $project['services'] ?? [],
+            'slug' => $project->slug,
+            'name' => $project->title,
+            'discipline' => $discipline,
+            'summary' => $project->description ?: null,
+            'services' => $project->tags ?? [],
             'cover' => $cover ?? ($screens[0] ?? null),
             'screens' => $screens,
         ];
@@ -107,8 +109,10 @@ class UiuxShowcase
     /**
      * Human page name from an export's file name, without its ordering prefix.
      */
-    private function label(string $file): string
+    private function label(string $path): string
     {
+        $file = basename((string) parse_url($path, PHP_URL_PATH));
+
         $words = collect(explode('-', Str::slug(preg_replace('/^\d+[a-z]?[-_ ]+/i', '', pathinfo($file, PATHINFO_FILENAME)))))
             ->filter()
             ->values();
@@ -122,31 +126,12 @@ class UiuxShowcase
     }
 
     /**
-     * Image files in a folder, in natural file-name order.
-     *
-     * @return array<int, string>
-     */
-    private function imageFiles(string $path): array
-    {
-        if (! File::isDirectory($path)) {
-            return [];
-        }
-
-        $files = collect(File::files($path))
-            ->filter(fn (\SplFileInfo $file): bool => in_array(strtolower($file->getExtension()), self::EXTENSIONS, true))
-            ->map(fn (\SplFileInfo $file): string => $file->getPathname())
-            ->all();
-
-        natcasesort($files);
-
-        return array_values($files);
-    }
-
-    /**
      * Public URLs (on the configured asset URL) and intrinsic size of one
-     * export; null when it is not a readable image.
+     * export; null when it is not a readable local image.
      *
-     * `thumb` is the top of the screen from the project's `thumbs/` folder,
+     * A root-relative path (`/images/work/uiux/...`) is a file under `public/`;
+     * anything else is a file on the public disk, as the media library stores
+     * it. `thumb` is the top of the screen from the same folder's `thumbs/`,
      * used wherever only a preview is shown, so the full-length page is only
      * downloaded when it is opened. Without one, the full export is used.
      * The modification time is appended so a re-exported screen is never
@@ -154,21 +139,40 @@ class UiuxShowcase
      *
      * @return array{src: string, thumb: string, width: int, height: int, alt: string}|null
      */
-    private function describe(string $file, string $publicDirectory, string $alt): ?array
+    private function describe(string $path, string $alt): ?array
     {
-        $size = @getimagesize($file);
+        $path = trim($path);
+
+        if (str_starts_with($path, '/') && ! str_starts_with($path, '/storage/')) {
+            $relative = ltrim($path, '/');
+            $file = public_path($relative);
+            $url = fn (string $relativePath): string => PublicAsset::to($relativePath);
+        } else {
+            $relative = ltrim((string) preg_replace('#^(https?://[^/]+)?/storage/#', '', $path), '/');
+
+            if (str_contains($relative, '://')) {
+                return null;
+            }
+
+            $file = Storage::disk('public')->path($relative);
+            $url = fn (string $relativePath): string => PublicAsset::disk($relativePath);
+        }
+
+        $size = is_file($file) ? @getimagesize($file) : false;
 
         if ($size === false || $size[0] === 0 || $size[1] === 0) {
             return null;
         }
 
-        $src = PublicAsset::to($publicDirectory.'/'.rawurlencode(basename($file))).'?v='.filemtime($file);
+        $directory = dirname($relative);
+        $prefix = $directory === '.' ? '' : $directory.'/';
+        $src = $url($prefix.rawurlencode(basename($file))).'?v='.filemtime($file);
         $thumbFile = dirname($file).'/thumbs/'.basename($file);
 
         return [
             'src' => $src,
             'thumb' => is_file($thumbFile)
-                ? PublicAsset::to($publicDirectory.'/thumbs/'.rawurlencode(basename($file))).'?v='.filemtime($thumbFile)
+                ? $url($prefix.'thumbs/'.rawurlencode(basename($file))).'?v='.filemtime($thumbFile)
                 : $src,
             'width' => $size[0],
             'height' => $size[1],

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'slug', 'title', 'client', 'category_id', 'work_group', 'year', 'description',
+    'slug', 'title', 'heading_scale', 'client', 'category_id', 'work_group', 'discipline', 'layout', 'year', 'description',
     'metric', 'metric_label', 'accent', 'image_path', 'image_alt',
     'tags', 'featured', 'status', 'sort_order',
     'external_url', 'case_study', 'brief',
@@ -38,6 +38,7 @@ class Project extends Model
             'featured' => 'boolean',
             'status' => ContentStatus::class,
             'sort_order' => 'integer',
+            'heading_scale' => 'integer',
         ];
     }
 
@@ -69,6 +70,45 @@ class Project extends Model
     protected function featured(Builder $query): void
     {
         $query->where('featured', true);
+    }
+
+    /**
+     * The UI/UX showcase projects: presented screen by screen on their own
+     * printer page rather than as a case study.
+     *
+     * @param  Builder<Project>  $query
+     */
+    #[Scope]
+    protected function showcase(Builder $query): void
+    {
+        $query->where('layout', self::LAYOUT_SCREENS);
+    }
+
+    /**
+     * Every project with a case study page, i.e. all but the showcase ones.
+     *
+     * @param  Builder<Project>  $query
+     */
+    #[Scope]
+    protected function caseStudies(Builder $query): void
+    {
+        $query->where(fn (Builder $query) => $query->whereNull('layout')->orWhere('layout', '!=', self::LAYOUT_SCREENS));
+    }
+
+    /**
+     * Whether this is a UI/UX showcase project (see `showcase()`).
+     */
+    public function isShowcase(): bool
+    {
+        return $this->layout === self::LAYOUT_SCREENS;
+    }
+
+    /**
+     * Where the project opens on the public site.
+     */
+    public function publicPath(): string
+    {
+        return $this->isShowcase() ? '/work/portfolio/uiux/'.$this->slug : '/work/'.$this->slug;
     }
 
     /**
@@ -145,6 +185,7 @@ class Project extends Model
         return [
             'slug' => $this->slug,
             'title' => $this->title,
+            'headingScale' => $this->heading_scale,
             'client' => $this->client,
             'category' => $this->category?->name,
             'categorySlug' => $this->category?->slug,
@@ -195,6 +236,9 @@ class Project extends Model
      */
     public const UIUX_ROOTS = ['web-uiux'];
 
+    /** The `layout` of a UI/UX showcase project. */
+    public const LAYOUT_SCREENS = 'screens';
+
     /**
      * Which Our Work menu column this project belongs to.
      *
@@ -223,6 +267,7 @@ class Project extends Model
     {
         $grouped = static::query()
             ->published()
+            ->caseStudies()
             ->with('category.parent')
             ->orderBy('sort_order')
             ->get()

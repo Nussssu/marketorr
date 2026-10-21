@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import MediaPickerField from '../../../components/admin/MediaPickerField';
 import SectionFields from '../../../components/admin/SectionFields';
@@ -63,12 +63,13 @@ function VisibilitySwitch({ checked, onChange, label }) {
 
 /**
  * One section as a widget card: its number, name and type in a single row
- * with reorder, show/hide, edit and delete controls. Tapping the card (or
- * its edit icon) opens its form and tapping again closes it; each card opens
- * and closes on its own, so the others stay exactly as they were.
+ * with reorder, show/hide and delete controls. Tapping the card opens its
+ * form and tapping again closes it; each card opens and closes on its own,
+ * so the others stay exactly as they were. Edits are saved by the page's
+ * fixed save bar, which this card registers with.
  */
-function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, onDelete }) {
-    const { data, setData, put, processing, errors } = useForm({
+function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, onDelete, register }) {
+    const { data, setData, put, errors } = useForm({
         type: section.type,
         name: section.name,
         content: section.content ?? {},
@@ -86,9 +87,26 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
         });
     }, [section.id, section.name, section.enabled, JSON.stringify(section.content)]);
 
+    const isDirty = () =>
+        JSON.stringify({ name: data.name, content: data.content }) !==
+        JSON.stringify({ name: section.name, content: section.content ?? {} });
+
+    const save = () =>
+        new Promise((resolve) => {
+            put(`/admin/pages/${page.id}/sections/${section.id}`, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => resolve(true),
+                onError: () => resolve(false),
+                onCancel: () => resolve(false),
+            });
+        });
+
+    useEffect(() => register(section.id, { isDirty, save }));
+    useEffect(() => () => register(section.id, null), [section.id]);
+
     const submit = (e) => {
         e.preventDefault();
-        put(`/admin/pages/${page.id}/sections/${section.id}`, { preserveScroll: true });
     };
 
     // Saves the stored copy with only the visibility flipped, so an unsaved
@@ -138,15 +156,6 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
                     </button>
                     <button
                         type="button"
-                        onClick={onToggleOpen}
-                        className={`${NEUTRAL_ICON} ${open ? 'border-[var(--field-line)] bg-[var(--chip)] text-[var(--ink)]' : ''}`}
-                        title={open ? 'Close editor' : 'Edit section'}
-                        aria-label={`${open ? 'Close' : 'Edit'} ${section.name}`}
-                    >
-                        <Icon name="edit" />
-                    </button>
-                    <button
-                        type="button"
                         onClick={() => onDelete(section)}
                         className={`${ICON_BUTTON} text-[#ff6b6b] hover:border-[#ff6b6b]/40 hover:bg-[#ff6b6b]/10`}
                         title="Delete section"
@@ -179,9 +188,6 @@ function SectionCard({ page, section, index, count, open, onToggleOpen, onMove, 
 
                     <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[var(--line)] pt-5">
                         <Button type="button" variant="secondary" onClick={onToggleOpen}>Close</Button>
-                        <Button type="submit" disabled={processing}>
-                            {processing ? 'Saving…' : 'Save section'}
-                        </Button>
                     </div>
                 </form>
             )}
@@ -289,11 +295,12 @@ function LengthHint({ value, limit }) {
 }
 
 /**
- * This page's SEO, edited beside its sections. Saves through the same page
- * update as the full "Page & SEO" screen and stays on the builder.
+ * This page's SEO, edited beside its sections. Saved by the page's fixed save
+ * bar through the same page update as the full "Page & SEO" screen, staying
+ * on the builder.
  */
-function SeoPanel({ page }) {
-    const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
+function SeoPanel({ page, register }) {
+    const { data, setData, put, errors, isDirty, setDefaults } = useForm({
         slug: page.slug,
         title: page.title,
         status: page.status,
@@ -307,9 +314,25 @@ function SeoPanel({ page }) {
         stay: true,
     });
 
+    const save = () =>
+        new Promise((resolve) => {
+            put(`/admin/pages/${page.id}`, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    setDefaults();
+                    resolve(true);
+                },
+                onError: () => resolve(false),
+                onCancel: () => resolve(false),
+            });
+        });
+
+    useEffect(() => register('seo', { isDirty: () => isDirty, save }));
+    useEffect(() => () => register('seo', null), []);
+
     const submit = (e) => {
         e.preventDefault();
-        put(`/admin/pages/${page.id}`, { preserveScroll: true });
     };
 
     return (
@@ -338,10 +361,6 @@ function SeoPanel({ page }) {
                 <Field label="Schema markup (JSON-LD)" error={errors.schema_markup}>
                     <Textarea rows={4} className="font-mono text-[12px]" value={data.schema_markup} onChange={(e) => setData('schema_markup', e.target.value)} />
                 </Field>
-                <div className="flex items-center justify-end gap-3">
-                    {recentlySuccessful && <span className="text-[12px] text-[var(--mute)]">Saved.</span>}
-                    <Button type="submit" disabled={processing}>{processing ? 'Saving…' : 'Save SEO'}</Button>
-                </div>
             </form>
         </Panel>
     );
@@ -360,6 +379,38 @@ export default function PageBuilder({ page, sections, palette, categories = null
         return next;
     });
     const [request, confirm, cancel, run] = useConfirm();
+
+    // Every editable widget registers its dirty check and save here, so the
+    // fixed save bar can save all pending changes in one go.
+    const savers = useRef(new Map());
+    const register = useCallback((key, api) => {
+        if (api) savers.current.set(key, api);
+        else savers.current.delete(key);
+    }, []);
+    const [saving, setSaving] = useState(false);
+    const [saveResult, setSaveResult] = useState(null);
+
+    // Saves one widget after another, since a new Inertia visit would cancel
+    // the one still in flight. Widgets that fail validation are opened so
+    // their errors show.
+    const saveAll = async () => {
+        setSaving(true);
+        setSaveResult(null);
+
+        const pending = [...savers.current.entries()].filter(([, api]) => api.isDirty());
+        const failed = [];
+        for (const [key, api] of pending) {
+            if (!(await api.save())) failed.push(key);
+        }
+
+        const failedSections = failed.filter((key) => key !== 'seo');
+        if (failedSections.length > 0) {
+            setOpenIds((current) => new Set([...current, ...failedSections]));
+        }
+
+        setSaving(false);
+        setSaveResult(pending.length === 0 ? 'none' : failed.length === 0 ? 'saved' : 'failed');
+    };
 
     useEffect(() => {
         setRows(sections);
@@ -431,6 +482,7 @@ export default function PageBuilder({ page, sections, palette, categories = null
                                 onToggleOpen={() => toggleOpen(section.id)}
                                 onMove={move}
                                 onDelete={askDelete}
+                                register={register}
                             />
                         ))
                     )}
@@ -440,7 +492,21 @@ export default function PageBuilder({ page, sections, palette, categories = null
 
                 <div className="space-y-6">
                     <AddSection page={page} palette={palette} />
-                    <SeoPanel page={page} />
+                    <SeoPanel page={page} register={register} />
+                </div>
+            </div>
+
+            {/* Spacer so the fixed save bar never covers the last widget. */}
+            <div className="h-20" aria-hidden />
+
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-[var(--surface)] px-4 py-3 sm:px-6 lg:left-64 lg:px-10">
+                <div className="flex items-center justify-end gap-3">
+                    {saveResult === 'saved' && <span className="text-[12px] text-[var(--mute)]">All changes saved.</span>}
+                    {saveResult === 'none' && <span className="text-[12px] text-[var(--mute)]">No changes to save.</span>}
+                    {saveResult === 'failed' && <span className="text-[12px] text-[#ff6b6b]">Some changes could not be saved, check the highlighted fields.</span>}
+                    <Button type="button" onClick={saveAll} disabled={saving}>
+                        {saving ? 'Saving…' : 'Save changes'}
+                    </Button>
                 </div>
             </div>
 

@@ -220,6 +220,7 @@ export default function WorkHero({ project }) {
                 )}
                 <h1
                     className="heading-hero-size max-w-6xl font-display font-extrabold uppercase leading-[0.9] tracking-[-0.03em] text-[var(--ink-strong)]"
+                    style={project.headingScale ? { '--heading-scale': Math.min(Math.max(Number(project.headingScale), 50), 200) / 100 } : undefined}
                     aria-label={project.title}
                 >
                     {words.map((word, wordIndex) => (

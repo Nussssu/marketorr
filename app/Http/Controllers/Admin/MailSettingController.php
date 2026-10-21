@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\EmailLogSource;
 use App\Enums\MailEncryption;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateMailSettingRequest;
 use App\Models\MailSetting;
+use App\Services\EmailLogger;
 use App\Services\SmtpTester;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,10 +27,17 @@ class MailSettingController extends Controller
         ]);
     }
 
-    public function update(UpdateMailSettingRequest $request): RedirectResponse
+    public function update(UpdateMailSettingRequest $request, EmailLogger $logger): RedirectResponse
     {
         $settings = MailSetting::current();
         $settings->update($request->mailAttributes());
+
+        // Recorded by field name only, so the password never reaches the log.
+        $changed = array_keys(array_diff_key($settings->getChanges(), array_flip(['updated_at'])));
+        if ($changed !== []) {
+            $logger->activity(EmailLogSource::SmtpSettings, 'SMTP settings updated', ['changed' => $changed]);
+        }
+
         MailSetting::forgetCurrent();
 
         return back()->with('success', 'SMTP settings saved.');

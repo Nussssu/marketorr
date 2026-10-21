@@ -8,6 +8,7 @@ use App\Models\PageSection;
 use App\Models\User;
 use App\Services\UiuxShowcase;
 use Database\Seeders\PageSeeder;
+use Database\Seeders\UiuxShowcaseSeeder;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -135,6 +136,8 @@ class HomeLandingSectionsTest extends TestCase
 
     public function test_the_home_page_sends_one_printed_sheet_per_uiux_project(): void
     {
+        $this->seed(UiuxShowcaseSeeder::class);
+
         $this->get('/')->assertInertia(fn ($inertia) => $inertia
             ->has('uiuxShowcase', 6)
             ->where('uiuxShowcase.0.slug', 'sailor-digital')

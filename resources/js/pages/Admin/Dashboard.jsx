@@ -18,7 +18,7 @@ export default function Dashboard({ stats, recentInquiries }) {
             <Head title="Dashboard | Marketorr Admin" />
             <PageHeader title="Dashboard" subtitle="What's live and what needs a reply." />
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Stat label="Published projects" value={stats.publishedProjects} accent="var(--brand-1)" />
                 <Stat label="Draft projects" value={stats.draftProjects} accent="var(--brand-2)" />
                 <Stat label="Services" value={stats.services} accent="var(--brand-3)" />
@@ -28,7 +28,15 @@ export default function Dashboard({ stats, recentInquiries }) {
             </div>
 
             <div className="mt-8">
-                <Panel title="Latest inquiries" className="overflow-hidden">
+                <Panel
+                    title="Latest inquiries"
+                    className="overflow-hidden"
+                    action={
+                        <Link href="/admin/inbox" className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                            View all →
+                        </Link>
+                    }
+                >
                     {recentInquiries.length === 0 ? (
                         <EmptyState>No inquiries yet.</EmptyState>
                     ) : (
@@ -40,7 +48,6 @@ export default function Dashboard({ stats, recentInquiries }) {
                                         <th className="pb-3 pr-4 font-bold">Type</th>
                                         <th className="pb-3 pr-4 font-bold">Status</th>
                                         <th className="pb-3 pr-4 font-bold">Received</th>
-                                        <th className="pb-3 font-bold" />
                                     </tr>
                                 </thead>
                                 <tbody className="align-top">
@@ -53,11 +60,6 @@ export default function Dashboard({ stats, recentInquiries }) {
                                             <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.type}</td>
                                             <td className="py-3 pr-4"><Badge tone={inquiry.status} /></td>
                                             <td className="py-3 pr-4 text-[var(--mute)]">{inquiry.createdAt}</td>
-                                            <td className="py-3 text-right">
-                                                <Link href={`/admin/inquiries/${inquiry.id}`} className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]">
-                                                    View →
-                                                </Link>
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
