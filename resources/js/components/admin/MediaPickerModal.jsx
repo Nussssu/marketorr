@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TAB_GRADIENT } from './ui';
+import { Select, TAB_GRADIENT } from './ui';
 
 /**
  * Helper to determine whether an asset is an image based on mime_type or file extension.
@@ -302,16 +302,17 @@ export default function MediaPickerModal({
                             </div>
 
                             {/* Category Filter */}
-                            <select
+                            <Select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                                aria-label="Filter by category"
+                                className="!w-auto min-w-[150px] !py-1.5 !text-xs"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((c) => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
-                            </select>
+                            </Select>
 
                             {/* Type Filter Pills */}
                             <div className="flex items-center rounded-md bg-slate-900 p-0.5 border border-slate-800/80 text-[11px]">

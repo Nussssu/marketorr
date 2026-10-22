@@ -7,6 +7,7 @@ use App\Models\GlobalBlock;
 use App\Models\Media;
 use App\Models\Project;
 use App\Models\User;
+use Database\Seeders\WebsiteMediaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -262,7 +263,7 @@ class AdminMediaTest extends TestCase
 
     public function test_the_media_grid_is_paginated(): void
     {
-        foreach (range(1, 13) as $index) {
+        foreach (range(1, 16) as $index) {
             Media::query()->create([
                 'filename' => "asset-{$index}.jpg",
                 'path' => "media/asset-{$index}.jpg",
@@ -273,8 +274,8 @@ class AdminMediaTest extends TestCase
         $this->actingAs($this->admin)
             ->get('/admin/media')
             ->assertInertia(fn (Assert $page) => $page
-                ->has('media.data', 12)
-                ->where('media.total', 13)
+                ->has('media.data', 15)
+                ->where('media.total', 16)
                 ->where('media.last_page', 2));
     }
 
@@ -282,5 +283,81 @@ class AdminMediaTest extends TestCase
     {
         $this->get('/admin/media')->assertRedirect('/admin/login');
         $this->get('/admin/media/create')->assertRedirect('/admin/login');
+    }
+
+    public function test_uploading_a_file_already_in_the_library_keeps_one_entry(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('logo.png', 'the same bytes');
+
+        $this->actingAs($this->admin)->post('/admin/media', ['file' => $file])->assertRedirect('/admin/media');
+        $first = Media::query()->sole();
+
+        $this->actingAs($this->admin)
+            ->postJson('/admin/media', ['file' => UploadedFile::fake()->createWithContent('logo-again.png', 'the same bytes')])
+            ->assertCreated()
+            ->assertJsonPath('medium.id', $first->id)
+            ->assertJsonPath('medium.file_url', $first->fileUrl());
+
+        $this->assertDatabaseCount('media', 1);
+        $this->assertCount(1, Storage::disk('public')->files('media'));
+        $this->assertNotNull($first->checksum);
+    }
+
+    public function test_the_websites_gifs_and_videos_are_listed_once_at_the_path_the_site_uses(): void
+    {
+        $copy = Media::query()->create([
+            'filename' => 'sabdita-logo-intro-animation.gif',
+            'path' => 'media/sabdita-logo-intro-animation.gif',
+            'checksum' => Media::checksumOf(public_path('images/work/sabdita/logo-intro-animation.gif')),
+            'category' => 'Rebranding',
+        ]);
+
+        $this->seed(WebsiteMediaSeeder::class);
+        $this->seed(WebsiteMediaSeeder::class);
+
+        $this->assertSame('/images/work/sabdita/logo-intro-animation.gif', $copy->fresh()->path);
+        $this->assertSame(1, Media::query()->where('checksum', $copy->checksum)->count());
+        $this->assertTrue(Media::query()->where('path', '/videos/city-online-hero.mp4')->where('mime_type', 'video/mp4')->exists());
+        $this->assertTrue(Media::query()->where('path', '/images/work/gallery/dusty-vision/03.gif')->where('mime_type', 'image/gif')->exists());
+        $this->assertSame(0, Media::query()->get()->groupBy('checksum')->filter(fn ($group) => $group->count() > 1)->count());
+        $this->assertFalse(Media::query()->where('path', 'like', '%/opt/%')->exists());
+
+        $this->actingAs($this->admin)->get('/admin/media?type=videos')->assertInertia(fn (Assert $page) => $page
+            ->where('media.data.0.filename', 'city-online-hero.mp4')
+            ->where('media.data.0.is_site_file', true));
+    }
+
+    public function test_the_library_edit_popup_saves_and_stays_on_the_library_page(): void
+    {
+        $medium = Media::query()->create(['filename' => 'old.jpg', 'path' => 'media/old.jpg', 'category' => 'General']);
+
+        $this->actingAs($this->admin)
+            ->from('/admin/media?type=images&page=2')
+            ->put("/admin/media/{$medium->id}", [
+                'from_library' => true,
+                'filename' => 'new-name.jpg',
+                'category' => 'Work',
+                'usage_location' => 'Home hero',
+                'alt_text' => 'A new description',
+            ])
+            ->assertRedirect('/admin/media?type=images&page=2')
+            ->assertSessionHas('success', 'Media updated.');
+
+        $medium->refresh();
+        $this->assertSame('new-name.jpg', $medium->filename);
+        $this->assertSame('Work', $medium->category);
+        $this->assertSame('Home hero', $medium->usage_location);
+        $this->assertSame('A new description', $medium->alt_text);
+    }
+
+    public function test_deleting_a_website_file_from_the_library_never_deletes_the_file(): void
+    {
+        $this->seed(WebsiteMediaSeeder::class);
+        $medium = Media::query()->where('path', '/videos/city-online-hero.mp4')->sole();
+
+        $this->actingAs($this->admin)->delete("/admin/media/{$medium->id}")->assertRedirect();
+
+        $this->assertModelMissing($medium);
+        $this->assertFileExists(public_path('videos/city-online-hero.mp4'));
     }
 }

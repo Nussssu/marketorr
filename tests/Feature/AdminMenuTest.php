@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContentStatus;
 use App\Enums\MenuLocation;
 use App\Models\Menu;
 use App\Models\MenuItem;
+use App\Models\Project;
 use App\Models\Setting;
+use App\Models\SubService;
 use App\Models\User;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\SubServiceCatalogueSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -84,7 +89,7 @@ class AdminMenuTest extends TestCase
 
     public function test_sub_items_are_stored_under_their_parent(): void
     {
-        $this->actingAs($this->admin)->put('/admin/menus/header', [
+        $this->actingAs($this->admin)->put('/admin/menus/mega_services', [
             'items' => [
                 $this->item([
                     'label' => 'Services',
@@ -98,6 +103,23 @@ class AdminMenuTest extends TestCase
         $child = MenuItem::query()->where('label', 'Branding')->firstOrFail();
 
         $this->assertSame($parent->id, $child->parent_id);
+    }
+
+    public function test_header_items_never_keep_sub_items(): void
+    {
+        $this->actingAs($this->admin)->put('/admin/menus/header', [
+            'items' => [
+                $this->item([
+                    'label' => 'About',
+                    'url' => '/about',
+                    'children' => [$this->item(['label' => 'helo', 'url' => '/contact'])],
+                ]),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertTrue(MenuItem::query()->where('label', 'About')->exists());
+        $this->assertFalse(MenuItem::query()->where('label', 'helo')->exists());
+        $this->get('/')->assertInertia(fn ($page) => $page->where('menus.header.0.children', []));
     }
 
     public function test_item_order_follows_the_submitted_order(): void
@@ -367,5 +389,130 @@ class AdminMenuTest extends TestCase
         );
         $this->assertSame(0, $sitemap->items()->count());
         $this->assertSame('/services#branding', $services->items()->value('url'));
+    }
+
+    public function test_the_seeded_services_mega_menu_lists_six_linked_sub_services_per_group(): void
+    {
+        $this->seed([SubServiceCatalogueSeeder::class, MenuSeeder::class]);
+
+        $this->get('/')->assertInertia(fn ($page) => $page
+            ->where('menus.mega_services.0.label', 'Branding')
+            ->has('menus.mega_services.0.children', 6)
+            ->where('menus.mega_services.0.children.0.url', '/services/branding/brand-strategy')
+            ->where('menus.mega_services.1.label', 'UI/UX')
+            ->has('menus.mega_services.1.children', 6)
+            ->where('menus.mega_services.1.children.5.url', '/services/ui-ux/design-system'));
+
+        $this->assertSame(12, MenuItem::query()->whereNotNull('sub_service_id')->count());
+    }
+
+    public function test_a_linked_sub_item_takes_its_name_and_slug_from_the_sub_service(): void
+    {
+        $this->seed(SubServiceCatalogueSeeder::class);
+        $subService = SubService::query()->where('slug', 'rebranding')->sole();
+
+        $this->actingAs($this->admin)->put('/admin/menus/mega_services', [
+            'items' => [
+                $this->item([
+                    'label' => 'Branding',
+                    'url' => '/services#branding',
+                    'children' => [$this->item(['label' => 'Typed by hand', 'url' => '/somewhere', 'sub_service_id' => $subService->id])],
+                ]),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $item = MenuItem::query()->where('sub_service_id', $subService->id)->sole();
+        $this->assertSame('Rebranding', $item->label);
+        $this->assertSame('/services/branding/rebranding', $item->url);
+
+        // Renaming the sub-service or changing its slug moves the menu with it.
+        $subService->update(['name' => 'Brand Refresh', 'slug' => 'brand-refresh']);
+
+        $this->get('/')->assertInertia(fn ($page) => $page
+            ->where('menus.mega_services.0.children.0.label', 'Brand Refresh')
+            ->where('menus.mega_services.0.children.0.url', '/services/branding/brand-refresh'));
+
+        $this->actingAs($this->admin)->get('/admin/menus')->assertInertia(fn ($page) => $page
+            ->where('subServiceOptions.0.items', fn ($items) => collect($items)->contains('slug', 'brand-refresh'))
+            ->where('menus', fn ($menus) => collect($menus)->firstWhere('location', 'mega_services')['items'][0]['children'][0]['url'] === '/services/branding/brand-refresh'));
+    }
+
+    public function test_a_hidden_or_deleted_sub_service_drops_out_of_the_mega_menu(): void
+    {
+        $this->seed([SubServiceCatalogueSeeder::class, MenuSeeder::class]);
+        $hidden = SubService::query()->where('slug', 'rebranding')->sole();
+        $deleted = SubService::query()->where('slug', 'design-system')->sole();
+
+        $hidden->update(['status' => ContentStatus::Draft]);
+        $deleted->delete();
+
+        $this->get('/')->assertInertia(fn ($page) => $page
+            ->has('menus.mega_services.0.children', 5)
+            ->where('menus.mega_services.0.children', fn ($children) => ! collect($children)->contains('url', '/services/branding/rebranding'))
+            ->has('menus.mega_services.1.children', 5));
+
+        $hidden->update(['status' => ContentStatus::Published]);
+        $this->get('/')->assertInertia(fn ($page) => $page->has('menus.mega_services.0.children', 6));
+    }
+
+    public function test_a_linked_work_sub_item_follows_its_project_and_drops_out_when_hidden(): void
+    {
+        $project = Project::factory()->create(['title' => 'Acme Rebrand', 'slug' => 'acme-rebrand', 'status' => ContentStatus::Published]);
+
+        $this->actingAs($this->admin)->put('/admin/menus/mega_work', [
+            'items' => [
+                $this->item([
+                    'label' => 'Branding Portfolio',
+                    'url' => '/work/portfolio/branding',
+                    'children' => [$this->item(['label' => 'Typed by hand', 'url' => '/elsewhere', 'project_id' => $project->id])],
+                ]),
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('/work/acme-rebrand', MenuItem::query()->where('project_id', $project->id)->value('url'));
+
+        $project->update(['title' => 'Acme Identity', 'slug' => 'acme-identity']);
+
+        $this->get('/')->assertInertia(fn ($page) => $page
+            ->where('menus.mega_work.0.children.0.label', 'Acme Identity')
+            ->where('menus.mega_work.0.children.0.url', '/work/acme-identity'));
+
+        $project->update(['status' => ContentStatus::Draft]);
+        $this->get('/')->assertInertia(fn ($page) => $page->has('menus.mega_work.0.children', 0));
+
+        $project->update(['status' => ContentStatus::Published]);
+        $project->delete();
+        $this->get('/')->assertInertia(fn ($page) => $page->has('menus.mega_work.0.children', 0));
+    }
+
+    public function test_a_showcase_project_is_linked_at_the_uiux_portfolio_opened_on_it(): void
+    {
+        $project = Project::factory()->create(['slug' => 'sailor-digital', 'title' => 'Sailor Digital', 'work_group' => 'uiux', 'layout' => Project::LAYOUT_SCREENS, 'status' => ContentStatus::Published]);
+
+        $this->actingAs($this->admin)->put('/admin/menus/mega_work', [
+            'items' => [$this->item(['label' => 'UI/UX Portfolio', 'url' => '/work/portfolio/uiux', 'children' => [$this->item(['project_id' => $project->id])]])],
+        ])->assertSessionHasNoErrors();
+
+        $this->get('/')->assertInertia(fn ($page) => $page->where('menus.mega_work.0.children.0.url', '/work/portfolio/uiux?project=sailor-digital'));
+
+        $this->actingAs($this->admin)->get('/admin/menus')->assertInertia(fn ($page) => $page
+            ->where('projectOptions.1.slug', 'uiux')
+            ->where('projectOptions.1.items', fn ($items) => collect($items)->contains('url', '/work/portfolio/uiux?project=sailor-digital')));
+    }
+
+    public function test_only_services_mega_menu_items_can_link_to_a_sub_service(): void
+    {
+        $this->seed(SubServiceCatalogueSeeder::class);
+        $subService = SubService::query()->firstOrFail();
+
+        $this->actingAs($this->admin)->put('/admin/menus/footer_sitemap', [
+            'items' => [$this->item(['children' => [$this->item(['label' => 'Kept', 'url' => '/kept', 'sub_service_id' => $subService->id])]])],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull(MenuItem::query()->where('label', 'Kept')->value('sub_service_id'));
+
+        $this->actingAs($this->admin)->put('/admin/menus/mega_services', [
+            'items' => [$this->item(['children' => [$this->item(['sub_service_id' => 999999])]])],
+        ])->assertSessionHasErrors('items.0.children.0.sub_service_id');
     }
 }

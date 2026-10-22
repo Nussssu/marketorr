@@ -112,6 +112,16 @@ class Project extends Model
     }
 
     /**
+     * Where the Our Work menu links the project: its case study, or for a
+     * showcase project the UI/UX portfolio opened on it (as `workGroupSummaries()`
+     * links them).
+     */
+    public function menuUrl(): string
+    {
+        return $this->isShowcase() ? '/work/portfolio/uiux?project='.rawurlencode($this->slug) : '/work/'.$this->slug;
+    }
+
+    /**
      * Projects filed under a category or any of its descendants.
      *
      * @param  Builder<Project>  $query

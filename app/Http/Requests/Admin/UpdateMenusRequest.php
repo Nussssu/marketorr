@@ -56,6 +56,8 @@ class UpdateMenusRequest extends FormRequest
             'menus.*.items.*.children.*.enabled' => ['required', 'boolean'],
             'menus.*.items.*.children.*.show_on_desktop' => ['required', 'boolean'],
             'menus.*.items.*.children.*.show_on_mobile' => ['required', 'boolean'],
+            'menus.*.items.*.children.*.sub_service_id' => ['nullable', 'integer', 'exists:sub_services,id'],
+            'menus.*.items.*.children.*.project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->whereNull('deleted_at')],
         ];
     }
 

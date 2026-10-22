@@ -1372,7 +1372,7 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
 		className: "min-w-0",
 		children: [/* @__PURE__ */ jsx(motion.div, {
 			variants: variants.item,
-			children: /* @__PURE__ */ jsxs(Link, {
+			children: /* @__PURE__ */ jsx(Link, {
 				href,
 				prefetch: true,
 				target: category.newTab ? "_blank" : void 0,
@@ -1384,39 +1384,21 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
 					if (!category.newTab) navigateWithCurtain(event, href, onNavigate);
 				},
 				className: `group/head block focus-visible:outline-none ${compact ? "!block" : ""}`.trimEnd(),
-				children: [
-					/* @__PURE__ */ jsx("span", {
-						className: "flex items-center gap-3",
-						children: /* @__PURE__ */ jsxs("span", {
-							className: `font-display ${compact ? "text-[10px]" : "text-[11px]"} font-bold tracking-[0.22em] text-[var(--ink-faint)]`,
-							"aria-hidden": true,
-							children: ["0", index + 1]
-						})
-					}),
-					/* @__PURE__ */ jsxs("span", {
-						className: `${compact ? "mt-3" : "mt-4"} flex items-baseline gap-3`,
-						children: [/* @__PURE__ */ jsx("span", {
-							className: `min-w-0 font-display ${compact ? "text-[1.35rem]" : "text-[clamp(1.5rem,2vw,2.15rem)]"} font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]`,
-							children: /* @__PURE__ */ jsx(GradientTitle, { text: category.name })
-						}), /* @__PURE__ */ jsx("span", {
-							"aria-hidden": true,
-							className: "shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100",
-							children: "↗"
-						})]
-					}),
-					/* @__PURE__ */ jsxs("span", {
-						className: `mt-2.5 block ${compact ? "text-[10.5px]" : "text-[12px]"} font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]`,
-						children: [
-							items.length,
-							" ",
-							items.length === 1 ? "project" : "projects"
-						]
-					})
-				]
+				children: /* @__PURE__ */ jsxs("span", {
+					className: "flex items-baseline gap-3",
+					children: [/* @__PURE__ */ jsx("span", {
+						className: `min-w-0 font-display ${compact ? "text-[1.35rem]" : "text-[clamp(1.5rem,2vw,2.15rem)]"} font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]`,
+						children: /* @__PURE__ */ jsx(GradientTitle, { text: category.name })
+					}), /* @__PURE__ */ jsx("span", {
+						"aria-hidden": true,
+						className: "shrink-0 -translate-x-1 text-[14px] leading-none text-[var(--ink-faint)] opacity-0 transition-all duration-300 group-hover/head:translate-x-0 group-hover/head:opacity-100",
+						children: "↗"
+					})]
+				})
 			})
 		}), /* @__PURE__ */ jsx(motion.div, {
 			variants: variants.row,
-			className: `${compact ? "mt-5" : "mt-7"} overflow-hidden`,
+			className: `${compact ? "mt-6" : "mt-10"} overflow-hidden`,
 			children: /* @__PURE__ */ jsx(motion.div, {
 				className: "flex w-max",
 				animate: reduce ? void 0 : { x: ["0%", "-50%"] },
@@ -3078,35 +3060,35 @@ createServer((page) => {
 		resolve: async (name) => {
 			const resolved = await (/* @__PURE__ */ Object.assign({
 				"./pages/About.jsx": () => import("./assets/About-DO5DwYML.js"),
-				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-B5Col2yI.js"),
-				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-BVph3Qs2.js"),
-				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-VFT0DJg_.js"),
-				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-DsZBqjyK.js"),
-				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-Dfr0ZRrn.js"),
-				"./pages/Admin/CustomCode/Form.jsx": () => import("./assets/Form-B4Cn8mKP.js"),
-				"./pages/Admin/CustomCode/Index.jsx": () => import("./assets/Index-BN_KixG4.js"),
-				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-Go9vvZ6h.js"),
-				"./pages/Admin/EmailLogs/Index.jsx": () => import("./assets/Index-DoLPo2sl.js"),
-				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-D0_6kUZ2.js"),
-				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-CjgQt6Gi.js"),
-				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-Dz69p8yC.js"),
-				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-DM_nLYOJ.js"),
-				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-DU0H19Wt.js"),
-				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-COwiTpor.js"),
-				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-Dv5u9zft.js"),
-				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-Br1GAppm.js"),
-				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-tsQwzRIM.js"),
-				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-QQHIgcpc.js"),
-				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-Cug9MkG-.js"),
-				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-DCsUmXRr.js"),
-				"./pages/Admin/ServiceGroups/Form.jsx": () => import("./assets/Form-B5TRV4PL.js"),
-				"./pages/Admin/ServiceGroups/Index.jsx": () => import("./assets/Index-Bf95Dj34.js"),
-				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-BW9VlAw8.js"),
-				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-CJrsa9Ym.js"),
-				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-C9hzNhgx.js"),
-				"./pages/Admin/SubServices/Form.jsx": () => import("./assets/Form-wNhi0dmR.js"),
-				"./pages/Admin/SubServices/Index.jsx": () => import("./assets/Index-DwfWSbYp.js"),
-				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-BYwU0XuB.js"),
+				"./pages/Admin/AuditLogs/Index.jsx": () => import("./assets/Index-D_VJQj_3.js"),
+				"./pages/Admin/Auth/Login.jsx": () => import("./assets/Login-BxyLOwdg.js"),
+				"./pages/Admin/Blocks/Index.jsx": () => import("./assets/Index-B3XkGeTG.js"),
+				"./pages/Admin/Categories/Form.jsx": () => import("./assets/Form-iZJmtGLN.js"),
+				"./pages/Admin/Categories/Index.jsx": () => import("./assets/Index-AF8BSz0q.js"),
+				"./pages/Admin/CustomCode/Form.jsx": () => import("./assets/Form-BUGX4Dnl.js"),
+				"./pages/Admin/CustomCode/Index.jsx": () => import("./assets/Index-D_lnWj0p.js"),
+				"./pages/Admin/Dashboard.jsx": () => import("./assets/Dashboard-DgIpq4Ew.js"),
+				"./pages/Admin/EmailLogs/Index.jsx": () => import("./assets/Index-CDgr1l0K.js"),
+				"./pages/Admin/EmailTemplates/Index.jsx": () => import("./assets/Index-D0GFMLFh.js"),
+				"./pages/Admin/Inquiries/Index.jsx": () => import("./assets/Index-BH31lIz2.js"),
+				"./pages/Admin/Inquiries/Show.jsx": () => import("./assets/Show-BnLIPCLM.js"),
+				"./pages/Admin/Mail/Edit.jsx": () => import("./assets/Edit-Ckn8dFZ2.js"),
+				"./pages/Admin/Media/Form.jsx": () => import("./assets/Form-AYFSWh49.js"),
+				"./pages/Admin/Media/Index.jsx": () => import("./assets/Index-CoN28bz8.js"),
+				"./pages/Admin/Menus/Index.jsx": () => import("./assets/Index-ChOhpnTK.js"),
+				"./pages/Admin/Pages/Builder.jsx": () => import("./assets/Builder-uyJZG6hd.js"),
+				"./pages/Admin/Pages/Form.jsx": () => import("./assets/Form-DtLDvXrL.js"),
+				"./pages/Admin/Pages/Index.jsx": () => import("./assets/Index-BMikNM8W.js"),
+				"./pages/Admin/Projects/Form.jsx": () => import("./assets/Form-uzTx-SoB.js"),
+				"./pages/Admin/Projects/Index.jsx": () => import("./assets/Index-COXvHl8I.js"),
+				"./pages/Admin/ServiceGroups/Form.jsx": () => import("./assets/Form-C2I5Mmx-.js"),
+				"./pages/Admin/ServiceGroups/Index.jsx": () => import("./assets/Index-BrYQPoIn.js"),
+				"./pages/Admin/Services/Form.jsx": () => import("./assets/Form-tEQRL0nH.js"),
+				"./pages/Admin/Services/Index.jsx": () => import("./assets/Index-gG5yN-8V.js"),
+				"./pages/Admin/Settings.jsx": () => import("./assets/Settings-CcZX6wmc.js"),
+				"./pages/Admin/SubServices/Form.jsx": () => import("./assets/Form-Hf29WF4n.js"),
+				"./pages/Admin/SubServices/Index.jsx": () => import("./assets/Index-2QkuK3hE.js"),
+				"./pages/Admin/Users/Index.jsx": () => import("./assets/Index-BS4aAASx.js"),
 				"./pages/CmsPage.jsx": () => import("./assets/CmsPage-BMQ9PECm.js"),
 				"./pages/ContactPage.jsx": () => import("./assets/ContactPage-DBYlNwZt.js"),
 				"./pages/Home.jsx": () => import("./assets/Home-_Rmz8gBm.js"),
@@ -3115,8 +3097,8 @@ createServer((page) => {
 				"./pages/Services/Show.jsx": () => import("./assets/Show-CielSNap.js"),
 				"./pages/Services/SubShow.jsx": () => import("./assets/SubShow-Dc1wWk2f.js"),
 				"./pages/Terms.jsx": () => import("./assets/Terms-BA9JKBl9.js"),
-				"./pages/Work/Index.jsx": () => import("./assets/Index-D7DLJ-rM.js"),
-				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-PlDRwHVS.js"),
+				"./pages/Work/Index.jsx": () => import("./assets/Index-CbrPJQRG.js"),
+				"./pages/Work/Portfolio.jsx": () => import("./assets/Portfolio-DiI-Nlb_.js"),
 				"./pages/Work/Show.jsx": () => import("./assets/Show-BrijncwO.js"),
 				"./pages/Work/UiuxProject.jsx": () => import("./assets/UiuxProject-BIxbjmys.js")
 			}))[`./pages/${name}.jsx`]();

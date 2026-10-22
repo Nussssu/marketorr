@@ -160,8 +160,28 @@ class AdminCategoryCrudTest extends TestCase
             ->get('/admin/categories')
             ->assertRedirect("/admin/pages/{$work->id}/builder#categories");
 
+        Category::query()->each(fn (Category $category) => Project::factory()->create(['category_id' => $category->id]));
+
         $this->actingAs($this->admin)
             ->get("/admin/pages/{$work->id}/builder")
             ->assertInertia(fn ($page) => $page->has('categories', 2));
+    }
+
+    public function test_the_our_work_page_lists_only_categories_in_use(): void
+    {
+        $work = Page::factory()->system()->create(['slug' => 'work']);
+        $usedParent = Category::factory()->create(['name' => 'Brand Design']);
+        $usedChild = Category::factory()->create(['name' => 'Fashion', 'parent_id' => $usedParent->id]);
+        Category::factory()->create(['name' => 'Packaging', 'parent_id' => $usedParent->id]);
+        Category::factory()->create(['name' => 'SEO']);
+        Project::factory()->create(['category_id' => $usedChild->id]);
+
+        $this->actingAs($this->admin)
+            ->get("/admin/pages/{$work->id}/builder")
+            ->assertInertia(fn ($page) => $page
+                ->has('categories', 1)
+                ->where('categories.0.name', 'Brand Design')
+                ->has('categories.0.children', 1)
+                ->where('categories.0.children.0.name', 'Fashion'));
     }
 }

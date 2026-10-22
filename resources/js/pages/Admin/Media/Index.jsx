@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, ConfirmDialog, useConfirm } from '../../../components/admin/ui';
+import { Button, ConfirmDialog, Select, useConfirm } from '../../../components/admin/ui';
 
 const FILTERS = [['all', 'All'], ['images', 'Images'], ['videos', 'Videos'], ['gif', 'GIF'], ['documents', 'Documents']];
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.txt,.zip';
@@ -15,6 +15,9 @@ function kindOf(medium) {
 
     return 'Document';
 }
+/** One of the icon buttons along the bottom of a media card. */
+const CARD_ACTION = 'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
 const STAT_CARDS = [['total_files', 'Total Files', 'files'], ['storage_used', 'Storage Used', 'storage'], ['images', 'Images', 'images'], ['used_in_products', 'Used in Products', 'products']];
 
 function Icon({ name, className = 'h-5 w-5' }) {
@@ -29,6 +32,8 @@ function Icon({ name, className = 'h-5 w-5' }) {
         file: <><path d="M6 3.5h8l4 4V20H6V3.5Z" /><path d="M14 3.5V8h4" /></>,
         eye: <><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.5" /></>,
         close: <path d="m6 6 12 12M18 6 6 18" />,
+        edit: <><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
+        trash: <><path d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" /><path d="M10 11.5v5M14 11.5v5" /></>,
     };
 
     return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>{paths[name]}</svg>;
@@ -148,7 +153,7 @@ function MediaPreview({ medium, onClose, onDelete }) {
             <button type="button" className="absolute inset-0 bg-slate-950/65 backdrop-blur-sm" onClick={onClose} aria-label="Close preview" />
             <div className="relative grid max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl md:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.7fr)]">
                 <div className="flex min-h-72 items-center justify-center bg-slate-100 p-5">
-                    {medium.is_image ? <img src={medium.file_url} alt={medium.alt_text || medium.filename} className="max-h-[72vh] max-w-full rounded-lg object-contain shadow-sm" /> : <div className="text-center text-slate-400"><Icon name="file" className="mx-auto h-20 w-20" /><p className="mt-3 font-bold">Document preview unavailable</p></div>}
+                    {medium.is_image ? <img src={medium.file_url} alt={medium.alt_text || medium.filename} className="max-h-[72vh] max-w-full rounded-lg object-contain shadow-sm" /> : kindOf(medium) === 'Video' ? <video src={medium.file_url} controls playsInline className="max-h-[72vh] max-w-full rounded-lg shadow-sm" /> : <div className="text-center text-slate-400"><Icon name="file" className="mx-auto h-20 w-20" /><p className="mt-3 font-bold">Document preview unavailable</p></div>}
                 </div>
                 <aside className="overflow-y-auto border-l border-slate-200 p-6">
                     <div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-widest text-blue-600">Media details</p><h2 className="mt-1 break-all text-lg font-bold text-slate-900">{medium.filename}</h2></div><button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Icon name="close" /></button></div>
@@ -164,9 +169,89 @@ function MediaPreview({ medium, onClose, onDelete }) {
     );
 }
 
+/**
+ * Edit one file's catalogue entry without leaving the library: its name,
+ * collection, usage note and alt text, and optionally a replacement image.
+ */
+function MediaEditModal({ medium, onClose }) {
+    const [preview, setPreview] = useState(medium.file_url);
+    const { data, setData, post, processing, errors } = useForm({
+        // Spoofed so a replacement upload still reaches the PUT route.
+        _method: 'put',
+        from_library: true,
+        file: null,
+        filename: medium.filename ?? '',
+        category: medium.category ?? '',
+        usage_location: medium.usage_location ?? '',
+        alt_text: medium.alt_text ?? '',
+    });
+
+    useEffect(() => {
+        const closeOnEscape = (event) => event.key === 'Escape' && onClose();
+        document.addEventListener('keydown', closeOnEscape);
+        return () => document.removeEventListener('keydown', closeOnEscape);
+    }, [onClose]);
+
+    useEffect(() => () => {
+        if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+    }, [preview]);
+
+    const chooseFile = (file) => {
+        setData('file', file);
+        setPreview(file ? URL.createObjectURL(file) : medium.file_url);
+    };
+
+    const submit = (event) => {
+        event.preventDefault();
+        post(`/admin/media/${medium.id}`, { forceFormData: true, preserveScroll: true, onSuccess: onClose });
+    };
+
+    const FIELD = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
+    const error = (key) => errors[key] && <p className="mt-1 text-xs font-semibold text-rose-600">{errors[key]}</p>;
+
+    return (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Edit ${medium.filename}`}>
+            <button type="button" className="absolute inset-0 bg-slate-950/65 backdrop-blur-sm" onClick={onClose} aria-label="Close" />
+            <form onSubmit={submit} className="relative grid max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl md:grid-cols-[minmax(0,1fr)_minmax(300px,1fr)]">
+                <div className="flex min-h-64 flex-col items-center justify-center gap-4 bg-slate-100 p-5">
+                    {medium.is_image || data.file
+                        ? <img src={preview} alt={data.alt_text || data.filename} className="max-h-[52vh] max-w-full rounded-lg object-contain shadow-sm" />
+                        : kindOf(medium) === 'Video'
+                            ? <video src={medium.file_url} controls playsInline className="max-h-[52vh] max-w-full rounded-lg shadow-sm" />
+                            : <Icon name="file" className="h-20 w-20 text-slate-400" />}
+                    {medium.is_image && (
+                        <label className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                            {data.file ? `Replacing with ${data.file.name}` : 'Replace image'}
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)} />
+                        </label>
+                    )}
+                    {error('file')}
+                </div>
+                <div className="flex flex-col overflow-y-auto border-l border-slate-200 p-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-widest text-blue-600">Edit media</p><h2 className="mt-1 break-all text-lg font-bold text-slate-900">{medium.filename}</h2></div>
+                        <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close"><Icon name="close" /></button>
+                    </div>
+                    <div className="mt-5 space-y-4">
+                        <label className="block text-xs font-bold text-slate-700">File name<input value={data.filename} onChange={(event) => setData('filename', event.target.value)} className={FIELD} />{error('filename')}</label>
+                        <label className="block text-xs font-bold text-slate-700">Collection<input value={data.category} onChange={(event) => setData('category', event.target.value)} className={FIELD} />{error('category')}</label>
+                        <label className="block text-xs font-bold text-slate-700">Usage location<input value={data.usage_location} onChange={(event) => setData('usage_location', event.target.value)} className={FIELD} placeholder="e.g. Home hero" />{error('usage_location')}</label>
+                        <label className="block text-xs font-bold text-slate-700">Alt text<input value={data.alt_text} onChange={(event) => setData('alt_text', event.target.value)} className={FIELD} placeholder="Describe the image" />{error('alt_text')}</label>
+                    </div>
+                    <div className="mt-auto flex justify-end gap-2 pt-6">
+                        <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">Cancel</button>
+                        <button type="submit" disabled={processing} className="rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-60">{processing ? 'Saving…' : 'Save changes'}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 export default function MediaIndex({ media, filters = {}, stats = {} }) {
     const items = media?.data ?? [];
     const [selected, setSelected] = useState(null);
+    const [editing, setEditing] = useState(null);
     const [search, setSearch] = useState(filters.search ?? '');
     const [activeFilter, setActiveFilter] = useState(filters.type ?? 'all');
     const fileInput = useRef(null);
@@ -184,7 +269,9 @@ export default function MediaIndex({ media, filters = {}, stats = {} }) {
 
     const askDelete = (medium) => confirm({
         title: `Delete “${medium.filename}”?`,
-        body: medium.usage_count > 0 ? `This file is currently used in ${medium.usage_count} CMS location(s). Deleting it will leave those locations without a working asset.` : 'The file will be permanently removed from storage and the media library.',
+        body: medium.is_site_file
+            ? 'This file ships with the website, so it is only removed from the media library: the file itself and every page using it stay as they are.'
+            : medium.usage_count > 0 ? `This file is currently used in ${medium.usage_count} CMS location(s). Deleting it will leave those locations without a working asset.` : 'The file will be permanently removed from storage and the media library.',
         action: () => router.delete(`/admin/media/${medium.id}`, { preserveScroll: true, onSuccess: () => setSelected(null) }),
     });
 
@@ -205,15 +292,25 @@ export default function MediaIndex({ media, filters = {}, stats = {} }) {
             <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-200 p-4 sm:p-5"><div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">{FILTERS.map(([value, label]) => <button key={value} type="button" onClick={() => chooseFilter(value)} className={`whitespace-nowrap rounded-lg px-4 py-2 text-xs font-bold transition ${activeFilter === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>{label}</button>)}</div>
-                    <div className="flex flex-col gap-2 sm:flex-row"><label className="relative block sm:w-72"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" className="h-4 w-4" /></span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search media…" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label><select value={sort} onChange={(event) => chooseSort(event.target.value)} className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="largest">Largest first</option><option value="smallest">Smallest first</option></select></div>
+                    <div className="flex flex-col gap-2 sm:flex-row"><label className="relative block sm:w-72"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" className="h-4 w-4" /></span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search media…" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label><Select value={sort} onChange={(event) => chooseSort(event.target.value)} aria-label="Sort media" className="sm:w-48"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="largest">Largest first</option><option value="smallest">Smallest first</option></Select></div>
                 </div></div>
 
                 <div className="p-4 sm:p-5">
                     {items.length === 0 ? <div className="py-16 text-center"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><Icon name="images" className="h-7 w-7" /></span><h2 className="mt-4 font-bold text-slate-900">No media found</h2><p className="mt-1 text-sm text-slate-500">Try another filter or upload a new asset.</p></div> : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">{items.map((medium) => (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">{items.map((medium) => (
                             <article key={medium.id} className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg">
-                                <button type="button" onClick={() => setSelected(medium)} className="relative block aspect-square w-full overflow-hidden bg-slate-100 text-left">{medium.is_image ? <img src={medium.file_url} alt={medium.alt_text || medium.filename} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : kindOf(medium) === 'Video' ? <video src={medium.file_url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <span className="flex h-full flex-col items-center justify-center text-slate-400"><Icon name="file" className="h-12 w-12" /><span className="mt-2 text-xs font-bold">{medium.filename.split('.').pop()?.toUpperCase()}</span></span>}<span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 text-white opacity-0 transition group-hover:bg-slate-950/30 group-hover:opacity-100"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg"><Icon name="eye" /></span></span>{medium.usage_count > 0 && <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">In use · {medium.usage_count}</span>}</button>
-                                <div className="p-3"><p className="truncate text-xs font-bold text-slate-800" title={medium.filename}>{medium.filename}</p><div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-500"><span className="truncate">{kindOf(medium)}</span><span className="shrink-0">{medium.size || '—'}</span></div></div>
+                                <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                                    <button type="button" onClick={() => setSelected(medium)} aria-label={`Preview ${medium.filename}`} className="block h-full w-full text-left">{medium.is_image ? <img src={medium.file_url} alt={medium.alt_text || medium.filename} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : kindOf(medium) === 'Video' ? <video src={medium.file_url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <span className="flex h-full flex-col items-center justify-center text-slate-400"><Icon name="file" className="h-12 w-12" /><span className="mt-2 text-xs font-bold">{medium.filename.split('.').pop()?.toUpperCase()}</span></span>}</button>
+                                    {medium.usage_count > 0 && <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">In use · {medium.usage_count}</span>}
+                                </div>
+                                <div className="flex items-start gap-2 p-3">
+                                    <div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-slate-800" title={medium.filename}>{medium.filename}</p><div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-500"><span className="truncate">{kindOf(medium)}</span><span className="shrink-0">{medium.size || '—'}</span></div></div>
+                                    {/* Edit and delete, beside the name rather than over the image. */}
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <button type="button" onClick={() => setEditing(medium)} className={CARD_ACTION} title="Edit" aria-label={`Edit ${medium.filename}`}><Icon name="edit" className="h-4 w-4" /></button>
+                                        <button type="button" onClick={() => askDelete(medium)} className={`${CARD_ACTION} !text-rose-600 hover:!bg-rose-50`} title="Delete" aria-label={`Delete ${medium.filename}`}><Icon name="trash" className="h-4 w-4" /></button>
+                                    </div>
+                                </div>
                             </article>
                         ))}</div>
                     )}
@@ -222,6 +319,7 @@ export default function MediaIndex({ media, filters = {}, stats = {} }) {
             </section>
 
             {selected && <MediaPreview medium={selected} onClose={() => setSelected(null)} onDelete={askDelete} />}
+            {editing && <MediaEditModal key={editing.id} medium={editing} onClose={() => setEditing(null)} />}
             <ConfirmDialog open={!!request} title={request?.title ?? ''} body={request?.body} onConfirm={run} onCancel={cancel} />
         </>
     );

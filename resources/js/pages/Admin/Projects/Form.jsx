@@ -1,21 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import {
-    Button,
-    ColorInput,
-    Field,
-    Input,
-    MediaPickerField,
-    PageHeader,
-    ProjectGalleryManager,
-    RepeatableList,
-    RepeatableRows,
-    Select,
-    Textarea,
-    WidgetPanel,
-    slugify,
-} from '../../../components/admin/ui';
+import { Button, ColorInput, Field, Input, MediaPickerField, PageHeader, ProjectGalleryManager, RepeatableList, RepeatableRows, Select, Textarea, WidgetPanel, slugify } from '../../../components/admin/ui';
 
 const BLANK_BRIEF = {
     overview: '',
@@ -436,10 +422,6 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                             Some fields need attention. Open the widgets above to see which.
                         </p>
                     )}
-
-                    <Button type="submit" disabled={processing} className="w-full">
-                        {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create project'}
-                    </Button>
                 </div>
             </form>
 

@@ -155,6 +155,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             Route::redirect('mail/templates', '/admin/email-templates');
 
             Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+            Route::put('email-templates', [EmailTemplateController::class, 'updateAll'])->name('email-templates.update-all');
             Route::put('email-templates/{template}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
 
             Route::get('email-logs', [EmailLogController::class, 'index'])->name('email-logs.index');

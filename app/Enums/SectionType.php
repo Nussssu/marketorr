@@ -140,6 +140,11 @@ enum SectionType: string
                 ['name' => 'title', 'label' => 'Big title (Our Work page)', 'type' => 'text'],
                 ['name' => 'intro', 'label' => 'Intro ({projects} and {practices} show live counts)', 'type' => 'textarea'],
                 ['name' => 'scrollHint', 'label' => 'Scroll hint (Our Work page)', 'type' => 'text'],
+                ['name' => 'brandingTitle', 'label' => 'Branding portfolio title (Our Work page; empty uses the portfolio name)', 'type' => 'text'],
+                ['name' => 'uiuxTitle', 'label' => 'UI/UX portfolio title (Our Work page; empty uses the portfolio name)', 'type' => 'text'],
+                ['name' => 'countLabel', 'label' => 'Project count (Our Work page; {count} shows the number)', 'type' => 'text'],
+                ['name' => 'countLabelOne', 'label' => 'Project count for one project (Our Work page)', 'type' => 'text'],
+                ['name' => 'openLabel', 'label' => 'Portfolio button label (Our Work page)', 'type' => 'text'],
             ],
             self::UiuxWork => [
                 ['name' => 'heading', 'label' => 'Label', 'type' => 'text'],

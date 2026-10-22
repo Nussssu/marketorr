@@ -142,16 +142,20 @@ class Category extends Model
             ->orderBy('id')
             ->get();
 
+        // Only categories in use are listed: a sub-category with projects, and
+        // a parent that has projects itself or a sub-category that does.
         return $categories
             ->whereNull('parent_id')
             ->map(fn (self $parent): array => [
                 ...$parent->toAdminArray(),
                 'children' => $categories
                     ->where('parent_id', $parent->id)
+                    ->filter(fn (self $child): bool => $child->projects_count > 0)
                     ->map(fn (self $child): array => $child->toAdminArray())
                     ->values()
                     ->all(),
             ])
+            ->filter(fn (array $parent): bool => $parent['projects_count'] > 0 || $parent['children'] !== [])
             ->values()
             ->all();
     }

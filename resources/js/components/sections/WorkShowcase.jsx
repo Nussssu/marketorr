@@ -268,14 +268,17 @@ function FixedPanel({ project, count, index, reduce }) {
                                 <span className="ml-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-faint)]">{project.metricLabel}</span>
                             </p>
                         )}
+                        {/* "View case study" (Branding) or "See all pages" (UI/UX): a brand-gradient
+                            outline at rest that fills with the gradient on hover, text staying legible. */}
                         <Link
                             href={projectLink(project)}
                             data-cursor="cta"
-                            className="btn-press group/link mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-[var(--field-line)] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.17em] text-[var(--ink)] hover:border-transparent hover:text-white"
+                            className="btn-press group/link relative mt-8 inline-flex w-fit items-center gap-3 overflow-hidden rounded-full border border-transparent px-6 py-3 text-[12px] font-bold uppercase tracking-[0.17em] text-[var(--ink)] transition-colors duration-300 hover:text-white focus-visible:text-white"
                             style={{ backgroundImage: `linear-gradient(var(--bg), var(--bg)), ${BRAND_GRADIENT}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}
                         >
-                            {project.ctaLabel ?? 'View case study'}
-                            <span data-arrow aria-hidden>↗</span>
+                            <span aria-hidden className="absolute inset-0 rounded-full opacity-0 transition-opacity duration-300 group-hover/link:opacity-100 group-focus-visible/link:opacity-100" style={{ background: BRAND_GRADIENT }} />
+                            <span className="relative">{project.ctaLabel ?? 'View case study'}</span>
+                            <span data-arrow aria-hidden className="relative transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5">↗</span>
                         </Link>
                     </motion.div>
                 </AnimatePresence>

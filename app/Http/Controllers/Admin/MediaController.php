@@ -92,7 +92,7 @@ class MediaController extends Controller
         }
 
         $media = $query
-            ->paginate(12)
+            ->paginate(15)
             ->withQueryString()
             ->through(fn (Media $medium): array => $medium->toAdminArray($usageMap[$medium->id] ?? []));
 
@@ -135,16 +135,31 @@ class MediaController extends Controller
 
         $catalogue = $request->safe()->except(['file', 'files', 'category']);
 
-        $media = $files->map(fn ($file): Media => Media::query()->create([
-            ...$catalogue,
-            'category' => $category,
-            ...$this->describeStoredFile(
-                $file->store('media', 'public'),
-                $file->getClientOriginalName(),
-                $file->getMimeType(),
-                $file->getSize()
-            ),
-        ]));
+        // A file already in the library is not stored again: the existing
+        // entry is reused, so the same file always has one link.
+        $duplicates = 0;
+        $media = $files->map(function ($file) use ($catalogue, $category, &$duplicates): Media {
+            $checksum = Media::checksumOf((string) $file->getRealPath());
+            $existing = $checksum !== null ? Media::query()->where('checksum', $checksum)->first() : null;
+
+            if ($existing !== null) {
+                $duplicates++;
+
+                return $existing;
+            }
+
+            return Media::query()->create([
+                ...$catalogue,
+                'category' => $category,
+                'checksum' => $checksum,
+                ...$this->describeStoredFile(
+                    $file->store('media', 'public'),
+                    $file->getClientOriginalName(),
+                    $file->getMimeType(),
+                    $file->getSize()
+                ),
+            ]);
+        });
 
         if ($request->wantsJson() || $request->boolean('json')) {
             return response()->json([
@@ -154,11 +169,16 @@ class MediaController extends Controller
             ], 201);
         }
 
-        $count = $media->count();
+        $count = $media->count() - $duplicates;
+        $message = $count.' media '.($count === 1 ? 'file' : 'files').' uploaded.';
+
+        if ($duplicates > 0) {
+            $message .= ' '.$duplicates.' '.($duplicates === 1 ? 'was' : 'were').' already in the library and kept as one file.';
+        }
 
         return redirect()
             ->route('admin.media.index')
-            ->with('success', $count.' media '.($count === 1 ? 'file' : 'files').' uploaded.');
+            ->with('success', $message);
     }
 
     /**
@@ -173,6 +193,14 @@ class MediaController extends Controller
         }
 
         $body = $response->body();
+        $checksum = hash('sha256', $body);
+
+        if (Media::query()->where('checksum', $checksum)->exists()) {
+            return redirect()
+                ->route('admin.media.index')
+                ->with('success', 'That file is already in the library, so it was kept as one file.');
+        }
+
         $filename = $this->filenameFromUrl($request->string('url')->toString());
         $path = 'media/'.$filename;
 
@@ -180,6 +208,7 @@ class MediaController extends Controller
 
         Media::query()->create([
             ...$request->safe()->except('url'),
+            'checksum' => $checksum,
             ...$this->describeStoredFile($path, $filename, null, strlen($body)),
         ]);
 
@@ -204,6 +233,7 @@ class MediaController extends Controller
             $this->deleteFile($medium->path);
             $data = [
                 ...$data,
+                'checksum' => Media::checksumOf((string) $file->getRealPath()),
                 ...$this->describeStoredFile(
                     $file->store('media', 'public'),
                     $file->getClientOriginalName(),
@@ -213,7 +243,12 @@ class MediaController extends Controller
             ];
         }
 
-        $medium->update($data);
+        $medium->update(collect($data)->except('from_library')->all());
+
+        // Saved from the library's edit popup: stay on the same page and filters.
+        if ($request->boolean('from_library')) {
+            return back()->with('success', 'Media updated.');
+        }
 
         return redirect()
             ->route('admin.media.index')

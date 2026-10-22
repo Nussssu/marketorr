@@ -2,18 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import MediaPickerField from '../../../components/admin/MediaPickerField';
-import {
-    Button,
-    ColorInput,
-    Field,
-    Input,
-    PageHeader,
-    Panel,
-    RepeatableList,
-    Select,
-    Textarea,
-    slugify,
-} from '../../../components/admin/ui';
+import { Button, ColorInput, Field, Input, PageHeader, Panel, RepeatableList, Select, StickyColumn, Textarea, slugify } from '../../../components/admin/ui';
 
 /** How many projects the public page's related-work row shows. */
 const RELATED_LIMIT = 4;
@@ -287,7 +276,7 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
     const isEdit = Boolean(item);
     const [slugLocked, setSlugLocked] = useState(isEdit);
 
-    const { data, setData, post, put, processing, errors, transform } = useForm({
+    const { data, setData, post, put, processing, errors, isDirty, transform } = useForm({
         service_group_id: item?.service_group_id ?? groups[0]?.id ?? '',
         slug: item?.slug ?? '',
         name: item?.name ?? '',
@@ -347,8 +336,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                 <Button as="link" href="/admin/sub-services" variant="secondary">Cancel</Button>
             </PageHeader>
 
-            <form onSubmit={submit} className="grid gap-6 lg:grid-cols-3">
-                <div className="space-y-6 lg:col-span-2">
+            {/* Both columns start on the same line and stick: whichever is shorter stays beside the other while scrolling. */}
+            <form onSubmit={submit} className="grid items-start gap-6 pb-24 lg:grid-cols-3">
+                <StickyColumn bottomOffset={96} className="space-y-6 lg:col-span-2">
                     <Panel title="Basics">
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field label="Tab" error={errors.service_group_id} required className="sm:col-span-2">
@@ -455,9 +445,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                     <Panel title="Case study" description="Optional long-form story below the page. Leave without sections for no case study.">
                         <CaseStudyEditor value={data.case_study} onChange={(v) => setData('case_study', v)} error={errors.case_study} />
                     </Panel>
-                </div>
+                </StickyColumn>
 
-                <div className="space-y-6">
+                <StickyColumn bottomOffset={96} className="space-y-6">
                     <Panel title="Publishing">
                         <div className="space-y-5">
                             <Field label="Status" error={errors.status} required>
@@ -507,9 +497,18 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                         </div>
                     </Panel>
 
-                    <Button type="submit" disabled={processing} className="w-full">
-                        {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create sub-service'}
-                    </Button>
+                </StickyColumn>
+                {/* The page's one save button, always on screen at the bottom. */}
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
+                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                        <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
+                            <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
+                            {isDirty ? 'You have unsaved changes.' : 'No unsaved changes.'}
+                        </p>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : isEdit ? 'Save changes' : 'Create sub-service'}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </>

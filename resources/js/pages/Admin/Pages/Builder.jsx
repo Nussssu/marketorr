@@ -3,19 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import MediaPickerField from '../../../components/admin/MediaPickerField';
 import SectionFields from '../../../components/admin/SectionFields';
-import {
-    Button,
-    ConfirmDialog,
-    EmptyState,
-    Field,
-    Input,
-    PageHeader,
-    Panel,
-    Select,
-    Textarea,
-    WidgetPanel,
-    useConfirm,
-} from '../../../components/admin/ui';
+import { Button, ConfirmDialog, EmptyState, Field, Input, PageHeader, Panel, Select, StickyColumn, Textarea, WidgetPanel, useConfirm } from '../../../components/admin/ui';
 
 const ROBOTS = ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'];
 
@@ -466,8 +454,10 @@ export default function PageBuilder({ page, sections, palette, categories = null
                 <Button as="link" href="/admin/pages" variant="secondary">All pages</Button>
             </PageHeader>
 
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="space-y-3 lg:col-span-2">
+            {/* Both columns start on the same line and stick: whichever is shorter
+                stays beside the other while scrolling, so neither leaves a blank area. */}
+            <div className="grid items-start gap-6 lg:grid-cols-3">
+                <StickyColumn className="space-y-3 lg:col-span-2" bottomOffset={96}>
                     {rows.length === 0 ? (
                         <Panel><EmptyState>No sections yet, add the first one.</EmptyState></Panel>
                     ) : (
@@ -488,12 +478,12 @@ export default function PageBuilder({ page, sections, palette, categories = null
                     )}
 
                     {categories && <CategoriesWidget categories={categories} onDelete={askDeleteCategory} />}
-                </div>
+                </StickyColumn>
 
-                <div className="space-y-6">
+                <StickyColumn className="space-y-3" bottomOffset={96}>
                     <AddSection page={page} palette={palette} />
                     <SeoPanel page={page} register={register} />
-                </div>
+                </StickyColumn>
             </div>
 
             {/* Spacer so the fixed save bar never covers the last widget. */}

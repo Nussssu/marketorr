@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Middleware\ContentSecurityPolicy;
+use App\Http\Middleware\EnsureAdminPermission;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\TrackAdminSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,6 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'super-admin' => EnsureUserIsSuperAdmin::class,
+            'permission' => EnsureAdminPermission::class,
+            'admin.session' => TrackAdminSession::class,
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('admin.login'));

@@ -425,12 +425,7 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
                     // inline-flex; the heading keeps its stacked desktop layout.
                     className={`group/head block focus-visible:outline-none ${compact ? '!block' : ''}`.trimEnd()}
                 >
-                    <span className="flex items-center gap-3">
-                        <span className={`font-display ${compact ? 'text-[10px]' : 'text-[11px]'} font-bold tracking-[0.22em] text-[var(--ink-faint)]`} aria-hidden>
-                            0{index + 1}
-                        </span>
-                    </span>
-                    <span className={`${compact ? 'mt-3' : 'mt-4'} flex items-baseline gap-3`}>
+                    <span className="flex items-baseline gap-3">
                         <span className={`min-w-0 font-display ${compact ? 'text-[1.35rem]' : 'text-[clamp(1.5rem,2vw,2.15rem)]'} font-bold leading-[1.05] tracking-[-0.01em] text-[var(--ink)]`}>
                             <GradientTitle text={category.name} />
                         </span>
@@ -441,15 +436,12 @@ function WorkMegaSection({ category, index, variants, onNavigate, compact = fals
                             &#8599;
                         </span>
                     </span>
-                    <span className={`mt-2.5 block ${compact ? 'text-[10.5px]' : 'text-[12px]'} font-bold uppercase tracking-[0.18em] text-[var(--ink-faint)]`}>
-                        {items.length} {items.length === 1 ? 'project' : 'projects'}
-                    </span>
                 </Link>
             </motion.div>
 
             <motion.div
                 variants={variants.row}
-                className={`${compact ? 'mt-5' : 'mt-7'} overflow-hidden`}
+                className={`${compact ? 'mt-6' : 'mt-10'} overflow-hidden`}
             >
                 <motion.div
                     className="flex w-max"

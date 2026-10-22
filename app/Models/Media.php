@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
-    'filename', 'path', 'mime_type', 'size_bytes', 'width', 'height',
+    'filename', 'path', 'checksum', 'mime_type', 'size_bytes', 'width', 'height',
     'category', 'usage_location', 'alt_text',
 ])]
 class Media extends Model
@@ -33,6 +33,25 @@ class Media extends Model
         }
 
         return Project::publicDiskUrl($this->path);
+    }
+
+    /**
+     * Whether the file ships with the website under `public/` (or lives at an
+     * external URL) rather than on the upload disk. Removing such an entry
+     * never deletes the file itself.
+     */
+    public function isSiteFile(): bool
+    {
+        return str_starts_with($this->path, '/') || str_starts_with($this->path, 'http');
+    }
+
+    /**
+     * The file's content fingerprint, used to keep one library entry (one
+     * link) per file however many times it is uploaded or used.
+     */
+    public static function checksumOf(string $absolutePath): ?string
+    {
+        return is_file($absolutePath) ? hash_file('sha256', $absolutePath) : null;
     }
 
     /**
@@ -74,6 +93,7 @@ class Media extends Model
             'created_at' => $this->created_at?->toDateTimeString(),
             'is_image' => str_starts_with((string) $this->mime_type, 'image/')
                 || (bool) preg_match('/\.(jpe?g|png|webp|gif|svg|avif)$/i', $this->filename),
+            'is_site_file' => $this->isSiteFile(),
             'usage_groups' => $usage['groups'] ?? [],
             'usage_labels' => $usage['labels'] ?? [],
             'usage_count' => count($usage['labels'] ?? []),

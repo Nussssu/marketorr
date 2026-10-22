@@ -35,10 +35,11 @@ class Menu extends Model
     public static function publicTree(): array
     {
         return self::query()
-            ->with(['items' => fn ($query) => $query->where('enabled', true)])
+            ->with(['items' => fn ($query) => $query->where('enabled', true)->with(['subService.group', 'project'])])
             ->get()
             ->mapWithKeys(function (self $menu): array {
-                $items = $menu->items;
+                // A sub-item linked to a hidden sub-service or project drops out.
+                $items = $menu->items->filter(fn (MenuItem $item): bool => $item->linksToLiveTarget());
 
                 return [
                     $menu->location->value => $items

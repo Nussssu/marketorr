@@ -5,17 +5,12 @@ import EmailPreviewModal from '../../../components/admin/EmailPreviewModal';
 import MailNav from '../../../components/admin/MailNav';
 import { Button, Field, Input, PageHeader, Panel, Textarea, Toggle } from '../../../components/admin/ui';
 
-function TemplateEditor({ template, onPreview }) {
-    const { data, setData, put, processing, errors } = useForm({
-        subject: template.subject,
-        body_html: template.bodyHtml,
-        enabled: template.enabled,
-    });
-
-    const submit = (e) => {
-        e.preventDefault();
-        put(`/admin/email-templates/${template.id}`, { preserveScroll: true });
-    };
+/**
+ * One template's fields. Its values live in the page's single form, which
+ * the fixed save bar submits for every template at once.
+ */
+function TemplateEditor({ template, data, onChange, errors, onPreview }) {
+    const setData = (key, value) => onChange({ ...data, [key]: value });
 
     const triggerPreview = () => {
         onPreview({
@@ -27,7 +22,7 @@ function TemplateEditor({ template, onPreview }) {
 
     return (
         <Panel title={template.label} description={template.description}>
-            <form onSubmit={submit} className="grid gap-5">
+            <div className="grid gap-5">
                 <Field label="Subject" error={errors.subject} required>
                     <Input value={data.subject} onChange={(e) => setData('subject', e.target.value)} />
                 </Field>
@@ -70,18 +65,36 @@ function TemplateEditor({ template, onPreview }) {
                         <Button type="button" variant="secondary" onClick={triggerPreview}>
                             Preview Template
                         </Button>
-                        <Button type="submit" disabled={processing}>
-                            {processing ? 'Saving…' : 'Save template'}
-                        </Button>
                     </div>
                 </div>
-            </form>
+            </div>
         </Panel>
     );
 }
 
 export default function EmailTemplatesIndex({ templates }) {
     const [activePreview, setActivePreview] = useState(null);
+    const { data, setData, put, processing, errors, isDirty } = useForm({
+        templates: templates.map((template) => ({
+            id: template.id,
+            subject: template.subject,
+            body_html: template.bodyHtml,
+            enabled: template.enabled,
+        })),
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+        put('/admin/email-templates', { preserveScroll: true });
+    };
+
+    const updateTemplate = (index, value) => setData('templates', data.templates.map((row, i) => (i === index ? value : row)));
+    // Errors arrive keyed by position (templates.0.body_html); each editor reads its own.
+    const errorsFor = (index) => Object.fromEntries(
+        Object.entries(errors)
+            .filter(([key]) => key.startsWith(`templates.${index}.`))
+            .map(([key, message]) => [key.slice(`templates.${index}.`.length), message]),
+    );
 
     return (
         <>
@@ -93,15 +106,31 @@ export default function EmailTemplatesIndex({ templates }) {
 
             <MailNav activeTab="templates" />
 
-            <div className="space-y-6">
-                {templates.map((template) => (
+            <form onSubmit={submit} className="space-y-6 pb-24">
+                {templates.map((template, index) => (
                     <TemplateEditor
                         key={template.id}
                         template={template}
+                        data={data.templates[index]}
+                        onChange={(value) => updateTemplate(index, value)}
+                        errors={errorsFor(index)}
                         onPreview={(item) => setActivePreview(item)}
                     />
                 ))}
-            </div>
+
+                {/* The page's one save button, always on screen at the bottom. */}
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
+                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                        <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
+                            <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
+                            {isDirty ? 'You have unsaved changes.' : 'No unsaved changes.'}
+                        </p>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : 'Save templates'}
+                        </Button>
+                    </div>
+                </div>
+            </form>
 
             <EmailPreviewModal
                 open={!!activePreview}

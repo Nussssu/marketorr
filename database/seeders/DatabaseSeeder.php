@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             UiuxShowcaseSeeder::class,
             MenuSeeder::class,
             MediaSeeder::class,
+            WebsiteMediaSeeder::class,
         ]);
     }
 

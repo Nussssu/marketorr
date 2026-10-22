@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import MediaPickerModal from './MediaPickerModal';
 
 const ICON_BUTTON = 'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--field-line)] text-[12px] text-[var(--ink)] hover:bg-[var(--chip)] disabled:cursor-not-allowed disabled:opacity-40';
@@ -21,6 +21,57 @@ function VisibilitySwitch({ checked, onChange, label }) {
     );
 }
 
+const isVideo = (src = '') => /\.mp4(?:$|[?#])/i.test(src);
+
+/**
+ * Full-size look at the gallery's images, in gallery order: the arrows (or
+ * ← → keys) step through them and Esc or a click outside closes it.
+ */
+function GalleryPreview({ images, index, onIndexChange, onClose }) {
+    const image = images[index];
+    const last = images.length - 1;
+
+    useEffect(() => {
+        const onKey = (event) => {
+            if (event.key === 'Escape') onClose();
+            if (event.key === 'ArrowLeft' && index > 0) onIndexChange(index - 1);
+            if (event.key === 'ArrowRight' && index < last) onIndexChange(index + 1);
+        };
+
+        window.addEventListener('keydown', onKey);
+
+        return () => window.removeEventListener('keydown', onKey);
+    }, [index, last, onClose, onIndexChange]);
+
+    const NAV_BUTTON = 'absolute top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-xl text-white backdrop-blur transition hover:bg-black/80 disabled:pointer-events-none disabled:opacity-0';
+
+    return (
+        <div className="fixed inset-0 z-[300] flex flex-col bg-black/85 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Image ${index + 1} of ${images.length}`}>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 text-white" onClick={(event) => event.stopPropagation()}>
+                <p className="min-w-0 truncate text-[13px]">
+                    <span className="font-bold">{index + 1} / {images.length}</span>
+                    {image.hidden && <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-[11px]">Hidden on the page</span>}
+                    {image.alt && <span className="ml-2 text-white/70">{image.alt}</span>}
+                </p>
+                <span className="flex shrink-0 items-center gap-2">
+                    <a href={image.src} target="_blank" rel="noreferrer" className="rounded-md border border-white/25 px-2.5 py-1 text-[12px] font-semibold hover:bg-white/10">Open original ↗</a>
+                    <button type="button" onClick={onClose} aria-label="Close preview" className="rounded-md px-2 py-1 text-lg hover:bg-white/10">✕</button>
+                </span>
+            </div>
+
+            <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-4 sm:px-16">
+                {isVideo(image.src) ? (
+                    <video key={image.src} src={image.src} controls autoPlay muted className="max-h-full max-w-full rounded-lg" onClick={(event) => event.stopPropagation()} />
+                ) : (
+                    <img key={image.src} src={image.src} alt={image.alt || ''} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" onClick={(event) => event.stopPropagation()} />
+                )}
+                <button type="button" onClick={(event) => { event.stopPropagation(); onIndexChange(index - 1); }} disabled={index === 0} aria-label="Previous image" className={`${NAV_BUTTON} left-2 sm:left-4`}>‹</button>
+                <button type="button" onClick={(event) => { event.stopPropagation(); onIndexChange(index + 1); }} disabled={index === last} aria-label="Next image" className={`${NAV_BUTTON} right-2 sm:right-4`}>›</button>
+            </div>
+        </div>
+    );
+}
+
 /**
  * Sequential gallery manager for a project's dedicated page.
  *
@@ -35,6 +86,8 @@ export default function ProjectGalleryManager({ values = [], onChange, error }) 
     const [pickerOpen, setPickerOpen] = useState(false);
     // The row being swapped for another image, or null when adding a new one.
     const [replacing, setReplacing] = useState(null);
+    // The row shown full size in the preview, or null when it is closed.
+    const [previewing, setPreviewing] = useState(null);
 
     const moveTo = (index, target) => {
         if (target < 0 || target >= values.length || target === index) return;
@@ -92,14 +145,20 @@ export default function ProjectGalleryManager({ values = [], onChange, error }) 
                                 >
                                     {index + 1}
                                 </span>
-                                <span className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg)]">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewing(index)}
+                                    aria-label={`Preview image ${index + 1}`}
+                                    title="Click to preview"
+                                    className="relative h-12 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg)] transition hover:border-cyan-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                                >
                                     <img
                                         src={image.src}
                                         alt={image.alt || ''}
                                         className="h-full w-full object-cover"
                                         loading="lazy"
                                     />
-                                </span>
+                                </button>
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate font-mono text-[11px] text-[var(--mute)]" title={image.src}>
                                         {image.src}
@@ -165,6 +224,10 @@ export default function ProjectGalleryManager({ values = [], onChange, error }) 
             </div>
 
             {error && <span className="block text-[12px] text-[#ff6b6b]">{error}</span>}
+
+            {previewing !== null && values[previewing] && (
+                <GalleryPreview images={values} index={previewing} onIndexChange={setPreviewing} onClose={() => setPreviewing(null)} />
+            )}
 
             <MediaPickerModal
                 open={pickerOpen}

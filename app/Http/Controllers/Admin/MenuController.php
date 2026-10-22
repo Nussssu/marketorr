@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ContentStatus;
 use App\Enums\MenuLocation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateMenuRequest;
 use App\Http\Requests\Admin\UpdateMenusRequest;
 use App\Models\Menu;
 use App\Models\MenuItem;
+use App\Models\Project;
+use App\Models\ServiceGroup;
+use App\Models\SubService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -17,7 +21,7 @@ class MenuController extends Controller
 {
     public function index(): Response
     {
-        $menus = Menu::query()->with('items')->get()->keyBy(fn (Menu $menu) => $menu->location->value);
+        $menus = Menu::query()->with(['items.subService.group', 'items.project'])->get()->keyBy(fn (Menu $menu) => $menu->location->value);
 
         return Inertia::render('Admin/Menus/Index', [
             // Every location is listed, including any that has no row yet, so
@@ -52,7 +56,68 @@ class MenuController extends Controller
                     ];
                 })
                 ->values(),
+            'subServiceOptions' => $this->subServiceOptions(),
+            'projectOptions' => $this->projectOptions(),
         ]);
+    }
+
+    /**
+     * Every sub-service a Services mega menu sub-item can link to, grouped by
+     * its group, with the slug and URL it is reached at.
+     *
+     * @return array<int, array{group: string, slug: string, items: array<int, array{id: int, name: string, slug: string, url: string, published: bool}>}>
+     */
+    private function subServiceOptions(): array
+    {
+        return ServiceGroup::query()
+            ->with(['subServices' => fn ($query) => $query->orderBy('sort_order')->orderBy('id')])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (ServiceGroup $group): array => [
+                'group' => $group->name,
+                'slug' => $group->slug,
+                'items' => $group->subServices->map(fn (SubService $subService): array => [
+                    'id' => $subService->id,
+                    'name' => $subService->name,
+                    'slug' => $subService->slug,
+                    'url' => '/services/'.$group->slug.'/'.$subService->slug,
+                    'published' => $subService->status === ContentStatus::Published && $group->status === ContentStatus::Published,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Every project an Our Work mega menu sub-item can link to, under the
+     * portfolio it shows in, with the slug and URL the menu links it at.
+     *
+     * @return array<int, array{group: string, slug: string, items: array<int, array{id: int, name: string, slug: string, url: string, published: bool}>}>
+     */
+    private function projectOptions(): array
+    {
+        $projects = Project::query()
+            ->with('category.parent')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (Project $project): string => $project->workGroup());
+
+        return collect(['branding' => 'Branding Portfolio', 'uiux' => 'UI/UX Portfolio'])
+            ->map(fn (string $name, string $key): array => [
+                'group' => $name,
+                'slug' => $key,
+                'items' => $projects->get($key, collect())->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'name' => $project->title,
+                    'slug' => $project->slug,
+                    'url' => $project->menuUrl(),
+                    'published' => $project->status === ContentStatus::Published,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -90,8 +155,10 @@ class MenuController extends Controller
     {
         return [
             'id' => $item->id,
-            'label' => $item->label,
-            'url' => $item->url,
+            'sub_service_id' => $item->sub_service_id,
+            'project_id' => $item->project_id,
+            'label' => $item->displayLabel(),
+            'url' => $item->displayUrl(),
             'description' => $item->description,
             'opens_in_new_tab' => $item->opens_in_new_tab,
             'enabled' => $item->enabled,
@@ -120,15 +187,68 @@ class MenuController extends Controller
         foreach ($data['items'] as $order => $item) {
             $parent = $menu->items()->create($this->itemAttributes($item, $order));
 
-            foreach ($item['children'] ?? [] as $childOrder => $child) {
+            // Header items are single links; sub-items belong to the mega menus.
+            $children = $location === MenuLocation::Header ? [] : ($item['children'] ?? []);
+
+            foreach ($children as $childOrder => $child) {
                 $menu->items()->create([
                     ...$this->itemAttributes($child, $childOrder),
+                    ...$this->subServiceLink($location, $child),
+                    ...$this->projectLink($location, $child),
                     'parent_id' => $parent->id,
                 ]);
             }
         }
 
         return $menu;
+    }
+
+    /**
+     * A Services mega menu sub-item linked to a sub-service stores that link,
+     * with the sub-service's current name and URL as its own.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function subServiceLink(MenuLocation $location, array $item): array
+    {
+        $subService = $location === MenuLocation::MegaServices && filled($item['sub_service_id'] ?? null)
+            ? SubService::query()->with('group')->find($item['sub_service_id'])
+            : null;
+
+        if ($subService === null || $subService->group === null) {
+            return ['sub_service_id' => null];
+        }
+
+        return [
+            'sub_service_id' => $subService->id,
+            'label' => $subService->name,
+            'url' => '/services/'.$subService->group->slug.'/'.$subService->slug,
+        ];
+    }
+
+    /**
+     * An Our Work mega menu sub-item linked to a project stores that link,
+     * with the project's current title and menu URL as its own.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function projectLink(MenuLocation $location, array $item): array
+    {
+        $project = $location === MenuLocation::MegaWork && filled($item['project_id'] ?? null)
+            ? Project::query()->find($item['project_id'])
+            : null;
+
+        if ($project === null) {
+            return ['project_id' => null];
+        }
+
+        return [
+            'project_id' => $project->id,
+            'label' => $project->title,
+            'url' => $project->menuUrl(),
+        ];
     }
 
     /**

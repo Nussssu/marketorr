@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ThemedSelect from './ThemedSelect';
 
 /** Page heading with an optional action slot on the right. */
 export function PageHeader({ title, subtitle, children }) {
@@ -131,11 +132,44 @@ export function Textarea({ className = '', rows = 4, ...props }) {
     return <textarea rows={rows} className={`${INPUT_CLASS} resize-y ${className}`} {...props} />;
 }
 
-export function Select({ className = '', children, ...props }) {
+/** The admin's dropdown, in the site theme (see ThemedSelect). */
+export function Select(props) {
+    return <ThemedSelect {...props} />;
+}
+
+/**
+ * One column of a two-column editor. It sticks while the other column
+ * scrolls, so neither side leaves a blank area: a column shorter than the
+ * screen stays at the shared top line, and a taller one scrolls with the page
+ * until its end is in view, then holds there (clear of a fixed save bar,
+ * `bottomOffset`), never needing a scrollbar of its own. Put it on both
+ * columns and whichever is shorter is the one that sticks.
+ */
+export function StickyColumn({ className = '', topOffset = 24, bottomOffset = 24, children }) {
+    const ref = useRef(null);
+    const [top, setTop] = useState(topOffset);
+
+    useEffect(() => {
+        const element = ref.current;
+        if (!element) return undefined;
+
+        const update = () => setTop(Math.min(topOffset, window.innerHeight - element.offsetHeight - bottomOffset));
+        update();
+
+        const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+        observer?.observe(element);
+        window.addEventListener('resize', update);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener('resize', update);
+        };
+    }, [topOffset, bottomOffset]);
+
     return (
-        <select className={`${INPUT_CLASS} ${className}`} {...props}>
+        <div ref={ref} className={`lg:sticky lg:self-start ${className}`} style={{ top }}>
             {children}
-        </select>
+        </div>
     );
 }
 

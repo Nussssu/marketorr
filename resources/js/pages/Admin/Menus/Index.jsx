@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, Field, Input, PageHeader, Panel, RepeatableList, TAB_BAR_CLASS, TAB_GRADIENT, Textarea, Toggle, tabClass } from '../../../components/admin/ui';
+import { Button, Field, Input, PageHeader, Panel, RepeatableList, Select, TAB_BAR_CLASS, TAB_GRADIENT, Textarea, Toggle, tabClass } from '../../../components/admin/ui';
 
 const BLANK = {
     label: '',
@@ -109,10 +109,20 @@ function MenuRow({
     isHeader,
     expander,
     footerAction,
+    linkTo,
 }) {
     const isContact = isHeader && !child && (item.url === '/contact' || item.label.trim().toLowerCase() === 'contact');
     const name = item.label || 'item';
     const urlError = errors[`${errorPrefix}.url`];
+    // A mega menu sub-item linked to a sub-service (Services) or a project
+    // (Our Work) takes its name and URL from it.
+    const linked = Boolean(linkTo && item[linkTo.field]);
+
+    const linkTarget = (value) => {
+        const option = linkTo.groups.flatMap((group) => group.items).find((entry) => String(entry.id) === value);
+
+        onChange(option ? { [linkTo.field]: option.id, label: option.name, url: option.url } : { [linkTo.field]: null });
+    };
 
     return (
         <div
@@ -148,7 +158,8 @@ function MenuRow({
                             child ? 'bg-[var(--brand-3)]/12 text-[var(--brand-3)]' : 'bg-[var(--brand-1)]/12 text-[var(--brand-1)]'
                         }`}
                     >
-                        {child ? 'Sub-item' : 'Parent item'}
+                        {/* One tag per row: mega menu sub-items read as Sub-service or Project. */}
+                        {child ? (linkTo ? linkTo.label : 'Sub-item') : 'Parent item'}
                     </span>
                 </button>
 
@@ -158,6 +169,8 @@ function MenuRow({
                         value={item.url}
                         onChange={(e) => onChange({ url: e.target.value })}
                         placeholder="/about"
+                        readOnly={linked}
+                        title={linked ? 'Follows the linked sub-service' : urlError}
                         aria-label={`URL for ${name}`}
                         aria-invalid={Boolean(urlError)}
                         className={`${URL_INPUT} ${urlError ? 'border-[#ff6b6b]' : 'border-[var(--line)]'}`}
@@ -196,11 +209,32 @@ function MenuRow({
             {open && (
                 <div className={`border-t border-[var(--line)] px-3 pb-3 pt-3 ${child ? '' : 'mx-3 mb-3 rounded-lg border bg-[var(--surface)]'}`}>
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label="Label" error={errors[`${errorPrefix}.label`]}>
-                            <Input value={item.label} onChange={(e) => onChange({ label: e.target.value })} />
+                        {linkTo && (
+                            <Field
+                                label={linkTo.label}
+                                error={errors[`${errorPrefix}.${linkTo.field}`]}
+                                hint={linkTo.hint}
+                                className="sm:col-span-2"
+                            >
+                                <Select value={item[linkTo.field] ? String(item[linkTo.field]) : ''} onChange={(e) => linkTarget(e.target.value)}>
+                                    <option value="">Custom link (not linked)</option>
+                                    {linkTo.groups.map((group) => (
+                                        <optgroup key={group.slug} label={group.group}>
+                                            {group.items.map((entry) => (
+                                                <option key={entry.id} value={entry.id}>
+                                                    {entry.name} · {entry.slug}{entry.published ? '' : ' (hidden)'}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </Select>
+                            </Field>
+                        )}
+                        <Field label="Label" error={errors[`${errorPrefix}.label`]} hint={linked ? `Follows the linked ${linkTo?.label.toLowerCase()}.` : undefined}>
+                            <Input value={item.label} onChange={(e) => onChange({ label: e.target.value })} readOnly={linked} />
                         </Field>
-                        <Field label="URL" error={urlError}>
-                            <Input value={item.url} onChange={(e) => onChange({ url: e.target.value })} placeholder="/about" />
+                        <Field label="URL" error={urlError} hint={linked ? `Follows the linked ${linkTo?.label.toLowerCase()}.` : undefined}>
+                            <Input value={item.url} onChange={(e) => onChange({ url: e.target.value })} placeholder="/about" readOnly={linked} />
                         </Field>
                         {isMega && !child && (
                             <Field label="Supporting text" error={errors[`${errorPrefix}.description`]} className="sm:col-span-2">
@@ -228,9 +262,29 @@ function MenuRow({
 }
 
 /** One editable menu location within the page-wide save form. */
-function MenuEditor({ menu, data, setData, errors }) {
+function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOptions }) {
+    // Header items are single links: sub-items belong to the mega menus.
+    const allowsSubItems = menu.location !== 'header';
+    // What this menu's sub-items can be linked to, so they follow it.
+    const linkTo = {
+        mega_services: {
+            field: 'sub_service_id',
+            label: 'Sub-service',
+            hint: "Linked sub-items take the sub-service's name and slug, and update when it is renamed or its slug changes. A hidden sub-service drops out of the menu.",
+            groups: subServiceOptions,
+        },
+        mega_work: {
+            field: 'project_id',
+            label: 'Project',
+            hint: "Linked sub-items take the project's title, slug and cover, and update when it is renamed or its slug changes. A hidden or deleted project drops out of the menu.",
+            groups: projectOptions,
+        },
+    }[menu.location];
+
     const [openKeys, setOpenKeys] = useState(() => new Set());
-    const [expandedKeys, setExpandedKeys] = useState(() => new Set());
+    // Mega menu categories open with their sub-items showing (Branding's and
+    // UI/UX's six sub-services, the portfolios' projects); other menus start collapsed.
+    const [expandedKeys, setExpandedKeys] = useState(() => new Set(menu.group === 'mega' ? data.items.map((item) => item._key) : []));
     const [textOpen, setTextOpen] = useState(false);
     const [dragging, setDragging] = useState(null);
     const [dropTarget, setDropTarget] = useState(null);
@@ -447,7 +501,7 @@ function MenuEditor({ menu, data, setData, errors }) {
                                 errorPrefix={`items.${index}`}
                                 isMega={menu.location === 'mega_services'}
                                 isHeader={menu.location === 'header'}
-                                expander={
+                                expander={allowsSubItems && (
                                     <button
                                         type="button"
                                         onClick={() => (children.length > 0 ? toggleKey(setExpandedKeys, item._key) : addChild(index))}
@@ -458,8 +512,8 @@ function MenuEditor({ menu, data, setData, errors }) {
                                     >
                                         <Icon name="chevron" className={`h-4 w-4 transition-transform duration-200 ${childrenShown ? 'rotate-90' : ''} ${children.length === 0 ? 'opacity-30' : ''}`} />
                                     </button>
-                                }
-                                footerAction={children.length === 0 && (
+                                )}
+                                footerAction={allowsSubItems && children.length === 0 && (
                                     <button
                                         type="button"
                                         onClick={() => addChild(index)}
@@ -489,6 +543,7 @@ function MenuEditor({ menu, data, setData, errors }) {
                                                 drag={dragProps(`children:${index}`, childIndex, childItem._key)}
                                                 errors={errors}
                                                 errorPrefix={`items.${index}.children.${childIndex}`}
+                                                linkTo={linkTo}
                                             />
                                         ))}
                                     </div>
@@ -509,7 +564,7 @@ function MenuEditor({ menu, data, setData, errors }) {
     );
 }
 
-export default function MenusIndex({ menus }) {
+export default function MenusIndex({ menus, subServiceOptions = [], projectOptions = [] }) {
     const [activeTab, setActiveTab] = useState('header');
     const { data, setData, put, processing, errors, isDirty, reset, clearErrors } = useForm({
         menus: menus.map((menu) => ({
@@ -593,6 +648,8 @@ export default function MenusIndex({ menus }) {
                                         data={data.menus[index]}
                                         setData={(key, value) => updateMenu(index, { ...data.menus[index], [key]: value })}
                                         errors={scopedErrors}
+                                        subServiceOptions={subServiceOptions}
+                                        projectOptions={projectOptions}
                                     />
                                 );
                             })}

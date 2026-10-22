@@ -12,6 +12,8 @@ enum EmailLogSource: string
     case SmtpTest = 'smtp_test';
     case SmtpSettings = 'smtp_settings';
     case EmailTemplate = 'email_template';
+    case AdminInvitation = 'admin_invitation';
+    case AdminPasswordReset = 'admin_password_reset';
 
     public function label(): string
     {
@@ -21,6 +23,8 @@ enum EmailLogSource: string
             self::SmtpTest => 'SMTP test',
             self::SmtpSettings => 'SMTP settings',
             self::EmailTemplate => 'Email template',
+            self::AdminInvitation => 'Admin invitation',
+            self::AdminPasswordReset => 'Admin password reset',
         };
     }
 

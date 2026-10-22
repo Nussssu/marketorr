@@ -34,6 +34,18 @@ export default function PagesIndex({ pages }) {
 
     const duplicate = (page) => router.post(`/admin/pages/${page.id}/duplicate`, {}, { preserveScroll: true });
 
+    // A click anywhere on a row opens its page's editor, except on the row's
+    // own links and buttons (visibility, view, duplicate, delete).
+    const openEditor = (event, page) => {
+        if (event.target.closest('a, button, input, select, textarea, label')) return;
+        if (event.metaKey || event.ctrlKey) {
+            window.open(`/admin/pages/${page.id}/builder`, '_blank');
+
+            return;
+        }
+        router.visit(`/admin/pages/${page.id}/builder`);
+    };
+
     const toggleVisibility = (page) => {
         router.patch(`/admin/pages/${page.id}/visibility`, {}, { preserveScroll: true });
     };
@@ -66,9 +78,13 @@ export default function PagesIndex({ pages }) {
                             </thead>
                             <tbody>
                                 {pages.map((page) => (
-                                    <tr key={page.id} className="border-t border-[var(--line)]">
+                                    <tr
+                                        key={page.id}
+                                        onClick={(event) => openEditor(event, page)}
+                                        className="cursor-pointer border-t border-[var(--line)] transition-colors hover:bg-[var(--chip)]"
+                                    >
                                         <td className="py-3 pr-4">
-                                            <span className="font-semibold text-[var(--ink-strong)]">{page.title}</span>
+                                            <Link href={`/admin/pages/${page.id}/builder`} className="font-semibold text-[var(--ink-strong)] hover:underline">{page.title}</Link>
                                             {page.is_system && (
                                                 <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
                                                     System

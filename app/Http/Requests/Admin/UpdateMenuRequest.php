@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\MenuLocation;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateMenuRequest extends FormRequest
 {
@@ -50,6 +51,8 @@ class UpdateMenuRequest extends FormRequest
             'items.*.children.*.enabled' => ['required', 'boolean'],
             'items.*.children.*.show_on_desktop' => ['required', 'boolean'],
             'items.*.children.*.show_on_mobile' => ['required', 'boolean'],
+            'items.*.children.*.sub_service_id' => ['nullable', 'integer', 'exists:sub_services,id'],
+            'items.*.children.*.project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->whereNull('deleted_at')],
         ];
     }
 

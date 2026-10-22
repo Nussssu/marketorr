@@ -23,6 +23,13 @@ class MediaSeeder extends Seeder
         foreach ($this->sabditaSet() as [$source, $filename, $alt]) {
             $path = 'media/'.$filename;
 
+            // A file already in the library (e.g. at the path the site uses it
+            // from) keeps its one entry rather than gaining a copy.
+            $checksum = Media::checksumOf(public_path(ltrim($source, '/')));
+            if ($checksum !== null && Media::query()->where('checksum', $checksum)->where('path', '!=', $path)->exists()) {
+                continue;
+            }
+
             if (! Storage::disk('public')->exists($path) && File::exists(public_path($source))) {
                 Storage::disk('public')->put($path, File::get(public_path($source)));
             }
@@ -70,6 +77,7 @@ class MediaSeeder extends Seeder
         $dimensions = @getimagesize($absolute) ?: null;
 
         return [
+            'checksum' => Media::checksumOf($absolute),
             'mime_type' => $dimensions['mime'] ?? Storage::disk('public')->mimeType($path),
             'size_bytes' => Storage::disk('public')->size($path),
             'width' => $dimensions[0] ?? null,

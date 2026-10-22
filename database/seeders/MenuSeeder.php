@@ -8,6 +8,7 @@ use App\Models\MenuItem;
 use App\Models\Project;
 use App\Models\ServiceGroup;
 use App\Models\Setting;
+use App\Models\SubService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -40,11 +41,43 @@ class MenuSeeder extends Seeder
                 foreach ($children as $childOrder => [$childLabel, $childUrl]) {
                     MenuItem::query()->firstOrCreate(
                         ['menu_id' => $menu->id, 'label' => $childLabel, 'parent_id' => $parent->id],
-                        ['url' => $childUrl, 'enabled' => true, 'sort_order' => $childOrder],
+                        [
+                            'url' => $childUrl,
+                            'enabled' => true,
+                            'sort_order' => $childOrder,
+                            'sub_service_id' => $location === MenuLocation::MegaServices ? $this->subServiceIdFor($childUrl) : null,
+                            'project_id' => $location === MenuLocation::MegaWork ? $this->projectIdFor($childUrl) : null,
+                        ],
                     );
                 }
             }
         }
+    }
+
+    /**
+     * The project an Our Work mega menu link points at, so the item follows
+     * it from then on.
+     */
+    private function projectIdFor(string $url): ?int
+    {
+        return Project::query()
+            ->get()
+            ->first(fn (Project $project): bool => $project->menuUrl() === $url)
+            ?->id;
+    }
+
+    /**
+     * The sub-service a Services mega menu link points at, so the item follows
+     * it from then on.
+     */
+    private function subServiceIdFor(string $url): ?int
+    {
+        return SubService::query()
+            ->with('group')
+            ->get()
+            ->first(fn (SubService $subService): bool => $subService->group !== null
+                && $url === '/services/'.$subService->group->slug.'/'.$subService->slug)
+            ?->id;
     }
 
     /**

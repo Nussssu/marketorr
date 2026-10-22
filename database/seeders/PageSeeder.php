@@ -473,6 +473,11 @@ class PageSeeder extends Seeder
             'title' => 'Work',
             'intro' => '{projects} projects across {practices} practices. Choose one to step inside.',
             'scrollHint' => 'Scroll ↓',
+            'brandingTitle' => 'Branding Portfolio',
+            'uiuxTitle' => 'UI/UX Portfolio',
+            'countLabel' => '{count} projects',
+            'countLabelOne' => '{count} project',
+            'openLabel' => 'Open portfolio',
         ];
     }
 

@@ -52,6 +52,42 @@ class AdminEmailTemplateTest extends TestCase
         $this->assertSame('Thanks {{ name }}', $template->fresh()->subject);
     }
 
+    public function test_every_template_is_saved_at_once_from_the_single_save_bar(): void
+    {
+        $responder = EmailTemplate::forKey(EmailTemplateKey::LeadAutoResponder);
+        $others = collect(EmailTemplateKey::cases())
+            ->reject(fn (EmailTemplateKey $key) => $key === EmailTemplateKey::LeadAutoResponder)
+            ->map(fn (EmailTemplateKey $key) => EmailTemplate::forKey($key));
+
+        $payload = [
+            ['id' => $responder->id, 'subject' => 'Thanks {{ name }}', 'body_html' => '<p>About {{ type }}.</p>', 'enabled' => false],
+            ...$others->map(fn (EmailTemplate $template) => ['id' => $template->id, 'subject' => $template->subject.' (edited)', 'body_html' => $template->body_html, 'enabled' => true])->values()->all(),
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->put('/admin/email-templates', ['templates' => $payload])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Email templates saved.');
+
+        $this->assertSame('Thanks {{ name }}', $responder->fresh()->subject);
+        $this->assertFalse($responder->fresh()->enabled);
+        $others->each(fn (EmailTemplate $template) => $this->assertStringEndsWith('(edited)', $template->fresh()->subject));
+    }
+
+    public function test_saving_all_templates_rejects_an_unknown_placeholder_and_saves_nothing(): void
+    {
+        $responder = EmailTemplate::forKey(EmailTemplateKey::LeadAutoResponder);
+        $original = $responder->subject;
+
+        $this->actingAs($this->superAdmin)
+            ->put('/admin/email-templates', ['templates' => [
+                ['id' => $responder->id, 'subject' => 'Changed', 'body_html' => '<p>Hello {{ nmae }}</p>', 'enabled' => true],
+            ]])
+            ->assertSessionHasErrors('templates.0.body_html');
+
+        $this->assertSame($original, $responder->fresh()->subject);
+    }
+
     public function test_an_unknown_placeholder_is_rejected(): void
     {
         $template = EmailTemplate::forKey(EmailTemplateKey::LeadAutoResponder);

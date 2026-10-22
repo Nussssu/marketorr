@@ -55,11 +55,16 @@ function MosaicColumn({ items, y, offset = false }) {
  *   equal slice of it: over that slice its mosaic drifts and, once the next
  *   door starts sliding over it, it sinks back and dims underneath.
  */
-function PortfolioDoor({ group, index, total, reduce, progress }) {
+function PortfolioDoor({ group, index, total, reduce, progress, content = {} }) {
     const tapIntent = useTapIntent();
     const destinationPreloaded = useRef(false);
     const previews = (group.items ?? []).filter((item) => item.image).slice(0, MOSAIC_COVERS);
     const count = (group.items ?? []).length;
+    // Edited under Admin > Pages > Our Work; each falls back to the copy the page always had.
+    const title = content[`${group.slug}Title`] || group.name;
+    const countText = String((count === 1 ? content.countLabelOne : content.countLabel) || (count === 1 ? '{count} project' : '{count} projects'))
+        .replaceAll('{count}', String(count));
+    const openLabel = content.openLabel || 'Open portfolio';
     const isLast = index === total - 1;
 
     const sliceStart = index / total;
@@ -112,7 +117,7 @@ function PortfolioDoor({ group, index, total, reduce, progress }) {
                 }}
                 onPointerCancel={tapIntent.onPointerCancel}
                 onClick={go}
-                aria-label={`${group.name}, ${count} projects`}
+                aria-label={`${title}, ${countText}`}
                 className="group/door relative grid overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] transition-colors duration-500 hover:border-[var(--field-line)] focus-visible:outline-none lg:h-[min(76svh,720px)] lg:grid-cols-12"
             >
                 {/* the practice's own colour, pooled behind its title */}
@@ -133,15 +138,15 @@ function PortfolioDoor({ group, index, total, reduce, progress }) {
 
                     <span className="block">
                         <span className="block font-display text-[clamp(2.4rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.035em] text-[var(--ink-strong)]">
-                            <GradientTitle text={group.name} />
+                            <GradientTitle text={title} />
                         </span>
                         <span className="mt-5 block text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-faint)]">
-                            {count} {count === 1 ? 'project' : 'projects'}
+                            {countText}
                         </span>
                     </span>
 
                     <span className="inline-flex w-max items-center gap-3 rounded-full border border-[var(--field-line)] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink)] transition-colors duration-300 group-hover/door:border-transparent group-hover/door:bg-[var(--invert-btn-hover)] group-hover/door:text-[var(--bg)]">
-                        Open portfolio
+                        {openLabel}
                         <span aria-hidden className="transition-transform duration-300 group-hover/door:-translate-y-0.5 group-hover/door:translate-x-0.5">
                             &#8599;
                         </span>
@@ -228,6 +233,7 @@ function WorkDirectory({ groups = [], content = {} }) {
                                 total={groups.length}
                                 reduce={reduce}
                                 progress={stackProgress}
+                                content={content}
                             />
                         ))}
                     </div>

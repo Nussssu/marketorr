@@ -65,7 +65,7 @@ function SocialLinks({ socials }) {
     const shown = data.items.filter((row) => row.enabled && row.url).length;
 
     return (
-        <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="space-y-5 pb-24">
             <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
                 <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink-strong)]">Social links</h2>
                 <p className="mt-1 text-[12px] text-[var(--mute)]">
@@ -118,13 +118,16 @@ function SocialLinks({ socials }) {
                 </button>
             </div>
 
-            <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur-md">
-                <p className="text-[12px] text-[var(--mute)]">
-                    {isDirty ? 'You have unsaved changes.' : 'Social links update the footer and the Contact page as soon as they are saved.'}
-                </p>
-                <Button type="submit" disabled={processing} className="min-w-[140px]">
-                    {processing ? 'Saving…' : 'Save social links'}
-                </Button>
+            {/* Always on screen, like the other admin forms' save bars. */}
+            <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
+                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                    <p className="text-[12px] text-[var(--mute)]">
+                        {isDirty ? 'You have unsaved changes.' : 'Social links update the footer and the Contact page as soon as they are saved.'}
+                    </p>
+                    <Button type="submit" disabled={processing} className="min-w-[140px]">
+                        {processing ? 'Saving…' : 'Save social links'}
+                    </Button>
+                </div>
             </div>
         </form>
     );
@@ -357,7 +360,7 @@ export default function Settings({ settings, socials = [] }) {
             {tab === 'social' && <SocialLinks socials={socials} />}
 
             {/* General and SEO share one form, so a save keeps both tabs' values. */}
-            <form onSubmit={submit} className={`space-y-5 ${tab === 'social' ? 'hidden' : ''}`}>
+            <form onSubmit={submit} className={`space-y-5 pb-24 ${tab === 'social' ? 'hidden' : ''}`}>
                 <div className={tab === 'general' ? 'space-y-5' : 'hidden'}>
                 {/* 1. General / Site Info (Open by default) */}
                 <AccordionWidget
@@ -619,14 +622,16 @@ export default function Settings({ settings, socials = [] }) {
 
                 </div>
 
-                {/* Sticky / Dedicated Save Bar */}
-                <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur-md">
-                    <p className="text-[12px] text-[var(--mute)]">
-                        Changes update site configuration and active layout components immediately.
-                    </p>
-                    <Button type="submit" disabled={processing} className="min-w-[140px]">
-                        {processing ? 'Saving…' : 'Save all settings'}
-                    </Button>
+                {/* Always on screen, like the other admin forms' save bars. */}
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
+                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                        <p className="text-[12px] text-[var(--mute)]">
+                            Changes update site configuration and active layout components immediately.
+                        </p>
+                        <Button type="submit" disabled={processing} className="min-w-[140px]">
+                            {processing ? 'Saving…' : 'Save all settings'}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </>

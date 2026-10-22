@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
@@ -22,7 +21,8 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', $this->emailRule()],
-            'role' => ['required', Rule::enum(UserRole::class)],
+            // A role slug from Admin > Users > Roles (super_admin, editor or a custom role).
+            'role' => ['required', 'string', Rule::exists('admin_roles', 'slug')],
         ];
     }
 
