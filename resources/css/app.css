@@ -1660,6 +1660,84 @@ input, textarea, select { color-scheme: inherit; }
   .scene * { animation: none !important; }
 }
 
+/* ---------- Hero brand orb (HeroOrb) ---------- */
+/* Every motion here is transform or opacity. Lengths are `cqw` of the box. */
+.hero-orb__glow {
+  background: radial-gradient(circle, rgba(137, 31, 251, 0.35), rgba(80, 122, 244, 0.22) 45%, rgba(34, 211, 238, 0.12) 65%, transparent 72%);
+  filter: blur(4cqw);
+  animation: hero-orb-breathe 6s ease-in-out infinite;
+}
+.hero-orb__orbit {
+  perspective: 120cqw;
+  transform: rotate(var(--turn));
+}
+.hero-orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--field-line);
+  transform: rotateX(var(--tilt));
+}
+.hero-orb__ring--spin { animation: hero-orb-orbit 14s linear infinite; }
+.hero-orb__ring--spin-reverse { animation: hero-orb-orbit 10s linear infinite reverse; }
+.hero-orb__spark {
+  position: absolute;
+  left: 50%;
+  top: -0.9cqw;
+  height: 1.8cqw;
+  width: 1.8cqw;
+  margin-left: -0.9cqw;
+  border-radius: 9999px;
+  box-shadow: 0 0 2.4cqw currentColor, 0 0 1cqw rgba(255, 255, 255, 0.9);
+}
+.hero-orb__sphere {
+  box-shadow: 0 4cqw 10cqw -3cqw rgba(80, 122, 244, 0.55);
+  animation: hero-orb-float 7s ease-in-out infinite;
+}
+.hero-orb__swirl {
+  filter: blur(2.4cqw) saturate(1.15);
+  animation: hero-orb-swirl 12s linear infinite;
+}
+.hero-orb__chip {
+  display: flex;
+  max-width: 42cqw;
+  align-items: center;
+  gap: 1.6cqw;
+  padding: 1.6cqw 3cqw 1.6cqw 2.2cqw;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2cqw 5cqw -2cqw rgba(10, 14, 30, 0.35);
+  color: var(--ink);
+  font-size: 3cqw;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: hero-orb-bob 6.5s ease-in-out infinite;
+}
+@keyframes hero-orb-breathe {
+  0%, 100% { opacity: 0.75; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+@keyframes hero-orb-orbit {
+  from { transform: rotateX(var(--tilt)) rotateZ(0deg); }
+  to { transform: rotateX(var(--tilt)) rotateZ(360deg); }
+}
+@keyframes hero-orb-swirl {
+  to { transform: rotate(360deg); }
+}
+@keyframes hero-orb-float {
+  0%, 100% { transform: translateY(-1.2cqw); }
+  50% { transform: translateY(1.2cqw); }
+}
+@keyframes hero-orb-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.2cqw); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb * { animation: none !important; }
+}
+
 /* ---------- Hero design object (DesignCanvas) ---------- */
 /* The ambient life of the object is CSS so it can be parked with
    `animation-play-state` while the hero is off screen. Every keyframe is

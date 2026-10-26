@@ -44,6 +44,35 @@ class EmailLogTest extends TestCase
         ];
     }
 
+    /**
+     * The sent email embeds the logo as a `cid:` part, which a browser cannot
+     * load, so the logged copy carries it inline and shows in the log view.
+     */
+    public function test_a_logged_email_shows_its_embedded_logo(): void
+    {
+        config(['mail.default' => 'array']);
+
+        $this->post('/contact', $this->lead());
+
+        $log = EmailLog::query()->where('source', EmailLogSource::LeadAutoResponder)->sole();
+
+        $this->assertStringNotContainsString('cid:', $log->body);
+        $this->assertStringContainsString('src="data:image/png;base64,', $log->body);
+    }
+
+    public function test_an_older_entry_shows_the_current_logo_in_place_of_a_cid_image(): void
+    {
+        $log = EmailLog::factory()->create(['body' => '<img src="cid:abc123@symfony" alt="Marketorr" />']);
+
+        $body = $this->actingAs($this->superAdmin)
+            ->getJson("/admin/email-logs/{$log->id}")
+            ->assertOk()
+            ->json('body');
+
+        $this->assertStringNotContainsString('cid:', $body);
+        $this->assertMatchesRegularExpression('#src="https?://[^"]+/images/logo/marketorr-logo-on-dark\.png"#', $body);
+    }
+
     public function test_a_new_lead_logs_the_team_notification_and_the_auto_reply(): void
     {
         Mail::fake();
@@ -134,6 +163,25 @@ class EmailLogTest extends TestCase
                 ->where('logs.data.0.subject', 'Broken send')
                 ->where('counts.sent', 1)
                 ->where('counts.failed', 1));
+    }
+
+    public function test_the_logs_page_filters_entries_between_two_inclusive_dates(): void
+    {
+        EmailLog::factory()->create(['subject' => 'Before range', 'created_at' => '2026-09-30 23:59:59']);
+        EmailLog::factory()->create(['subject' => 'Range start', 'created_at' => '2026-10-01 00:00:00']);
+        EmailLog::factory()->create(['subject' => 'Range end', 'created_at' => '2026-10-07 23:59:59']);
+        EmailLog::factory()->create(['subject' => 'After range', 'created_at' => '2026-10-08 00:00:00']);
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/email-logs?from=2026-10-01&to=2026-10-07')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/EmailLogs/Index')
+                ->has('logs.data', 2)
+                ->where('logs.data.0.subject', 'Range end')
+                ->where('logs.data.1.subject', 'Range start')
+                ->where('filters.from', '2026-10-01')
+                ->where('filters.to', '2026-10-07'));
     }
 
     public function test_an_entry_opens_with_its_full_message(): void

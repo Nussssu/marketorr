@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScro
 import { useRef, useState } from 'react';
 import { EASE } from '../../lib/motion';
 import { MARK, markBarStyle, markGap } from '../../lib/tokens';
+import RichContent from '../ui/RichContent';
 
 /** Height of the pinned frame's mark (its tallest bar); it keeps the logo's proportions. */
 const PINNED_MARK_SIZE = 'min(46svh, 22rem, 27vw)';
@@ -101,7 +102,7 @@ function PinnedProcess({ heading, items }) {
                                     <p className="font-display text-[clamp(1.6rem,2.6vw,2.4rem)] font-bold leading-[1.1] tracking-[-0.02em] text-[var(--ink-strong)]">
                                         {item.title}
                                     </p>
-                                    <p className="mt-4 text-[16px] leading-relaxed text-[var(--mute)]">{item.body}</p>
+                                    <RichContent value={item.body} className="mt-4 text-[16px] leading-relaxed text-[var(--mute)]" />
                                 </motion.div>
                             </AnimatePresence>
                         </div>
@@ -169,7 +170,7 @@ function StackedProcess({ heading, items }) {
                                 </p>
                             </div>
                             <p className="mt-6 font-display text-[1.5rem] font-bold leading-[1.15] text-[var(--ink-strong)]">{item.title}</p>
-                            <p className="mt-3 text-[15px] leading-relaxed text-[var(--mute)]">{item.body}</p>
+                            <RichContent value={item.body} className="mt-3 text-[15px] leading-relaxed text-[var(--mute)]" />
                         </motion.li>
                     ))}
                 </ol>

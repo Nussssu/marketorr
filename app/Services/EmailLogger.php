@@ -9,6 +9,7 @@ use Illuminate\Mail\SentMessage;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
 use Throwable;
 
 /**
@@ -34,7 +35,9 @@ class EmailLogger
                 'recipients' => $this->addresses($message->getTo()),
                 'from_address' => $this->addresses($message->getFrom()),
                 'subject' => $message->getSubject(),
-                'body' => $message->getHtmlBody() ?? $message->getTextBody(),
+                'body' => $message->getHtmlBody() !== null
+                    ? $this->withInlineImages($message, (string) $message->getHtmlBody())
+                    : $message->getTextBody(),
             ] : []),
             ...$context,
         ]);
@@ -99,6 +102,28 @@ class EmailLogger
         } catch (Throwable $exception) {
             Log::warning('Email log entry could not be written', ['error' => $exception->getMessage()]);
         }
+    }
+
+    /**
+     * Images embedded in the message (such as the logo) are referenced as
+     * `cid:` parts, which only a mail client can resolve. The logged copy
+     * carries them as data URIs so the admin log shows the email as sent.
+     */
+    private function withInlineImages(Email $message, string $html): string
+    {
+        foreach ($message->getAttachments() as $part) {
+            if (! $part instanceof DataPart || $part->getMediaType() !== 'image' || ! str_contains($html, 'cid:'.$part->getContentId())) {
+                continue;
+            }
+
+            $html = str_replace(
+                'cid:'.$part->getContentId(),
+                'data:image/'.$part->getMediaSubtype().';base64,'.base64_encode($part->getBody()),
+                $html,
+            );
+        }
+
+        return $html;
     }
 
     /**

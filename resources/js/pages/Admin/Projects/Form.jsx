@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { Button, ColorInput, Field, Input, MediaPickerField, PageHeader, ProjectGalleryManager, RepeatableList, RepeatableRows, Select, Textarea, WidgetPanel, slugify } from '../../../components/admin/ui';
+import { Button, ColorInput, Field, Input, MediaPickerField, PageHeader, ProjectGalleryManager, RepeatableList, RepeatableRows, Select, StickyColumn, Textarea, WidgetPanel, slugify } from '../../../components/admin/ui';
 
 const BLANK_BRIEF = {
     overview: '',
@@ -38,7 +38,7 @@ const LAYOUTS = [
  * One project, edited as a stack of widgets that map one-to-one onto the
  * public project page. Each widget opens and closes on its own.
  */
-function ProjectFormFields({ project, statuses, categories = [], categoriesHref = '/admin/pages' }) {
+function ProjectFormFields({ project, statuses, categories = [], categoriesHref = '/admin/pages', portfolio = 'branding' }) {
     const isEdit = Boolean(project);
     // Only auto-fill the slug while the admin has not hand-edited it.
     const [slugLocked, setSlugLocked] = useState(isEdit);
@@ -52,7 +52,8 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
         heading_scale: project?.heading_scale ?? 100,
         client: project?.client ?? '',
         category_id: project?.category_id ?? '',
-        work_group: project?.work_group ?? '',
+        // A new project is filed under the portfolio chosen for it.
+        work_group: project ? (project.work_group ?? '') : portfolio,
         layout: project?.layout ?? '',
         discipline: project?.discipline ?? '',
         year: project?.year ?? String(new Date().getFullYear()),
@@ -127,13 +128,20 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                 {isEdit && (
                     <Button as="a" href={project.public_url ?? `/work/${project.slug}`} target="_blank" rel="noreferrer" variant="secondary">View page ↗</Button>
                 )}
-                <Button as="link" href="/admin/projects" variant="secondary">Cancel</Button>
             </PageHeader>
 
             <form id="project-form" onSubmit={submit} className="grid gap-6 lg:grid-cols-3 pb-24">
                 <div className="space-y-4 lg:col-span-2">
                     <WidgetPanel title="Basics" summary={data.title || 'Title, slug, client, year and description'} defaultOpen>
                         <div className="grid gap-5 sm:grid-cols-2">
+                            {!isEdit && (
+                                <Field label="Add to" error={errors.work_group} required className="sm:col-span-2" hint="The project is listed in this portfolio, in the admin and on the Our Work pages.">
+                                    <Select value={isShowcase ? 'uiux' : data.work_group} disabled={isShowcase} onChange={(e) => setData('work_group', e.target.value)} aria-label="Portfolio">
+                                        <option value="branding">Branding</option>
+                                        <option value="uiux">UI/UX</option>
+                                    </Select>
+                                </Field>
+                            )}
                             <div className="grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-3 sm:col-span-2">
                                 <Field label="Title" error={errors.title} required>
                                     <Input value={data.title} onChange={(e) => onTitleChange(e.target.value)} />
@@ -313,7 +321,7 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                         </Field>
                     </WidgetPanel>
 
-                    <WidgetPanel title="Cover image" summary={preview ? 'Cover set' : 'No cover yet'} defaultOpen={!isEdit}>
+                    <WidgetPanel title="Cover image" summary={preview ? 'Cover set' : 'No cover yet'}>
                         <div className="space-y-4">
                             <MediaPickerField
                                 label="Cover Image"
@@ -345,7 +353,7 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                     </WidgetPanel>
                 </div>
 
-                <div className="space-y-4">
+                <StickyColumn className="space-y-4" bottomOffset={96}>
                     <WidgetPanel title="Publishing" summary={`${data.status}${data.featured ? ' · featured' : ''}`} defaultOpen>
                         <div className="space-y-5">
                             <Field label="Status" error={errors.status} required>
@@ -422,13 +430,13 @@ function ProjectFormFields({ project, statuses, categories = [], categoriesHref 
                             Some fields need attention. Open the widgets above to see which.
                         </p>
                     )}
-                </div>
+                </StickyColumn>
             </form>
 
             {/* Always on screen, so the project can be saved from wherever the
                 editor is on the page; it says when there are unsaved changes. */}
-            <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
-                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+            <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:px-6 lg:left-64 lg:px-10">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
                         <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
                         {isDirty ? 'You have unsaved changes.' : isEdit ? 'No unsaved changes.' : 'Fill in the project, then create it.'}

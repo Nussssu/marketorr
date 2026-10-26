@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EmailLogSource;
 use App\Enums\EmailLogStatus;
+use App\Mail\TemplatedMail;
 use Database\Factories\EmailLogFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -74,7 +75,25 @@ class EmailLog extends Model
             'inquiryId' => $this->contact_submission_id,
             'createdAt' => $this->created_at?->format('d M Y, h:i A'),
             'createdAgo' => $this->created_at?->diffForHumans(),
-            ...($withBody ? ['body' => $this->body] : []),
+            ...($withBody ? ['body' => $this->viewableBody()] : []),
         ];
+    }
+
+    /**
+     * Entries logged before embedded images were stored with the body point
+     * at `cid:` parts a browser cannot load. The only image emails embed is
+     * the logo, so those references are shown with the current email logo.
+     */
+    private function viewableBody(): ?string
+    {
+        if ($this->body === null || ! str_contains($this->body, 'src="cid:')) {
+            return $this->body;
+        }
+
+        $logoUrl = TemplatedMail::layoutData('')['logoUrl'];
+
+        return $logoUrl === null
+            ? $this->body
+            : (string) preg_replace('/src="cid:[^"]*"/', 'src="'.e($logoUrl).'"', $this->body);
     }
 }

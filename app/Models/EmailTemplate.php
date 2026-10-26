@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\EmailTemplateKey;
+use App\Enums\EmailWidget;
+use App\Services\EmailWidgetRenderer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-#[Fillable(['key', 'name', 'subject', 'body_html', 'enabled'])]
+#[Fillable(['key', 'name', 'subject', 'blocks', 'enabled'])]
 class EmailTemplate extends Model
 {
     /**
@@ -17,6 +19,7 @@ class EmailTemplate extends Model
     {
         return [
             'key' => EmailTemplateKey::class,
+            'blocks' => 'array',
             'enabled' => 'boolean',
         ];
     }
@@ -38,47 +41,34 @@ class EmailTemplate extends Model
     }
 
     /**
-     * Substitute `{{ placeholder }}` tokens. Values are escaped, because the
-     * body is rendered as HTML and the data comes from a public form.
+     * Whether this email goes out. Account and SMTP test emails cannot be
+     * switched off, whatever the stored flag says.
+     */
+    public function isSendable(): bool
+    {
+        return $this->enabled || ! $this->key->canBeDisabled();
+    }
+
+    /**
+     * The subject with placeholders filled in. It is plain text, so values
+     * are not escaped here; the mailer encodes the header itself.
      *
      * @param  array<string, string|null>  $data
      */
     public function renderSubject(array $data): string
     {
-        return $this->substitute($this->subject, $data, escape: false);
+        return EmailWidgetRenderer::fill($this->subject, $this->withSiteValues($data), escape: false);
     }
 
     /**
+     * The body HTML built from the template's widgets. Values are escaped,
+     * because the data often comes from a public form.
+     *
      * @param  array<string, string|null>  $data
      */
     public function renderBody(array $data): string
     {
-        return $this->substitute($this->body_html, $data, escape: true);
-    }
-
-    /**
-     * @param  array<string, string|null>  $data
-     */
-    private function substitute(string $template, array $data, bool $escape): string
-    {
-        return preg_replace_callback(
-            '/\{\{\s*([a-z_]+)\s*\}\}/i',
-            function (array $matches) use ($data, $escape): string {
-                if (! array_key_exists($matches[1], $data)) {
-                    return $matches[0];
-                }
-
-                $value = (string) ($data[$matches[1]] ?? '-');
-                $value = $value === '' ? '-' : $value;
-
-                if (! $escape) {
-                    return $value;
-                }
-
-                return nl2br(e($value));
-            },
-            $template,
-        ) ?? $template;
+        return app(EmailWidgetRenderer::class)->render($this->blocks ?? [], $this->withSiteValues($data));
     }
 
     /**
@@ -88,19 +78,7 @@ class EmailTemplate extends Model
      */
     public function preview(): array
     {
-        $sample = [
-            'name' => 'Ayesha Rahman',
-            'email' => 'ayesha@example.com',
-            'phone' => '+880 1700 000000',
-            'company' => 'Northwind Studio',
-            'type' => 'Web UI/UX',
-            'budget' => '$10k – $25k',
-            'message' => "We are relaunching our storefront and need a full UI system.\nCan you take this on next quarter?",
-            'source_page' => '/contact',
-            'submitted_at' => now()->format('d M Y, H:i'),
-            'site_name' => Setting::current()->site_name,
-            'contact_email' => Setting::current()->contact_email,
-        ];
+        $sample = $this->key->sampleValues();
 
         return [
             'subject' => $this->renderSubject($sample),
@@ -120,30 +98,57 @@ class EmailTemplate extends Model
             'label' => $this->key->label(),
             'description' => $this->key->description(),
             'subject' => $this->subject,
-            'bodyHtml' => $this->body_html,
+            'blocks' => $this->blocks ?? [],
+            // The widgets as one clean HTML body with placeholders left in
+            // place, for the editor's single Body box; styling is added on send.
+            'bodyHtml' => app(EmailWidgetRenderer::class)->editableHtml($this->blocks ?? []),
+            'defaultBlocks' => $this->key->defaults()['blocks'],
             'enabled' => $this->enabled,
+            'canBeDisabled' => $this->key->canBeDisabled(),
             'placeholders' => collect($this->key->placeholders())
                 ->map(fn (string $hint, string $token) => ['token' => '{{ '.$token.' }}', 'hint' => $hint])
                 ->values()
                 ->all(),
-            'preview' => $this->preview(),
             'updatedAt' => $this->updated_at?->diffForHumans(),
         ];
     }
 
     /**
-     * Guards against an editor saving a body whose tokens do not exist.
+     * Guards against an editor saving a template whose tokens do not exist.
      *
      * @return array<int, string>
      */
     public function unknownPlaceholders(): array
     {
-        preg_match_all('/\{\{\s*([a-z_]+)\s*\}\}/i', $this->subject.' '.$this->body_html, $matches);
+        $texts = collect($this->blocks ?? [])
+            ->filter(fn (mixed $block): bool => is_array($block))
+            ->flatMap(fn (array $block): array => EmailWidget::textsOf($block))
+            ->prepend($this->subject)
+            ->implode(' ');
+
+        preg_match_all('/\{\{\s*([a-z_]+)\s*\}\}/i', $texts, $matches);
 
         return collect($matches[1] ?? [])
             ->unique()
             ->reject(fn (string $token) => array_key_exists(Str::lower($token), $this->key->placeholders()))
             ->values()
             ->all();
+    }
+
+    /**
+     * The site-wide values every template can use, under any caller's data.
+     *
+     * @param  array<string, string|null>  $data
+     * @return array<string, string|null>
+     */
+    private function withSiteValues(array $data): array
+    {
+        $settings = Setting::current();
+
+        return [
+            'site_name' => $settings->site_name ?: config('app.name'),
+            'contact_email' => $settings->contact_email,
+            ...$data,
+        ];
     }
 }

@@ -1,4 +1,4 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, router, usePage, usePoll } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 /**
@@ -23,6 +23,8 @@ const NAV = [
             {
                 label: 'Inbox',
                 href: '/admin/inbox',
+                permission: 'inquiries',
+                badge: 'newInquiries',
                 matches: ['/admin/inbox', '/admin/leads', '/admin/inquiries'],
             },
         ],
@@ -30,11 +32,11 @@ const NAV = [
     {
         group: 'CONTENT MANAGEMENT',
         items: [
-            { label: 'Pages', href: '/admin/pages' },
-            { label: 'Projects', href: '/admin/projects' },
-            { label: 'Services', href: '/admin/sub-services' },
-            { label: 'Media Library', href: '/admin/media' },
-            { label: 'Menus', href: '/admin/menus' },
+            { label: 'Pages', href: '/admin/pages', permission: 'pages' },
+            { label: 'Projects', href: '/admin/projects', permission: 'projects' },
+            { label: 'Services', href: '/admin/sub-services', permission: 'services' },
+            { label: 'Media Library', href: '/admin/media', permission: 'media' },
+            { label: 'Menus', href: '/admin/menus', permission: 'menus' },
         ],
     },
     {
@@ -44,15 +46,28 @@ const NAV = [
             {
                 label: 'Email & SMTP',
                 href: '/admin/email-smtp',
-                superAdminOnly: true,
+                permission: 'email',
                 matches: ['/admin/email-smtp', '/admin/mail', '/admin/email-templates', '/admin/email-logs', '/admin/settings/email'],
             },
-            { label: 'Settings', href: '/admin/settings', superAdminOnly: true },
+            { label: 'Settings', href: '/admin/settings', permission: 'settings' },
             { label: 'Custom Code', href: '/admin/custom-code', superAdminOnly: true },
-            { label: 'Audit Logs', href: '/admin/audit-logs' },
+            { label: 'Audit Logs', href: '/admin/audit-logs', permission: 'audit_logs' },
         ],
     },
 ];
+
+/**
+ * Whether the signed-in admin may open a nav item: Super Admin-only items
+ * need that role, section items need the section's view permission. The
+ * server enforces the same rules; this only hides what would be refused.
+ */
+function canSee(user, item) {
+    if (user?.isSuperAdmin) return true;
+    if (item.superAdminOnly) return false;
+    if (!item.permission) return true;
+
+    return (user?.permissions ?? []).includes(`${item.permission}.view`);
+}
 
 function isActive(url, item) {
     const path = url.split('?')[0];
@@ -75,17 +90,55 @@ function isActive(url, item) {
 export default function AdminLayout({ children }) {
     const { url, props } = usePage();
     const user = props.auth?.user;
-    const flash = props.flash?.success;
+    const badges = { newInquiries: props.newInquiries ?? 0 };
+
+    // Keeps the Inbox badge current while the panel stays open, so a new
+    // inquiry shows up without navigating.
+    const canSeeInbox = canSee(user, { permission: 'inquiries' });
+    const poll = usePoll(60000, { only: ['newInquiries'] }, { autoStart: false });
+    useEffect(() => {
+        if (!canSeeInbox) return undefined;
+
+        poll.start();
+        return () => poll.stop();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canSeeInbox]);
+    const flashMessage = props.flash?.error ?? props.flash?.success;
+    const flash = flashMessage ? { message: flashMessage, error: !!props.flash?.error } : null;
+    const flashId = props.flash?.id ?? flashMessage;
     const [open, setOpen] = useState(false);
     const [notice, setNotice] = useState(flash);
 
+    // Keyed on the message's id, so the same message twice in a row (a second
+    // test email) shows again.
     useEffect(() => {
         setNotice(flash);
         if (!flash) return undefined;
 
         const timer = setTimeout(() => setNotice(null), 6000);
         return () => clearTimeout(timer);
-    }, [flash]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flashId]);
+
+    // The toast sits just above a page's fixed save bar (every bar is pinned
+    // `fixed inset-x-0 bottom-0`), so it never covers a save button.
+    const [toastBottom, setToastBottom] = useState(20);
+    useEffect(() => {
+        if (!notice) return undefined;
+
+        const place = () => {
+            const bar = [...document.querySelectorAll('.fixed.inset-x-0.bottom-0')]
+                .map((element) => element.getBoundingClientRect())
+                .filter((rect) => rect.height > 0 && rect.height < window.innerHeight / 2)
+                .reduce((tallest, rect) => Math.max(tallest, window.innerHeight - rect.top), 0);
+
+            setToastBottom(bar > 0 ? bar + 12 : 20);
+        };
+
+        place();
+        window.addEventListener('resize', place);
+        return () => window.removeEventListener('resize', place);
+    }, [notice, url]);
 
     useEffect(() => {
         setOpen(false);
@@ -94,7 +147,7 @@ export default function AdminLayout({ children }) {
     const groups = NAV
         .map((group) => ({
             ...group,
-            items: group.items.filter((item) => !item.superAdminOnly || user?.isSuperAdmin),
+            items: group.items.filter((item) => canSee(user, item)),
         }))
         .filter((group) => group.items.length > 0);
 
@@ -211,6 +264,15 @@ export default function AdminLayout({ children }) {
                                                 }`}
                                             >
                                                 <span>{item.label}</span>
+                                                {item.badge && badges[item.badge] > 0 && (
+                                                    <span
+                                                        className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                                                        style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}
+                                                        aria-label={`${badges[item.badge]} new`}
+                                                    >
+                                                        {badges[item.badge] > 99 ? '99+' : badges[item.badge]}
+                                                    </span>
+                                                )}
                                             </Link>
                                         );
                                     })}
@@ -222,8 +284,19 @@ export default function AdminLayout({ children }) {
 
                 {/* Profile footer: pinned at bottom */}
                 <div className="shrink-0 border-t border-slate-800/60 bg-[#090d16] p-4">
-                    <div className="mb-3 px-1">
-                        <p className="truncate text-xs font-semibold text-slate-200">{user?.name || 'Marketorr Admin'}</p>
+                    <div className="mb-3 flex items-center justify-between gap-2 px-1">
+                        <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-slate-200">{user?.name || 'Marketorr Admin'}</p>
+                            {user?.roleLabel && <p className="truncate text-[10px] text-slate-500">{user.roleLabel}</p>}
+                        </div>
+                        <Link
+                            href="/admin/account/security"
+                            className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                                url.startsWith('/admin/account') ? 'bg-slate-800/60 text-white' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                            }`}
+                        >
+                            My security
+                        </Link>
                     </div>
                     <div className="flex items-center gap-2">
                         <a
@@ -264,11 +337,14 @@ export default function AdminLayout({ children }) {
                 the editor is still looking at. */}
             {notice && (
                 <div
-                    role="status"
-                    className="fixed bottom-5 right-5 z-[200] flex max-w-sm items-start gap-3 rounded-xl border border-[var(--brand-3)]/40 bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--ink)] shadow-2xl"
+                    role={notice.error ? 'alert' : 'status'}
+                    style={{ bottom: toastBottom }}
+                    className={`fixed right-5 z-[200] flex max-w-sm items-start gap-3 rounded-xl border bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--ink)] shadow-2xl ${
+                        notice.error ? 'border-[#ff6b6b]/50' : 'border-[var(--brand-3)]/40'
+                    }`}
                 >
-                    <span aria-hidden className="mt-0.5 text-[var(--brand-3)]">✓</span>
-                    <span className="flex-1">{notice}</span>
+                    <span aria-hidden className={`mt-0.5 ${notice.error ? 'text-[#ff6b6b]' : 'text-[var(--brand-3)]'}`}>{notice.error ? '!' : '✓'}</span>
+                    <span className="flex-1 break-words">{notice.message}</span>
                     <button
                         type="button"
                         onClick={() => setNotice(null)}

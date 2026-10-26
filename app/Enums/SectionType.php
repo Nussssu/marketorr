@@ -117,7 +117,7 @@ enum SectionType: string
                 ['name' => 'heading', 'label' => 'Label', 'type' => 'text'],
                 ['name' => 'titleLines', 'label' => 'Heading lines (About page)', 'type' => 'list'],
                 ['name' => 'titleHighlight', 'label' => 'Gradient lines at the end of the heading', 'type' => 'number'],
-                ['name' => 'text', 'label' => 'Body', 'type' => 'textarea'],
+                ['name' => 'text', 'label' => 'Body', 'type' => 'richtext'],
                 ['name' => 'tagline', 'label' => 'Tagline phrases (purple, blue, cyan)', 'type' => 'list'],
                 ['name' => 'linkLabel', 'label' => 'Link label', 'type' => 'text'],
                 ['name' => 'linkUrl', 'label' => 'Link URL', 'type' => 'text'],
@@ -200,7 +200,7 @@ enum SectionType: string
                 ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
                 ['name' => 'items', 'label' => 'Features', 'type' => 'repeater', 'item_fields' => [
                     ['name' => 'title', 'label' => 'Title', 'type' => 'text'],
-                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea'],
+                    ['name' => 'body', 'label' => 'Body', 'type' => 'richtext'],
                     ['name' => 'accent', 'label' => 'Accent colour', 'type' => 'color'],
                 ]],
             ],
@@ -221,7 +221,7 @@ enum SectionType: string
             ],
             self::Cta => [
                 ['name' => 'heading', 'label' => 'Heading', 'type' => 'text'],
-                ['name' => 'body', 'label' => 'Body', 'type' => 'textarea'],
+                ['name' => 'body', 'label' => 'Body', 'type' => 'richtext'],
                 ['name' => 'buttonLabel', 'label' => 'Button label', 'type' => 'text'],
                 ['name' => 'buttonUrl', 'label' => 'Button URL', 'type' => 'text'],
             ],
@@ -230,7 +230,7 @@ enum SectionType: string
                 ['name' => 'items', 'label' => 'Stages', 'type' => 'repeater', 'item_fields' => [
                     ['name' => 'stage', 'label' => 'Stage word', 'type' => 'text'],
                     ['name' => 'title', 'label' => 'Title', 'type' => 'text'],
-                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea'],
+                    ['name' => 'body', 'label' => 'Body', 'type' => 'richtext'],
                 ]],
             ],
             self::Results => [
@@ -307,7 +307,7 @@ enum SectionType: string
                 ['name' => 'label', 'label' => 'Label', 'type' => 'text'],
                 ['name' => 'titleLines', 'label' => 'Heading lines', 'type' => 'list'],
                 ['name' => 'titleHighlight', 'label' => 'Gradient lines at the end of the heading', 'type' => 'number'],
-                ['name' => 'body', 'label' => 'Text', 'type' => 'textarea'],
+                ['name' => 'body', 'label' => 'Text', 'type' => 'richtext'],
                 ['name' => 'buttonLabel', 'label' => 'Button label', 'type' => 'text'],
                 ['name' => 'closingNote', 'label' => 'Closing line (gradient part)', 'type' => 'text'],
             ],

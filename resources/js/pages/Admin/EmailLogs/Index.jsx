@@ -19,6 +19,48 @@ function StatusBadge({ status, label }) {
     );
 }
 
+function DateField({ label, value, min, max, onChange }) {
+    return (
+        <label className="flex items-center gap-2">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">{label}</span>
+            <Input
+                type="date"
+                value={value}
+                min={min}
+                max={max}
+                onChange={(event) => onChange(event.target.value)}
+                aria-label={`Email logs ${label.toLowerCase()} date`}
+                className="min-w-[9rem] text-[13px]"
+            />
+        </label>
+    );
+}
+
+/** Up to five consecutive page numbers, centred on the current page. */
+function paginationWindow(currentPage, lastPage) {
+    const visiblePages = Math.min(5, lastPage);
+    const firstPage = Math.min(
+        Math.max(currentPage - Math.floor(visiblePages / 2), 1),
+        lastPage - visiblePages + 1,
+    );
+
+    return Array.from({ length: visiblePages }, (_, index) => firstPage + index);
+}
+
+function pageUrl(page, filters) {
+    const query = new URLSearchParams(
+        Object.entries({ ...filters, page: String(page) }).filter(([, value]) => value),
+    );
+
+    return `/admin/email-logs?${query.toString()}`;
+}
+
+function subjectPreview(subject, maxLength = 40) {
+    const text = String(subject || '-');
+
+    return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}...` : text;
+}
+
 /** The setting and template field names an activity entry lists. */
 const FIELD_LABELS = {
     enabled: 'SMTP on/off',
@@ -199,19 +241,44 @@ export default function EmailLogsIndex({ logs, filters, counts, statuses, source
                 })}
             </div>
 
-            <Panel className="mb-4">
+            <Panel className="mb-4 overflow-x-auto">
                 <form
                     onSubmit={(event) => {
                         event.preventDefault();
                         apply({ search });
                     }}
-                    className="grid gap-3 sm:grid-cols-[1fr_14rem]"
+                    className="flex min-w-[56rem] flex-nowrap items-center gap-3"
                 >
-                    <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search recipient or subject, then press Enter" aria-label="Search email logs" />
-                    <Select value={filters.source ?? ''} onChange={(event) => apply({ source: event.target.value })} aria-label="Filter by type">
-                        <option value="">All types</option>
-                        {sources.map((source) => <option key={source.value} value={source.value}>{source.label}</option>)}
-                    </Select>
+                    <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search recipient or subject, then press Enter" aria-label="Search email logs" className="min-w-[16rem] flex-1" />
+                    <div className="w-56 shrink-0">
+                        <Select value={filters.source ?? ''} onChange={(event) => apply({ source: event.target.value })} aria-label="Filter by type">
+                            <option value="">All types</option>
+                            {sources.map((source) => <option key={source.value} value={source.value}>{source.label}</option>)}
+                        </Select>
+                    </div>
+                    <DateField
+                        label="From"
+                        value={filters.from ?? ''}
+                        max={filters.to || undefined}
+                        onChange={(from) => apply({ from })}
+                    />
+                    <DateField
+                        label="To"
+                        value={filters.to ?? ''}
+                        min={filters.from || undefined}
+                        onChange={(to) => apply({ to })}
+                    />
+                    {(filters.from || filters.to) && (
+                        <button
+                            type="button"
+                            onClick={() => apply({ from: '', to: '' })}
+                            title="Clear dates"
+                            aria-label="Clear dates"
+                            className="flex h-[42px] w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--field-line)] text-[16px] text-[var(--ink-faint)] hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                        >
+                            &times;
+                        </button>
+                    )}
                 </form>
             </Panel>
 
@@ -240,13 +307,22 @@ export default function EmailLogsIndex({ logs, filters, counts, statuses, source
                                         <td className="whitespace-nowrap py-3 pr-4 text-[var(--mute)]">{log.sourceLabel}</td>
                                         <td className="max-w-[14rem] truncate py-3 pr-4 text-[var(--ink)]" title={log.recipients ?? ''}>{log.recipients ?? '-'}</td>
                                         <td className="max-w-[18rem] py-3 pr-4">
-                                            <p className="truncate text-[var(--ink-strong)]" title={log.subject ?? ''}>{log.subject ?? '-'}</p>
+                                            <p className="truncate text-[var(--ink-strong)]" title={log.subject ?? ''}>{subjectPreview(log.subject)}</p>
                                             {log.error && <p className={`truncate text-[12px] ${log.status === 'failed' ? 'text-[#ff6b6b]' : 'text-[#d97706]'}`} title={log.error}>{log.error}</p>}
                                         </td>
                                         <td className="whitespace-nowrap py-3 pr-4 text-[var(--mute)]">{log.user ?? (log.status === 'activity' ? '-' : 'Website')}</td>
                                         <td className="py-3">
-                                            <button type="button" onClick={(event) => { event.stopPropagation(); setOpenId(log.id); }} className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]">
-                                                View
+                                            <button
+                                                type="button"
+                                                onClick={(event) => { event.stopPropagation(); setOpenId(log.id); }}
+                                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                                                aria-label={`View ${log.subject ?? 'email log'}`}
+                                                title="View details"
+                                            >
+                                                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.5-6 9.75-6 9.75 6 9.75 6-3.5 6-9.75 6-9.75-6-9.75-6Z" />
+                                                    <circle cx="12" cy="12" r="2.75" />
+                                                </svg>
                                             </button>
                                         </td>
                                     </tr>
@@ -257,22 +333,38 @@ export default function EmailLogsIndex({ logs, filters, counts, statuses, source
                 )}
             </Panel>
 
-            {logs.links?.length > 3 && (
-                <nav className="mt-6 flex flex-wrap gap-2" aria-label="Pagination">
-                    {logs.links.map((link, i) => (
+            {logs.last_page >= 1 && (
+                <nav className="mt-6 flex flex-wrap justify-end gap-2" aria-label="Pagination">
+                    <Link
+                        href={logs.prev_page_url ?? '#'}
+                        disabled={!logs.prev_page_url}
+                        preserveScroll
+                        className={`rounded-lg border border-[var(--line)] px-3 py-2 text-[12px] font-bold text-[var(--ink-faint)] hover:text-[var(--ink)] ${logs.prev_page_url ? '' : 'pointer-events-none opacity-40'}`}
+                    >
+                        Previous
+                    </Link>
+                    {paginationWindow(logs.current_page, logs.last_page).map((page) => (
                         <Link
-                            key={i}
-                            href={link.url ?? '#'}
-                            disabled={!link.url}
+                            key={page}
+                            href={pageUrl(page, filters)}
                             preserveScroll
                             className={`rounded-lg border px-3 py-2 text-[12px] font-bold ${
-                                link.active
+                                page === logs.current_page
                                     ? 'border-transparent bg-[var(--chip)] text-[var(--ink-strong)]'
                                     : 'border-[var(--line)] text-[var(--ink-faint)] hover:text-[var(--ink)]'
-                            } ${link.url ? '' : 'pointer-events-none opacity-40'}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
+                            }`}
+                        >
+                            {page}
+                        </Link>
                     ))}
+                    <Link
+                        href={logs.next_page_url ?? '#'}
+                        disabled={!logs.next_page_url}
+                        preserveScroll
+                        className={`rounded-lg border border-[var(--line)] px-3 py-2 text-[12px] font-bold text-[var(--ink-faint)] hover:text-[var(--ink)] ${logs.next_page_url ? '' : 'pointer-events-none opacity-40'}`}
+                    >
+                        Next
+                    </Link>
                 </nav>
             )}
 

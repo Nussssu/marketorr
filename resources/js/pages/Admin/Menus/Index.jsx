@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { Button, Field, Input, PageHeader, Panel, RepeatableList, Select, TAB_BAR_CLASS, TAB_GRADIENT, Textarea, Toggle, tabClass } from '../../../components/admin/ui';
 
@@ -262,7 +262,7 @@ function MenuRow({
 }
 
 /** One editable menu location within the page-wide save form. */
-function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOptions }) {
+function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOptions, focusKey, openFirstItem = false }) {
     // Header items are single links: sub-items belong to the mega menus.
     const allowsSubItems = menu.location !== 'header';
     // What this menu's sub-items can be linked to, so they follow it.
@@ -281,7 +281,8 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
         },
     }[menu.location];
 
-    const [openKeys, setOpenKeys] = useState(() => new Set());
+    // The first item of a tab's first menu starts open; the rest start closed.
+    const [openKeys, setOpenKeys] = useState(() => new Set(openFirstItem && data.items[0] ? [data.items[0]._key] : []));
     // Mega menu categories open with their sub-items showing (Branding's and
     // UI/UX's six sub-services, the portfolios' projects); other menus start collapsed.
     const [expandedKeys, setExpandedKeys] = useState(() => new Set(menu.group === 'mega' ? data.items.map((item) => item._key) : []));
@@ -327,11 +328,13 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
         expand(data.items[index]._key);
         setOpenKeys((current) => new Set([...current, child._key]));
     };
-    const addItem = () => {
-        const item = withKey(BLANK);
-        setItems([...data.items, item]);
-        setOpenKeys((current) => new Set([...current, item._key]));
-    };
+
+    // An item added from the tab's top button opens and comes into view.
+    useEffect(() => {
+        if (!focusKey) return;
+        setOpenKeys((current) => new Set([...current, focusKey]));
+        window.requestAnimationFrame(() => document.getElementById(`menu-item-${focusKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    }, [focusKey]);
 
     /**
      * Drag-and-drop within one level: top-level items among themselves, and
@@ -384,11 +387,6 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
             className="h-full"
             title={data.name || menu.label}
             description="Drag to reorder, click a row to edit, or add new items."
-            action={
-                <Button type="button" onClick={addItem} className="inline-flex items-center gap-2">
-                    <Icon name="plus" className="h-4 w-4" /> Add item
-                </Button>
-            }
         >
             {menu.note && (
                 <p className="mb-4 rounded-lg border border-[var(--brand-2)]/30 bg-[var(--brand-2)]/10 px-3 py-2 text-[12px] text-[var(--mute)]">
@@ -469,7 +467,7 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
 
             {data.items.length === 0 && (
                 <p className="rounded-xl border border-dashed border-[var(--field-line)] px-4 py-6 text-center text-[13px] text-[var(--mute)]">
-                    No items yet. Use Add item to create the first one.
+                    No items yet. Use the add button at the top of this tab to create the first one.
                 </p>
             )}
 
@@ -482,7 +480,8 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
                     return (
                         <div
                             key={item._key}
-                            className={`overflow-hidden rounded-xl border transition-colors duration-200 ${
+                            id={`menu-item-${item._key}`}
+                            className={`scroll-mt-24 overflow-hidden rounded-xl border transition-colors duration-200 ${
                                 childrenShown || itemOpen ? 'border-[var(--brand-2)]/30 bg-[var(--brand-2)]/[0.04]' : 'border-[var(--line)] bg-[var(--surface)] hover:border-[var(--field-line)]'
                             }`}
                         >
@@ -513,7 +512,7 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
                                         <Icon name="chevron" className={`h-4 w-4 transition-transform duration-200 ${childrenShown ? 'rotate-90' : ''} ${children.length === 0 ? 'opacity-30' : ''}`} />
                                     </button>
                                 )}
-                                footerAction={allowsSubItems && children.length === 0 && (
+                                footerAction={allowsSubItems && menu.group !== 'footer' && children.length === 0 && (
                                     <button
                                         type="button"
                                         onClick={() => addChild(index)}
@@ -556,11 +555,84 @@ function MenuEditor({ menu, data, setData, errors, subServiceOptions, projectOpt
                                     </button>
                                 </div>
                             )}
+
+                            {/* Footer items keep their add-sub-item option along the bottom. */}
+                            {menu.group === 'footer' && !childrenShown && (
+                                <button
+                                    type="button"
+                                    onClick={() => addChild(index)}
+                                    className="flex w-full items-center gap-2 border-t border-[var(--line)] px-4 py-2.5 text-[13px] font-semibold text-[var(--brand-1)] transition-colors hover:bg-[var(--brand-1)]/5"
+                                >
+                                    <Icon name="plusCircle" className="h-4 w-4" /> Add sub-item
+                                    {children.length > 0 && <span className="text-[11px] font-normal text-[var(--ink-faint)]">({children.length} hidden)</span>}
+                                </button>
+                            )}
                         </div>
                     );
                 })}
             </div>
         </Panel>
+    );
+}
+
+/**
+ * The tab's one add button. With a single menu in the tab it adds there
+ * straight away; with several it asks which menu the new item goes in.
+ */
+function AddItemBar({ label, targets, onAdd }) {
+    const [open, setOpen] = useState(false);
+    const wrapper = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const close = (event) => {
+            if (!wrapper.current?.contains(event.target)) setOpen(false);
+        };
+        const escape = (event) => event.key === 'Escape' && setOpen(false);
+        document.addEventListener('pointerdown', close);
+        document.addEventListener('keydown', escape);
+
+        return () => {
+            document.removeEventListener('pointerdown', close);
+            document.removeEventListener('keydown', escape);
+        };
+    }, [open]);
+
+    if (targets.length === 0) return null;
+
+    const single = targets.length === 1;
+
+    return (
+        <div className="flex justify-end">
+            <div ref={wrapper} className="relative">
+                <Button
+                    type="button"
+                    onClick={() => (single ? onAdd(targets[0].index) : setOpen((value) => !value))}
+                    aria-haspopup={single ? undefined : 'menu'}
+                    aria-expanded={single ? undefined : open}
+                    className="inline-flex items-center gap-2"
+                >
+                    <Icon name="plus" className="h-4 w-4" /> {label}
+                    {!single && <Icon name="chevron" className={`h-3 w-3 transition-transform duration-200 ${open ? '-rotate-90' : 'rotate-90'}`} />}
+                </Button>
+                {open && (
+                    <div role="menu" className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-2xl">
+                        <p className="px-3 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">Add to</p>
+                        {targets.map((target) => (
+                            <button
+                                key={target.index}
+                                type="button"
+                                role="menuitem"
+                                onClick={() => { setOpen(false); onAdd(target.index); }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--chip)]"
+                            >
+                                <Icon name="plusCircle" className="h-4 w-4 text-[var(--brand-1)]" /> {target.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -586,6 +658,15 @@ export default function MenusIndex({ menus, subServiceOptions = [], projectOptio
         const next = [...data.menus];
         next[index] = value;
         setData('menus', next);
+    };
+
+    // One add button per tab, at the top: a new parent item (mega menu) or a
+    // new label (header, footer) at the end of the chosen menu.
+    const [focus, setFocus] = useState(null);
+    const addItemTo = (index) => {
+        const item = withKey(BLANK);
+        updateMenu(index, { ...data.menus[index], items: [...data.menus[index].items, item] });
+        setFocus({ location: menus[index].location, key: item._key });
     };
 
     const submit = (event) => {
@@ -630,10 +711,18 @@ export default function MenusIndex({ menus, subServiceOptions = [], projectOptio
                         hidden={activeTab !== tab.id}
                         className="space-y-6"
                     >
+                        <AddItemBar
+                            label={tab.id === 'header' ? 'Add new label' : 'Add parent item'}
+                            targets={menus.map((menu, index) => ({ menu, index }))
+                                .filter(({ menu }) => menu.group === tab.id)
+                                .sort((a, b) => (MENU_DISPLAY_ORDER[a.menu.location] ?? 100) - (MENU_DISPLAY_ORDER[b.menu.location] ?? 100))
+                                .map(({ menu, index }) => ({ index, label: data.menus[index].name || menu.label }))}
+                            onAdd={addItemTo}
+                        />
                         {menus.map((menu, index) => ({ menu, index }))
                             .filter(({ menu }) => menu.group === tab.id)
                             .sort((a, b) => (MENU_DISPLAY_ORDER[a.menu.location] ?? 100) - (MENU_DISPLAY_ORDER[b.menu.location] ?? 100))
-                            .map(({ menu, index }) => {
+                            .map(({ menu, index }, position) => {
                                 const prefix = `menus.${index}.`;
                                 const scopedErrors = Object.fromEntries(
                                     Object.entries(errors)
@@ -650,13 +739,15 @@ export default function MenusIndex({ menus, subServiceOptions = [], projectOptio
                                         errors={scopedErrors}
                                         subServiceOptions={subServiceOptions}
                                         projectOptions={projectOptions}
+                                        focusKey={focus?.location === menu.location ? focus.key : null}
+                                        openFirstItem={position === 0}
                                     />
                                 );
                             })}
                     </div>
                 ))}
                 <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur sm:px-6 lg:left-64 lg:px-10">
-                    <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-4">
                         <p className="flex items-center gap-2 text-[13px] text-[var(--mute)]">
                             <Icon name={isDirty ? 'dot' : 'check'} className={`h-4 w-4 ${isDirty ? 'text-[var(--brand-2)]' : 'text-[#22c55e]'}`} />
                             {isDirty ? 'You have unsaved menu changes.' : 'All menu changes are saved.'}

@@ -145,7 +145,19 @@ class AdminMailSettingTest extends TestCase
     {
         $this->actingAs($this->superAdmin)
             ->post('/admin/mail/test', ['recipient' => 'someone@example.com'])
-            ->assertSessionHasErrors('recipient');
+            ->assertSessionHasErrors('recipient')
+            ->assertSessionHas('error');
+    }
+
+    public function test_every_message_gets_a_new_id_so_a_repeated_toast_still_shows(): void
+    {
+        $first = $this->actingAs($this->superAdmin)->withSession(['success' => 'Test email sent to a@example.com.'])->get('/admin/mail');
+        $second = $this->actingAs($this->superAdmin)->withSession(['success' => 'Test email sent to a@example.com.'])->get('/admin/mail');
+
+        $id = fn ($response) => $response->viewData('page')['props']['flash']['id'];
+
+        $this->assertNotNull($id($first));
+        $this->assertNotSame($id($first), $id($second));
     }
 
     public function test_apply_config_sets_mail_configuration_and_default_driver(): void

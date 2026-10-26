@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StorePageSectionRequest;
 use App\Http\Requests\Admin\UpdatePageSectionRequest;
 use App\Models\Page;
 use App\Models\PageSection;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -31,13 +32,13 @@ class PageSectionController extends Controller
         return back()->with('success', 'Section saved.');
     }
 
-    public function destroy(Page $page, PageSection $section): RedirectResponse
+    public function destroy(Page $page, PageSection $section, TrashBin $trash): RedirectResponse
     {
         $this->assertBelongsToPage($page, $section);
 
-        $section->delete();
+        $entry = $trash->trash($section, 'page_section', $section->name ?: 'Section', $page->title.' page');
 
-        return back()->with('success', 'Section removed.');
+        return back()->with('success', 'Section moved to the trash.')->with('undo', $entry->id);
     }
 
     /**

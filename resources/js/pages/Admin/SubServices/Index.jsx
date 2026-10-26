@@ -68,6 +68,18 @@ export default function SubServicesIndex({ groups, items }) {
 
     const duplicate = (item) => router.post(`/admin/sub-services/${item.id}/duplicate`, {}, { preserveScroll: true });
 
+    // A click anywhere on a row opens its editor, except on the row's own
+    // links and buttons (reorder, toggles, view, copy, delete).
+    const openEditor = (event, href) => {
+        if (event.target.closest('a, button, input, select, textarea, label')) return;
+        if (event.metaKey || event.ctrlKey) {
+            window.open(href, '_blank');
+
+            return;
+        }
+        router.visit(href);
+    };
+
     return (
         <>
             <Head title="Sub-services | Marketorr Admin" />
@@ -112,7 +124,7 @@ export default function SubServicesIndex({ groups, items }) {
                             </thead>
                             <tbody>
                                 {visible.map((item, index) => (
-                                    <tr key={item.id} className="border-t border-[var(--line)]">
+                                    <tr key={item.id} onClick={(event) => openEditor(event, `/admin/sub-services/${item.id}/edit`)} className="cursor-pointer border-t border-[var(--line)] transition-colors hover:bg-[var(--chip)]">
                                         <td className="py-3 pr-3">
                                             <div className="flex flex-col gap-1">
                                                 <button
@@ -137,7 +149,6 @@ export default function SubServicesIndex({ groups, items }) {
                                         </td>
                                         <td className="py-3 pr-4">
                                             <p className="font-semibold text-[var(--ink)]">{item.name}</p>
-                                            <a href={`/services/${item.group_slug}/${item.slug}`} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">/services/{item.group_slug}/{item.slug} ↗</a>
                                         </td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{item.group_name}</td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{item.short || '—'}</td>

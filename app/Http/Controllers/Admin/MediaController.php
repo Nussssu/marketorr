@@ -10,9 +10,12 @@ use App\Models\Category;
 use App\Models\GlobalBlock;
 use App\Models\Media;
 use App\Models\Project;
+use App\Services\MediaCatalogue;
+use App\Services\TrashBin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -21,10 +24,27 @@ use Inertia\Response;
 
 class MediaController extends Controller
 {
-    public function index(Request $request): Response|JsonResponse
+    public function index(Request $request, MediaCatalogue $catalogue): Response|JsonResponse
     {
+        // Picks up any Branding / UI/UX image added since the last visit; once
+        // the library is in step this only reads.
+        $catalogue->sync();
+
         $allMedia = Media::query()->get();
         $usageMap = $this->usageMap($allMedia);
+        $references = $catalogue->references();
+        $uses = $catalogue->usageByMedia($allMedia, $references);
+        // A section holds what its projects and services use, plus files
+        // uploaded into its category that nothing uses yet.
+        $sectionIds = collect(MediaCatalogue::SECTIONS)->map(fn (string $label, string $section): array => collect($uses)
+            ->filter(fn (array $list): bool => collect($list)->contains('section', $section))
+            ->keys()
+            ->merge($allMedia->filter(fn (Media $medium): bool => mb_strtolower((string) $medium->category) === mb_strtolower($label))->modelKeys())
+            ->unique()
+            ->values()
+            ->all());
+        $section = $request->string('section')->lower()->toString();
+        $section = in_array($section, ['branding', 'uiux', 'other'], true) ? $section : 'all';
         $usage = $request->string('usage')->lower()->toString();
         $usage = in_array($usage, ['products', 'categories', 'banners'], true) ? $usage : 'all';
         $type = $request->string('type')->lower()->toString();
@@ -37,10 +57,20 @@ class MediaController extends Controller
         $query = Media::query();
 
         if ($search = $request->string('search')->trim()->toString()) {
-            $query->where(function ($q) use ($search) {
+            // A project's name finds every image it uses, as well as the files
+            // uploaded under it.
+            $needle = mb_strtolower($search);
+            $ownedIds = collect($uses)
+                ->filter(fn (array $list): bool => collect($list)->contains(fn (array $use): bool => str_contains(mb_strtolower((string) $use['owner']), $needle)))
+                ->keys()
+                ->all();
+
+            $query->where(function ($q) use ($search, $ownedIds) {
                 $q->where('filename', 'like', "%{$search}%")
                     ->orWhere('alt_text', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhere('usage_location', 'like', "%{$search}%")
+                    ->orWhereKey($ownedIds);
             });
         }
 
@@ -67,6 +97,12 @@ class MediaController extends Controller
             $query->whereKey($ids);
         }
 
+        match ($section) {
+            'branding', 'uiux' => $query->whereKey($sectionIds[$section]),
+            'other' => $query->whereKeyNot(collect($sectionIds)->flatten()->unique()->all()),
+            default => null,
+        };
+
         match ($sort) {
             'oldest' => $query->orderBy('created_at')->orderBy('id'),
             'name_asc' => $query->orderBy('filename')->orderBy('id'),
@@ -85,24 +121,112 @@ class MediaController extends Controller
         if ($request->wantsJson() || $request->boolean('json')) {
             return response()->json([
                 'media' => $query->get()->map(
-                    fn (Media $medium): array => $medium->toAdminArray($usageMap[$medium->id] ?? [])
+                    fn (Media $medium): array => $medium->toAdminArray($usageMap[$medium->id] ?? [], $uses[$medium->id] ?? [])
                 ),
                 'categories' => $categories,
+                'projects' => $this->projectOptions(),
             ]);
         }
 
-        $media = $query
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn (Media $medium): array => $medium->toAdminArray($usageMap[$medium->id] ?? []));
+        // Branding and UI/UX are shown whole, grouped by the project or
+        // service using each image; the other views page through the library.
+        $groups = [];
+
+        if (in_array($section, ['branding', 'uiux'], true)) {
+            $found = $query->get()->keyBy('id');
+            $byKey = $found->groupBy(fn (Media $medium): string => MediaCatalogue::key($medium->path));
+            $placed = [];
+
+            foreach ($references->where('section', $section) as $reference) {
+                foreach ($byKey->get($reference['key'], collect()) as $medium) {
+                    if (isset($placed[$medium->id])) {
+                        continue;
+                    }
+
+                    $placed[$medium->id] = true;
+                    $groups[$reference['owner_key']] ??= [
+                        'key' => $reference['owner_key'],
+                        'title' => $reference['owner'],
+                        'type' => $reference['owner_type'],
+                        'edit_url' => $reference['edit_url'],
+                        'ids' => [],
+                    ];
+                    $groups[$reference['owner_key']]['ids'][] = $medium->id;
+                }
+            }
+
+            // Files uploaded under a project sit with that project's images.
+            $projectsByTitle = collect($this->projectOptions())
+                ->where('section', $section)
+                ->keyBy(fn (array $project): string => mb_strtolower(trim($project['title'])));
+
+            foreach ($found as $medium) {
+                $project = $projectsByTitle->get(mb_strtolower(trim((string) $medium->usage_location)));
+
+                if (isset($placed[$medium->id]) || $project === null) {
+                    continue;
+                }
+
+                $placed[$medium->id] = true;
+                $groups['project-'.$project['id']] ??= [
+                    'key' => 'project-'.$project['id'],
+                    'title' => $project['title'],
+                    'type' => 'Project',
+                    'edit_url' => "/admin/projects/{$project['id']}/edit",
+                    'ids' => [],
+                ];
+                $groups['project-'.$project['id']]['ids'][] = $medium->id;
+            }
+
+            $loose = $found->keys()->reject(fn (int $id): bool => isset($placed[$id]))->values()->all();
+
+            if ($loose !== []) {
+                $groups['uploads'] = ['key' => 'uploads', 'title' => 'Uploaded, not used yet', 'type' => 'Uploads', 'edit_url' => null, 'ids' => $loose];
+            }
+
+            // Paged like the other views, in project order; a project split
+            // across pages keeps its heading (with its full count) on each.
+            $ordered = collect($groups)->pluck('ids')->flatten()->values();
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $onPage = $ordered->slice(($page - 1) * 15, 15)->values();
+
+            $groups = collect($groups)
+                ->map(fn (array $group): array => [...$group, 'total' => count($group['ids']), 'ids' => array_values(array_intersect($group['ids'], $onPage->all()))])
+                ->filter(fn (array $group): bool => $group['ids'] !== [])
+                ->values()
+                ->all();
+            $media = (new LengthAwarePaginator(
+                $onPage->map(fn (int $id): array => $found[$id]->toAdminArray($usageMap[$id] ?? [], $uses[$id] ?? [])),
+                $ordered->count(),
+                15,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()],
+            ));
+        } else {
+            $media = $query
+                ->paginate(15)
+                ->withQueryString()
+                ->through(fn (Media $medium): array => $medium->toAdminArray($usageMap[$medium->id] ?? [], $uses[$medium->id] ?? []));
+        }
 
         $imageCount = $allMedia->filter(fn (Media $medium): bool => str_starts_with((string) $medium->mime_type, 'image/')
             || (bool) preg_match('/\.(jpe?g|png|webp|gif|svg|avif)$/i', $medium->filename))->count();
 
+        $sectioned = collect($sectionIds)->flatten()->unique();
+
         return Inertia::render('Admin/Media/Index', [
             'media' => $media,
+            'groups' => $groups,
+            'sections' => [
+                'all' => $allMedia->count(),
+                'branding' => count($sectionIds['branding']),
+                'uiux' => count($sectionIds['uiux']),
+                'other' => $allMedia->reject(fn (Media $medium): bool => $sectioned->contains($medium->id))->count(),
+            ],
             'categories' => $categories,
+            'projects' => $this->projectOptions(),
             'filters' => [
+                'section' => $section,
                 'usage' => $usage,
                 'type' => $type,
                 'search' => $request->string('search')->toString(),
@@ -138,12 +262,22 @@ class MediaController extends Controller
         // A file already in the library is not stored again: the existing
         // entry is reused, so the same file always has one link.
         $duplicates = 0;
-        $media = $files->map(function ($file) use ($catalogue, $category, &$duplicates): Media {
+        $media = $files->map(function ($file) use ($request, $catalogue, $category, &$duplicates): Media {
             $checksum = Media::checksumOf((string) $file->getRealPath());
             $existing = $checksum !== null ? Media::query()->where('checksum', $checksum)->first() : null;
 
             if ($existing !== null) {
                 $duplicates++;
+
+                // Uploaded again into a chosen category: the one entry moves there.
+                if ($request->filled('category') && $existing->category !== $category) {
+                    $existing->update(['category' => $category]);
+                }
+
+                // Uploaded again under a project: the one entry is filed under it.
+                if ($request->filled('usage_location') && $existing->usage_location !== $request->input('usage_location')) {
+                    $existing->update(['usage_location' => $request->input('usage_location')]);
+                }
 
                 return $existing;
             }
@@ -174,6 +308,11 @@ class MediaController extends Controller
 
         if ($duplicates > 0) {
             $message .= ' '.$duplicates.' '.($duplicates === 1 ? 'was' : 'were').' already in the library and kept as one file.';
+        }
+
+        // Uploaded from the library page: stay on the same tab and filters.
+        if ($request->boolean('from_library')) {
+            return back()->with('success', $message);
         }
 
         return redirect()
@@ -255,16 +394,41 @@ class MediaController extends Controller
             ->with('success', 'Media updated.');
     }
 
-    public function destroy(Request $request, Media $medium): RedirectResponse|JsonResponse
+    /**
+     * Move a file to the trash. The file itself stays in storage until it is
+     * deleted for good, so anything still showing it keeps working.
+     */
+    public function destroy(Request $request, Media $medium, TrashBin $trash): RedirectResponse|JsonResponse
     {
-        $this->deleteFile($medium->path);
-        $medium->delete();
+        $entry = $trash->trash($medium, 'media', $medium->filename, $medium->category);
 
         if ($request->wantsJson() || $request->boolean('json')) {
-            return response()->json(['success' => true]);
+            return response()->json(['success' => true, 'undo' => $entry->id]);
         }
 
-        return back()->with('success', 'Media deleted.');
+        return back()->with('success', 'Media moved to the trash.')->with('undo', $entry->id);
+    }
+
+    /**
+     * Every project, in portfolio order, with the portfolio it is filed under,
+     * so a project added later shows up in the library's lists straight away.
+     *
+     * @return array<int, array{id: int, title: string, section: string, section_label: string}>
+     */
+    private function projectOptions(): array
+    {
+        return Project::query()
+            ->with('category.parent')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Project $project): array => [
+                'id' => $project->id,
+                'title' => $project->title,
+                'section' => $project->workGroup(),
+                'section_label' => $project->workGroupName(),
+            ])
+            ->all();
     }
 
     /**

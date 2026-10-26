@@ -61,4 +61,25 @@ class AdminAuditLogsTest extends TestCase
                 ->component('Admin/AuditLogs/Index')
                 ->where('filters.category', 'leads'));
     }
+
+    public function test_audit_logs_are_paginated_twenty_five_at_a_time(): void
+    {
+        ContactSubmission::factory()->count(26)->create();
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/audit-logs?category=leads')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/AuditLogs/Index')
+                ->has('logs.data', 25)
+                ->where('logs.per_page', 25)
+                ->where('logs.total', 26));
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/audit-logs?category=leads&page=2')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('logs.data', 1)
+                ->where('logs.current_page', 2));
+    }
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'page_id', 'type', 'name', 'content', 'settings', 'enabled', 'sort_order',
@@ -16,6 +17,8 @@ class PageSection extends Model
 {
     /** @use HasFactory<PageSectionFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * @return array<string, string>

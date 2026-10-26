@@ -10,7 +10,7 @@ class UpdateMailSettingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isSuperAdmin() ?? false;
+        return $this->user()?->hasPermission('email.manage') ?? false;
     }
 
     /**

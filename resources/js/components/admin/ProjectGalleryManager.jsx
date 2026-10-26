@@ -199,9 +199,13 @@ export default function ProjectGalleryManager({ values = [], onChange, error }) 
                                         type="button"
                                         onClick={() => remove(index)}
                                         aria-label={`Remove image ${index + 1}`}
+                                        title="Remove this image"
                                         className="rounded-md border border-rose-900/40 bg-rose-950/20 px-2 py-1 text-[11px] font-semibold text-rose-400 hover:bg-rose-900/30"
                                     >
-                                        Remove
+                                        <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
+                                            <path d="M10 11.5v5M14 11.5v5" />
+                                        </svg>
                                     </button>
                                 </span>
                             </li>

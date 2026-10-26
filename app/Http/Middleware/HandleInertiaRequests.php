@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\InquiryStatus;
 use App\Enums\InquiryType;
+use App\Models\ContactSubmission;
 use App\Models\GlobalBlock;
 use App\Models\Menu;
 use App\Models\Project;
@@ -11,6 +13,7 @@ use App\Models\Setting;
 use App\Services\CodeInjector;
 use App\Services\PublicAsset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -47,6 +50,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                // New on every response that carries a message, so the same
+                // message twice in a row (a second test email) still shows.
+                'id' => fn () => $request->session()->has('success') || $request->session()->has('error') ? (string) Str::uuid() : null,
             ],
             // Base for files under public/ (see PublicAsset::base), so front-end
             // asset paths resolve exactly as the server's do.
@@ -89,6 +96,10 @@ class HandleInertiaRequests extends Middleware
                 ->values(),
             // The Our Work menu's two columns and the projects filed under each.
             'workGroups' => fn () => Project::workGroupSummaries(),
+            // Unread ("new") inquiries for the admin sidebar's Inbox badge.
+            'newInquiries' => fn () => $request->is('admin', 'admin/*') && $request->user()?->hasPermission('inquiries.view')
+                ? ContactSubmission::query()->where('status', InquiryStatus::New)->count()
+                : 0,
             'auth' => [
                 'user' => fn () => $request->user() ? [
                     'id' => $request->user()->id,
@@ -96,6 +107,11 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'role' => $request->user()->role->value,
                     'isSuperAdmin' => $request->user()->isSuperAdmin(),
+                    'roleLabel' => $request->user()->effectiveRole()?->name ?? $request->user()->role->label(),
+                    // Section permission keys ("projects.view", …) so the panel only
+                    // offers what the server will allow.
+                    'permissions' => $request->user()->permissionKeys(),
+                    'twoFactor' => $request->user()->hasTwoFactor(),
                 ] : null,
             ],
         ];

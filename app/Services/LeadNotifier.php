@@ -54,7 +54,7 @@ class LeadNotifier
         $source = EmailLogSource::forTemplate($key);
         $context = ['contact_submission_id' => $submission->id];
 
-        if (! $template->enabled) {
+        if (! $template->isSendable()) {
             Log::debug('Lead notification email skipped: template is disabled', [
                 'template' => $key->value,
             ]);

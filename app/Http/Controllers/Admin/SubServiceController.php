@@ -6,9 +6,11 @@ use App\Enums\ContentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSubServiceRequest;
 use App\Http\Requests\Admin\UpdateSubServiceRequest;
+use App\Models\Menu;
 use App\Models\ServiceGroup;
 use App\Models\SubService;
 use App\Services\SubServiceRelatedWork;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -53,7 +55,8 @@ class SubServiceController extends Controller
         $data['sort_order'] = $data['sort_order']
             ?? ((int) SubService::query()->where('service_group_id', $data['service_group_id'])->max('sort_order') + 1);
 
-        SubService::query()->create($data);
+        $subService = SubService::query()->create($data);
+        Menu::linkSubService($subService);
         ServiceGroup::forgetCatalogue();
 
         return redirect()
@@ -75,6 +78,8 @@ class SubServiceController extends Controller
     public function update(UpdateSubServiceRequest $request, SubService $subService): RedirectResponse
     {
         $subService->update($this->validated($request->validated()));
+        // Only moves an existing link: one taken out in the Menus editor stays out.
+        Menu::linkSubService($subService->refresh(), addIfMissing: false);
         ServiceGroup::forgetCatalogue();
 
         return redirect()
@@ -82,12 +87,11 @@ class SubServiceController extends Controller
             ->with('success', 'Sub-service updated.');
     }
 
-    public function destroy(SubService $subService): RedirectResponse
+    public function destroy(SubService $subService, TrashBin $trash): RedirectResponse
     {
-        $subService->delete();
-        ServiceGroup::forgetCatalogue();
+        $entry = $trash->trash($subService, 'sub_service', $subService->name, ($subService->group?->name ?? 'Service').' tab');
 
-        return back()->with('success', 'Sub-service deleted.');
+        return back()->with('success', 'Sub-service moved to the trash.')->with('undo', $entry->id);
     }
 
     /**

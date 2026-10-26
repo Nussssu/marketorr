@@ -239,6 +239,55 @@ class AdminMediaTest extends TestCase
                 ->where('media.data.0.filename', 'banner.jpg'));
     }
 
+    public function test_searching_a_project_name_finds_its_images_and_files_uploaded_under_it(): void
+    {
+        Media::query()->create(['filename' => 'cover.jpg', 'path' => 'media/cover.jpg', 'mime_type' => 'image/jpeg', 'category' => 'General']);
+        Media::query()->create(['filename' => 'extra.jpg', 'path' => 'media/extra.jpg', 'mime_type' => 'image/jpeg', 'category' => 'Branding', 'usage_location' => 'Nimbus Coffee']);
+        Media::query()->create(['filename' => 'unrelated.jpg', 'path' => 'media/unrelated.jpg', 'mime_type' => 'image/jpeg', 'category' => 'General']);
+
+        Project::factory()->create(['title' => 'Nimbus Coffee', 'image_path' => 'media/cover.jpg']);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/media?search=nimbus')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('media.data', 2)
+                ->where('media.data', fn ($items) => collect($items)->pluck('filename')->sort()->values()->all() === ['cover.jpg', 'extra.jpg']));
+    }
+
+    public function test_the_library_lists_every_project_including_newly_added_ones(): void
+    {
+        $this->actingAs($this->admin)
+            ->getJson('/admin/media?json=1')
+            ->assertOk()
+            ->assertJsonCount(0, 'projects');
+
+        $project = Project::factory()->create(['title' => 'Fresh Launch']);
+
+        $this->actingAs($this->admin)
+            ->getJson('/admin/media?json=1')
+            ->assertJsonPath('projects.0.id', $project->id)
+            ->assertJsonPath('projects.0.title', 'Fresh Launch')
+            ->assertJsonPath('projects.0.section', $project->workGroup());
+
+        $this->actingAs($this->admin)
+            ->get('/admin/media')
+            ->assertInertia(fn (Assert $page) => $page->where('projects.0.title', 'Fresh Launch'));
+    }
+
+    public function test_an_upload_can_be_filed_under_a_project(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/media', [
+                'file' => UploadedFile::fake()->image('shot.jpg'),
+                'category' => 'UI/UX',
+                'usage_location' => 'Fresh Launch',
+                'from_library' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('media', ['filename' => 'shot.jpg', 'category' => 'UI/UX', 'usage_location' => 'Fresh Launch']);
+    }
+
     public function test_an_admin_can_rename_media_without_changing_its_storage_path(): void
     {
         $medium = Media::query()->create([

@@ -1,4 +1,4 @@
-import { Form, Head, Link, router } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import AdminLayout from '../../../components/admin/AdminLayout';
@@ -271,7 +271,7 @@ function FilterSelect({ value, onChange, options, placeholder, label }) {
                 aria-label={`${label}: ${current.label}`}
                 onClick={() => (open ? setOpen(false) : openList())}
                 onKeyDown={onKeyDown}
-                className={`flex min-w-[160px] items-center justify-between gap-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-left text-[14px] transition-colors hover:border-[rgba(var(--brand-1-rgb),0.65)] ${value ? 'text-[var(--ink)]' : 'text-[var(--placeholder)]'}`}
+                className={`flex min-w-[140px] shrink-0 items-center justify-between gap-3 rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 py-2.5 text-left text-[14px] transition-colors hover:border-[rgba(var(--brand-1-rgb),0.65)] ${value ? 'text-[var(--ink)]' : 'text-[var(--placeholder)]'}`}
             >
                 <span className="min-w-0 truncate capitalize">{current.label}</span>
                 <svg
@@ -334,12 +334,46 @@ function EyeIcon() {
     );
 }
 
+function ReplyIcon() {
+    return (
+        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 8 5 12.5 9.5 17" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12.5h9.5A4.5 4.5 0 0 1 19 17v1" />
+        </svg>
+    );
+}
+
+/** A reply to the lead in the admin's own email app, quoting the inquiry type. */
+function replyHref(inquiry) {
+    return `mailto:${inquiry.email}?subject=${encodeURIComponent(`Re: your project inquiry: ${inquiry.type}`)}`;
+}
+
 function TrashIcon() {
     return (
         <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
             <path strokeLinecap="round" d="M10 11.5v5M14 11.5v5" />
         </svg>
+    );
+}
+
+/** A compact date picker with its label beside the field, for the filter row. */
+function DateField({ label, value, min, max, onChange }) {
+    return (
+        <label className="flex shrink-0 items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">{label}</span>
+            <span className="flex h-[42px] items-center rounded-lg border border-[var(--field-line)] bg-[var(--bg)] px-3 transition-colors focus-within:border-[var(--brand-3)] focus-within:ring-1 focus-within:ring-[var(--brand-3)]">
+                <input
+                    type="date"
+                    value={value}
+                    min={min}
+                    max={max}
+                    onChange={(e) => onChange(e.target.value)}
+                    aria-label={`Received ${label.toLowerCase()} date`}
+                    className="w-[128px] bg-transparent text-[13px] text-[var(--ink)] focus:outline-none"
+                />
+            </span>
+        </label>
     );
 }
 
@@ -447,8 +481,9 @@ function InquiryModal({ inquiry, onClose }) {
     );
 }
 
-export default function InquiriesIndex({ inquiries, filters, statuses, types }) {
+export default function InquiriesIndex({ inquiries, filters, statuses, types, counts = {} }) {
     const [form, setForm] = useState(filters);
+    const { errors } = usePage().props;
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [request, confirm, cancel, run] = useConfirm();
 
@@ -501,13 +536,44 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                 </Button>
             </PageHeader>
 
+            {/* Inbox totals by status; each chip filters the list to it. */}
+            <div className="mb-3 flex flex-wrap gap-2" aria-label="Inquiry counts">
+                {[{ value: '', label: 'Total', color: 'var(--ink)', count: counts.total ?? 0 }, ...statuses.map((status) => ({
+                    value: status,
+                    label: STATUS_THEME[status]?.label ?? status.replace('_', ' '),
+                    color: STATUS_THEME[status]?.color ?? 'var(--ink)',
+                    count: counts[status] ?? 0,
+                }))].map((chip) => {
+                    const active = (form.status ?? '') === chip.value;
+
+                    return (
+                        <button
+                            key={chip.value || 'total'}
+                            type="button"
+                            onClick={() => apply({ ...form, status: chip.value })}
+                            aria-pressed={active}
+                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
+                                active ? 'border-[var(--brand-2)]/60 bg-[var(--chip)]' : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--chip)]'
+                            }`}
+                        >
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: chip.color }} aria-hidden />
+                            <span className="text-[var(--ink-faint)]">{chip.label}</span>
+                            <span className="font-display text-[13px] font-black" style={{ color: chip.color }}>{chip.count}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
             <Panel className="mb-6">
-                <form onSubmit={onSearch} className="grid gap-4 sm:grid-cols-[1fr_auto_auto_auto]">
+                {/* One row: search, status, type, the received-date range (both days
+                    included, applied as soon as a date is picked) and Search. */}
+                <form onSubmit={onSearch} className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
                     <Input
                         value={form.search}
                         onChange={(e) => setForm({ ...form, search: e.target.value })}
                         placeholder="Search name, email or company…"
                         aria-label="Search inquiries"
+                        className="min-w-[160px] flex-1 lg:w-auto"
                     />
                     <FilterSelect
                         label="Filter by status"
@@ -523,8 +589,32 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                         placeholder="All types"
                         options={types.map((t) => ({ value: t, label: t }))}
                     />
-                    <Button type="submit" variant="secondary">Search</Button>
+                    <DateField
+                        label="From"
+                        value={form.from ?? ''}
+                        max={form.to || undefined}
+                        onChange={(from) => apply({ ...form, from })}
+                    />
+                    <DateField
+                        label="To"
+                        value={form.to ?? ''}
+                        min={form.from || undefined}
+                        onChange={(to) => apply({ ...form, to })}
+                    />
+                    {(form.from || form.to) && (
+                        <button
+                            type="button"
+                            onClick={() => apply({ ...form, from: '', to: '' })}
+                            title="Clear dates"
+                            aria-label="Clear dates"
+                            className="flex h-[42px] w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--field-line)] text-[16px] text-[var(--ink-faint)] hover:bg-[var(--chip)] hover:text-[var(--ink)]"
+                        >
+                            &times;
+                        </button>
+                    )}
+                    <Button type="submit" variant="secondary" className="shrink-0">Search</Button>
                 </form>
+                {(errors?.from || errors?.to) && <p className="mt-2 text-[12px] text-[#ff6b6b]">{errors.from || errors.to}</p>}
             </Panel>
 
             <Panel className="overflow-hidden">
@@ -570,6 +660,15 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
                                             >
                                                 <EyeIcon />
                                             </button>
+                                            {/* Plain anchor: opens the email app, not an Inertia visit. */}
+                                            <a
+                                                href={replyHref(inquiry)}
+                                                aria-label={`Reply to ${inquiry.name} by email`}
+                                                title={`Reply to ${inquiry.email}`}
+                                                className="ml-2 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[var(--ink-faint)] transition-colors hover:border-[var(--field-line)] hover:bg-[var(--chip)] hover:text-[var(--brand-3)]"
+                                            >
+                                                <ReplyIcon />
+                                            </a>
                                             <button
                                                 type="button"
                                                 onClick={() => askDelete(inquiry)}
@@ -589,7 +688,7 @@ export default function InquiriesIndex({ inquiries, filters, statuses, types }) 
             </Panel>
 
             {inquiries.links?.length > 3 && (
-                <nav className="mt-6 flex flex-wrap gap-2" aria-label="Pagination">
+                <nav className="mt-6 flex flex-wrap justify-end gap-2" aria-label="Pagination">
                     {inquiries.links.map((link, i) => (
                         <Link
                             key={i}

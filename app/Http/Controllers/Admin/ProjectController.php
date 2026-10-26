@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreProjectRequest;
 use App\Http\Requests\Admin\UpdateProjectRequest;
 use App\Models\Category;
 use App\Models\Project;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -30,10 +31,14 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $portfolio = $request->string('portfolio')->toString();
+
         return Inertia::render('Admin/Projects/Form', [
             'project' => null,
+            // The portfolio tab "New project" was clicked on, chosen up front.
+            'portfolio' => in_array($portfolio, ['branding', 'uiux'], true) ? $portfolio : 'branding',
             'statuses' => ContentStatus::values(),
             'categories' => $this->categoryOptions(),
             'categoriesHref' => CategoryController::manageUrl(),
@@ -122,11 +127,11 @@ class ProjectController extends Controller
             ->with('success', 'Project saved.');
     }
 
-    public function destroy(Project $project): RedirectResponse
+    public function destroy(Project $project, TrashBin $trash): RedirectResponse
     {
-        $project->delete();
+        $entry = $trash->trash($project, 'project', $project->title, $project->workGroupName().' portfolio');
 
-        return back()->with('success', 'Project deleted.');
+        return back()->with('success', 'Project moved to the trash.')->with('undo', $entry->id);
     }
 
     public function duplicate(Project $project): RedirectResponse

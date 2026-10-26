@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\UserRole;
+use App\Models\AdminRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -62,6 +63,8 @@ class AdminAccountCommand extends Command
                 'name' => $this->option('name') ?: ($existing->name ?? Str::title(Str::before($email, '@'))),
                 'password' => Hash::make($password),
                 'role' => $role,
+                // Keep the assigned role in step, so permissions follow the base role.
+                'admin_role_id' => AdminRole::forSlug($role->value)?->id,
                 'email_verified_at' => $existing->email_verified_at ?? now(),
             ],
         );

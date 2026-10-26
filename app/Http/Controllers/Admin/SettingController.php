@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\MenuLocation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingRequest;
+use App\Models\MailSetting;
 use App\Models\MenuItem;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,9 @@ class SettingController extends Controller
                 'logo_url' => $settings->assetUrl($settings->logo_path),
                 'logo_dark_url' => $settings->assetUrl($settings->logo_dark_path),
                 'favicon_url' => $settings->assetUrl($settings->favicon_path),
+                // The logo every email shows; empty falls back to the dark logo.
+                'email_logo' => MailSetting::current()->email_logo_path,
+                'email_logo_url' => $settings->assetUrl(MailSetting::current()->email_logo_path ?: $settings->logo_dark_path),
                 'header_sticky' => (bool) ($settings->header_sticky ?? true),
                 'header_cta_text' => $settings->header_cta_text ?? 'Start a Project',
                 'header_cta_link' => $settings->header_cta_link ?? '/contact',
@@ -47,6 +51,7 @@ class SettingController extends Controller
                     ? json_encode($settings->schema_markup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                     : '',
                 'sitemap_enabled' => $settings->sitemap_enabled,
+                'seo_sections' => $settings->seo_sections ?? [],
             ],
             // The site-wide social links: one list for the footer and the
             // Contact page, each with its own show/hide switch.
@@ -56,6 +61,7 @@ class SettingController extends Controller
                 ->orderBy('sort_order')
                 ->get()
                 ->map(fn (MenuItem $item): array => [
+                    'id' => $item->id,
                     'label' => $item->label,
                     'url' => $item->url,
                     'enabled' => $item->enabled,
@@ -87,6 +93,11 @@ class SettingController extends Controller
 
         $settings->update($data);
         Setting::forgetCurrent();
+
+        if ($request->has('email_logo')) {
+            MailSetting::current()->update(['email_logo_path' => $request->validated('email_logo')]);
+            MailSetting::forgetCurrent();
+        }
 
         return back()->with('success', 'Settings saved.');
     }

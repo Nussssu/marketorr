@@ -88,11 +88,23 @@ export default function ProjectsIndex({ projects }) {
 
     const duplicate = (project) => router.post(`/admin/projects/${project.id}/duplicate`, {}, { preserveScroll: true });
 
+    // A click anywhere on a row opens its editor, except on the row's own
+    // links and buttons (reorder, toggles, view, copy, delete).
+    const openEditor = (event, href) => {
+        if (event.target.closest('a, button, input, select, textarea, label')) return;
+        if (event.metaKey || event.ctrlKey) {
+            window.open(href, '_blank');
+
+            return;
+        }
+        router.visit(href);
+    };
+
     return (
         <>
             <Head title="Projects | Marketorr Admin" />
             <PageHeader title="Projects" subtitle={`${rows.length} projects. Order here is the order on the public site.`}>
-                <Button as="link" href="/admin/projects/create">New project</Button>
+                <Button as="link" href={`/admin/projects/create?portfolio=${activeTab}`}>New project</Button>
             </PageHeader>
 
             <div className={`mb-6 ${TAB_BAR_CLASS}`} role="tablist" aria-label="Portfolio">
@@ -116,6 +128,22 @@ export default function ProjectsIndex({ projects }) {
                 })}
             </div>
 
+            {/* Totals for the open portfolio tab. */}
+            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {[
+                    { label: 'Total projects', value: visible.length, accent: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' },
+                    { label: 'Published', value: visible.filter((row) => row.status === 'published').length, accent: 'var(--brand-3)' },
+                    { label: 'Draft', value: visible.filter((row) => row.status !== 'published').length, accent: '#8B98A8' },
+                    { label: 'Featured', value: visible.filter((row) => row.featured).length, accent: 'var(--brand-1)' },
+                ].map((card) => (
+                    <div key={card.label} className="relative overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                        <span className="absolute inset-x-0 top-0 h-0.5" style={{ background: card.accent }} aria-hidden />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">{card.label}</p>
+                        <p className="mt-1 font-display text-2xl font-black text-[var(--ink-strong)]">{card.value}</p>
+                    </div>
+                ))}
+            </div>
+
             <Panel className="overflow-hidden">
                 {visible.length === 0 ? (
                     <EmptyState>No {PORTFOLIO_TABS.find((tab) => tab.key === activeTab)?.label} projects yet, create the first one.</EmptyState>
@@ -135,7 +163,7 @@ export default function ProjectsIndex({ projects }) {
                             </thead>
                             <tbody>
                                 {visible.map((project, index) => (
-                                    <tr key={project.id} className="border-t border-[var(--line)]">
+                                    <tr key={project.id} onClick={(event) => openEditor(event, `/admin/projects/${project.id}/edit`)} className="cursor-pointer border-t border-[var(--line)] transition-colors hover:bg-[var(--chip)]">
                                         <td className="py-3 pr-3">
                                             <div className="flex flex-col gap-1">
                                                 <button
@@ -166,7 +194,6 @@ export default function ProjectsIndex({ projects }) {
                                                 />
                                                 <div className="min-w-0">
                                                     <p className="truncate font-semibold text-[var(--ink)]">{project.title}</p>
-                                                    <a href={project.public_url} target="_blank" rel="noreferrer" className="block truncate font-mono text-[12px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline" title="Open on the site">{project.public_url} ↗</a>
                                                 </div>
                                             </div>
                                         </td>

@@ -7,8 +7,13 @@ use App\Models\CodeSnippetAuditLog;
 use App\Models\ContactSubmission;
 use App\Models\MailSetting;
 use App\Models\Media;
-use App\Models\User;
+use App\Models\Setting;
+use App\Models\UserActivityLog;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,25 +72,28 @@ class AuditLogController extends Controller
             }
         }
 
-        // 3. User accounts activity
+        // 3. User accounts activity: sign-ins, invitations, roles, status,
+        // passwords, two-factor and sessions (see UserActivityLog).
         if (in_array($category, ['all', 'users'])) {
-            User::query()
-                ->latest('updated_at')
-                ->limit(20)
+            UserActivityLog::query()
+                ->with('actor:id,name')
+                ->latest('id')
+                ->limit(60)
                 ->get()
-                ->each(function (User $user) use ($logs): void {
+                ->each(function (UserActivityLog $entry) use ($logs): void {
+                    $details = $entry->detailsLine();
                     $logs->push([
-                        'id' => 'user-'.$user->id,
+                        'id' => 'user-activity-'.$entry->id,
                         'category' => 'users',
-                        'type' => 'User Account',
-                        'title' => "User profile: {$user->name}",
-                        'description' => "Role: {$user->role->value} · Email: {$user->email}",
-                        'actor' => $user->name,
-                        'ip' => 'Internal',
-                        'status' => $user->role->value,
-                        'level' => 'info',
-                        'timestamp' => $user->updated_at?->toIso8601String(),
-                        'time_for_humans' => $user->updated_at?->diffForHumans(),
+                        'type' => str_starts_with($entry->action, 'role_') && $entry->action !== 'role_changed' ? 'Admin Role' : 'User Account',
+                        'title' => $entry->actionLabel().($entry->subject_name ? ": {$entry->subject_name}" : ''),
+                        'description' => $details !== '' ? $details : 'No further details recorded.',
+                        'actor' => $entry->actor?->name ?? ($entry->action === 'login_failed' ? 'Unknown visitor' : 'System'),
+                        'ip' => $entry->ip_address ?? 'N/A',
+                        'status' => $entry->actionLabel(),
+                        'level' => in_array($entry->action, UserActivityLog::WARNING_ACTIONS, true) ? 'warning' : 'info',
+                        'timestamp' => $entry->created_at?->toIso8601String(),
+                        'time_for_humans' => $entry->created_at?->diffForHumans(),
                     ]);
                 });
         }
@@ -179,6 +187,13 @@ class AuditLogController extends Controller
             }
         }
 
+        // Entries from before a module was last cleared stay out of the log.
+        $clearedAt = Setting::current()->audit_cleared_at ?? [];
+        $logs = $logs
+            ->reject(fn (array $item): bool => isset($clearedAt[$item['category']], $item['timestamp'])
+                && Carbon::parse($item['timestamp'])->lessThanOrEqualTo(Carbon::parse($clearedAt[$item['category']])))
+            ->values();
+
         // Filter and sort
         $filtered = $logs
             ->filter(function (array $item) use ($search): bool {
@@ -193,8 +208,18 @@ class AuditLogController extends Controller
             ->sortByDesc('timestamp')
             ->values();
 
+        $perPage = 25;
+        $currentPage = Paginator::resolveCurrentPage();
+        $paginatedLogs = new LengthAwarePaginator(
+            $filtered->forPage($currentPage, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()],
+        );
+
         return Inertia::render('Admin/AuditLogs/Index', [
-            'logs' => $filtered,
+            'logs' => $paginatedLogs,
             'filters' => [
                 'category' => $category,
                 'search' => $search,
@@ -206,5 +231,43 @@ class AuditLogController extends Controller
                 'users' => $logs->where('category', 'users')->count(),
             ],
         ]);
+    }
+
+    /**
+     * Clear one tab of the log, or all of it. The log-only records (user
+     * account and custom code activity) are deleted; entries built from real
+     * data (inquiries, media uploads, mail tests, the server log) are hidden
+     * up to now, so the inquiries and files themselves are never touched.
+     */
+    public function clear(Request $request): RedirectResponse
+    {
+        $category = $request->string('category')->toString();
+        $category = in_array($category, ['leads', 'system', 'users', 'content'], true) ? $category : 'all';
+
+        $modules = match ($category) {
+            'system' => ['system', 'mail'],
+            'all' => ['leads', 'system', 'mail', 'users', 'content'],
+            default => [$category],
+        };
+
+        if (in_array('users', $modules, true)) {
+            UserActivityLog::query()->delete();
+        }
+
+        if (in_array('system', $modules, true)) {
+            CodeSnippetAuditLog::query()->delete();
+        }
+
+        $settings = Setting::current();
+        $now = now()->toIso8601String();
+        $settings->update([
+            'audit_cleared_at' => [
+                ...($settings->audit_cleared_at ?? []),
+                ...array_fill_keys($modules, $now),
+            ],
+        ]);
+        Setting::forgetCurrent();
+
+        return back()->with('success', $category === 'all' ? 'Audit log cleared.' : 'This part of the audit log was cleared.');
     }
 }

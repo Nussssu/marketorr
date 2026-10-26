@@ -41,6 +41,9 @@ class UpdateMenusRequest extends FormRequest
             'menus.*.content.motto_items' => ['nullable', 'array', 'max:8'],
             'menus.*.content.motto_items.*' => ['required', 'string', 'max:60'],
             'menus.*.items' => ['present', 'array', 'max:100'],
+            // Existing items' ids, so items removed on save can go to the trash.
+            'menus.*.items.*.id' => ['nullable', 'integer'],
+            'menus.*.items.*.children.*.id' => ['nullable', 'integer'],
             'menus.*.items.*.label' => ['required', 'string', 'max:120'],
             'menus.*.items.*.url' => ['required', 'string', 'max:2048'],
             'menus.*.items.*.description' => ['nullable', 'string', 'max:255'],

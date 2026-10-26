@@ -1,8 +1,9 @@
-import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
     Button,
+    ConfirmDialog,
     Field,
     Input,
     MediaPickerField,
@@ -12,6 +13,7 @@ import {
     Textarea,
     Toggle,
     tabClass,
+    useConfirm,
 } from '../../components/admin/ui';
 
 const TABS = [
@@ -20,19 +22,39 @@ const TABS = [
     { id: 'seo', label: 'SEO' },
 ];
 
+/** An empty row for a custom SEO section's meta tag list. */
+const BLANK_META_TAG = { attribute: 'name', key: '', content: '' };
+
+/** A client-only key per custom SEO section, so its open state follows it. */
+let seoUid = 0;
+const newSeoUid = () => `s${++seoUid}`;
+
 /** Platforms the site has an icon for; any other name still works as a text link. */
 const PLATFORMS = ['LinkedIn', 'Facebook', 'Behance', 'Dribbble', 'Instagram', 'X', 'YouTube'];
 
 /**
  * The site-wide social links — one list for the footer and the Contact page.
  * Each link can be edited, reordered, shown or hidden, or removed, and new
- * ones added. Saved on its own, as the "Footer: Social links" menu.
+ * ones added. Changes save automatically, as the "Footer: Social links" menu.
  */
 function SocialLinks({ socials }) {
     const blank = { label: '', url: '', enabled: true };
-    const { data, setData, transform, put, processing, errors, isDirty } = useForm({
+    const { data, setData, setDefaults, transform, put, processing, errors, isDirty } = useForm({
         items: socials.length ? socials : [blank],
     });
+
+    const [request, confirm, cancel, run] = useConfirm();
+
+    const askRemove = (index) => {
+        const label = data.items[index].label.trim();
+
+        confirm({
+            title: `Remove ${label ? `“${label}”` : 'this social link'}?`,
+            body: 'The link will be removed from the list.',
+            confirmLabel: 'Remove',
+            action: () => setData('items', data.items.filter((_, i) => i !== index)),
+        });
+    };
 
     const update = (index, patch) => setData('items', data.items.map((row, i) => (i === index ? { ...row, ...patch } : row)));
     const move = (index, delta) => {
@@ -43,10 +65,11 @@ function SocialLinks({ socials }) {
         setData('items', next);
     };
 
-    transform((current) => ({
-        items: current.items
+    const payload = (items) => ({
+        items: items
             .filter((row) => row.label.trim() !== '' || row.url.trim() !== '')
             .map((row) => ({
+                id: row.id ?? null,
                 label: row.label,
                 url: row.url,
                 opens_in_new_tab: true,
@@ -55,12 +78,44 @@ function SocialLinks({ socials }) {
                 show_on_mobile: true,
                 children: [],
             })),
-    }));
+    });
+
+    transform((current) => payload(current.items));
+
+    // The show/hide switch saves straight away, so the footer and the Contact
+    // page always match what the switch shows.
+    const [toggling, setToggling] = useState(false);
+    const toggleShown = (index) => {
+        const next = data.items.map((row, i) => (i === index ? { ...row, enabled: !row.enabled } : row));
+        setData('items', next);
+        setToggling(true);
+        router.put('/admin/menus/footer_social', payload(next), {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => setDefaults({ items: next }),
+            onError: () => setData('items', data.items),
+            onFinish: () => setToggling(false),
+        });
+    };
 
     const submit = (e) => {
         e.preventDefault();
         put('/admin/menus/footer_social', { preserveScroll: true, preserveState: true });
     };
+
+    // Every other change (edit, reorder, add, remove) saves itself shortly
+    // after the last keystroke, so the footer and the Contact page stay in step.
+    useEffect(() => {
+        if (!isDirty || toggling) return undefined;
+        const timeout = window.setTimeout(() => {
+            put('/admin/menus/footer_social', {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setDefaults(),
+            });
+        }, 800);
+        return () => window.clearTimeout(timeout);
+    }, [data.items, isDirty, toggling]);
 
     const shown = data.items.filter((row) => row.enabled && row.url).length;
 
@@ -88,22 +143,31 @@ function SocialLinks({ socials }) {
                                 <Input value={row.url} onChange={(e) => update(index, { url: e.target.value })} placeholder="https://" />
                             </Field>
                             <div className="flex flex-wrap items-center gap-2 pb-0.5">
-                                <button
-                                    type="button"
-                                    onClick={() => update(index, { enabled: !row.enabled })}
-                                    aria-pressed={row.enabled}
-                                    className={`rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
-                                        row.enabled
-                                            ? 'border-[var(--field-line)] text-[var(--ink)] hover:bg-[var(--chip)]'
-                                            : 'border-[#ff6b6b]/40 text-[#ff6b6b] hover:bg-[#ff6b6b]/10'
-                                    }`}
-                                    title={row.enabled ? 'Shown on the site — click to hide' : 'Hidden from the site — click to show'}
-                                >
-                                    {row.enabled ? 'Shown' : 'Hidden'}
-                                </button>
+                                <div className="flex items-center gap-2 pr-1">
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={row.enabled}
+                                        aria-label={`${row.enabled ? 'Hide' : 'Show'} ${row.label || 'this link'} on the site`}
+                                        onClick={() => toggleShown(index)}
+                                        disabled={toggling || processing}
+                                        title={row.enabled ? 'Shown on the site — click to hide' : 'Hidden from the site — click to show'}
+                                        className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:cursor-wait ${
+                                            row.enabled ? 'border-transparent' : 'border-[var(--field-line)] bg-[var(--chip)]'
+                                        }`}
+                                        style={row.enabled ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
+                                    >
+                                        <span className={`absolute top-[3px] h-4 w-4 rounded-full bg-white shadow transition-all ${row.enabled ? 'left-[23px]' : 'left-[3px]'}`} />
+                                    </button>
+                                </div>
                                 <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up" className="rounded-lg border border-[var(--field-line)] px-2.5 py-2 text-[11px] text-[var(--ink-faint)] hover:text-[var(--ink)] disabled:opacity-30">▲</button>
                                 <button type="button" onClick={() => move(index, 1)} disabled={index === data.items.length - 1} aria-label="Move down" className="rounded-lg border border-[var(--field-line)] px-2.5 py-2 text-[11px] text-[var(--ink-faint)] hover:text-[var(--ink)] disabled:opacity-30">▼</button>
-                                <button type="button" onClick={() => setData('items', data.items.filter((_, i) => i !== index))} className="rounded-lg px-2.5 py-2 text-[12px] text-[#ff6b6b] hover:opacity-80">Remove</button>
+                                <button type="button" onClick={() => askRemove(index)} aria-label="Remove" title="Remove" className="rounded-lg px-2.5 py-2 text-[12px] text-[#ff6b6b] hover:opacity-80">
+                                    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
+                                        <path strokeLinecap="round" d="M10 11.5v5M14 11.5v5" />
+                                    </svg>
+                                </button>
                             </div>
                         </li>
                     ))}
@@ -118,17 +182,14 @@ function SocialLinks({ socials }) {
                 </button>
             </div>
 
-            {/* Always on screen, like the other admin forms' save bars. */}
-            <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
-                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
-                    <p className="text-[12px] text-[var(--mute)]">
-                        {isDirty ? 'You have unsaved changes.' : 'Social links update the footer and the Contact page as soon as they are saved.'}
-                    </p>
-                    <Button type="submit" disabled={processing} className="min-w-[140px]">
-                        {processing ? 'Saving…' : 'Save social links'}
-                    </Button>
-                </div>
-            </div>
+            <ConfirmDialog
+                open={!!request}
+                title={request?.title ?? ''}
+                body={request?.body}
+                confirmLabel={request?.confirmLabel}
+                onConfirm={run}
+                onCancel={cancel}
+            />
         </form>
     );
 }
@@ -218,6 +279,17 @@ export default function Settings({ settings, socials = [] }) {
     });
     const chooseTab = (id) => {
         setTab(id);
+        // Opening SEO shows its first widget open and the rest collapsed.
+        if (id === 'seo') {
+            setOpenSections((prev) => ({
+                ...Object.fromEntries(Object.keys(prev).map((key) => [key, key.startsWith('seo_') ? false : prev[key]])),
+                seo_meta: true,
+            }));
+        }
+        // Opening General likewise shows only its first widget open.
+        if (id === 'general') {
+            setOpenSections((prev) => ({ ...prev, general: true, header_branding: false, footer_social: false }));
+        }
         if (typeof window !== 'undefined') window.history.replaceState(null, '', `#${id}`);
     };
     const [ogPreview, setOgPreview] = useState(settings.og_image_url);
@@ -225,6 +297,7 @@ export default function Settings({ settings, socials = [] }) {
     const [logoDarkPreview, setLogoDarkPreview] = useState(settings.logo_dark_url);
     const [faviconPreview, setFaviconPreview] = useState(settings.favicon_url);
     const [footerLogoPreview, setFooterLogoPreview] = useState(settings.footer_logo_url);
+    const [emailLogoPreview, setEmailLogoPreview] = useState(settings.email_logo_url);
 
     // Initial state: Top widget (general) open by default, all others collapsed
     const [openSections, setOpenSections] = useState({
@@ -241,23 +314,6 @@ export default function Settings({ settings, socials = [] }) {
         }));
     };
 
-    const expandAll = () => {
-        setOpenSections({
-            general: true,
-            header_branding: true,
-            footer_social: true,
-            seo_meta: true,
-        });
-    };
-
-    const collapseAll = () => {
-        setOpenSections({
-            general: false,
-            header_branding: false,
-            footer_social: false,
-            seo_meta: false,
-        });
-    };
 
     const { data, setData, post, processing, errors } = useForm({
         _method: 'put',
@@ -276,6 +332,8 @@ export default function Settings({ settings, socials = [] }) {
         copyright_text: settings.copyright_text ?? '',
         footer_intro: settings.footer_intro ?? '',
         footer_logo: null,
+        // Starts from the saved logo, so saving without touching it keeps it.
+        email_logo: settings.email_logo ?? '',
         footer_logo_visible: settings.footer_logo_visible ?? true,
         footer_motto_items: settings.footer_motto_items ?? ['IDEA', 'EXPERIENCE', 'RESULT'],
         meta_default_title: settings.meta_default_title ?? '',
@@ -284,7 +342,26 @@ export default function Settings({ settings, socials = [] }) {
         robots_txt: settings.robots_txt ?? '',
         schema_markup: settings.schema_markup ?? '',
         sitemap_enabled: settings.sitemap_enabled ?? true,
+        seo_sections: (settings.seo_sections ?? []).map((section) => ({ ...section, uid: newSeoUid() })),
     });
+
+    const [seoRequest, confirmSeo, cancelSeo, runSeo] = useConfirm();
+
+    const updateSeoSection = (index, patch) => setData('seo_sections', data.seo_sections.map((section, i) => (i === index ? { ...section, ...patch } : section)));
+    const updateSeoTag = (index, tagIndex, patch) => updateSeoSection(index, {
+        tags: data.seo_sections[index].tags.map((tag, i) => (i === tagIndex ? { ...tag, ...patch } : tag)),
+    });
+
+    const askRemoveSeoSection = (index) => {
+        const title = data.seo_sections[index].title.trim();
+
+        confirmSeo({
+            title: `Remove ${title ? `“${title}”` : 'this section'}?`,
+            body: 'Its meta tags are taken off the site when you save the settings.',
+            confirmLabel: 'Remove',
+            action: () => setData('seo_sections', data.seo_sections.filter((_, i) => i !== index)),
+        });
+    };
 
     /** Swaps an upload or chosen media asset in and previews it without waiting for the save. */
     const onImageChange = (field, setPreview, fallback) => (fileOrUrl) => {
@@ -323,22 +400,6 @@ export default function Settings({ settings, socials = [] }) {
                     subtitle="Site-wide configuration: general details and branding, social links and SEO. Page content is edited under Pages."
                 />
 
-                <div className={`flex items-center gap-2 shrink-0 ${tab === 'social' ? 'invisible' : ''}`}>
-                    <button
-                        type="button"
-                        onClick={expandAll}
-                        className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--mute)] hover:text-[var(--ink)]"
-                    >
-                        Expand all
-                    </button>
-                    <button
-                        type="button"
-                        onClick={collapseAll}
-                        className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--mute)] hover:text-[var(--ink)]"
-                    >
-                        Collapse all
-                    </button>
-                </div>
             </div>
 
             <div className={`mb-6 ${TAB_BAR_CLASS}`} role="tablist" aria-label="Settings sections">
@@ -489,6 +550,13 @@ export default function Settings({ settings, socials = [] }) {
                                     preview={faviconPreview}
                                     onChange={onImageChange('favicon', setFaviconPreview, settings.favicon_url)}
                                 />
+                                <ImageField
+                                    label="Email Logo"
+                                    hint="Shown at the top of every email. Emails are dark, so pick a logo for dark backgrounds. Empty uses the dark-theme logo."
+                                    error={errors.email_logo}
+                                    preview={emailLogoPreview}
+                                    onChange={onImageChange('email_logo', setEmailLogoPreview, settings.logo_dark_url)}
+                                />
                             </div>
                         </div>
                     </div>
@@ -620,11 +688,92 @@ export default function Settings({ settings, socials = [] }) {
                     </div>
                 </AccordionWidget>
 
+                {/* Admin-added sections of custom meta tags, added to every public page's <head>. */}
+                {data.seo_sections.map((section, index) => (
+                    <AccordionWidget
+                        key={section.uid}
+                        id={`seo_custom_${section.uid}`}
+                        title={section.title.trim() || 'New section'}
+                        subtitle={`${section.tags.length} meta tag${section.tags.length === 1 ? '' : 's'} added to the <head> of every page.`}
+                        badge="Meta tags"
+                        isOpen={Boolean(openSections[`seo_custom_${section.uid}`])}
+                        onToggle={toggleSection}
+                        icon={(
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m8 7-5 5 5 5M16 7l5 5-5 5" />
+                            </svg>
+                        )}
+                    >
+                        <div className="space-y-5">
+                            <Field label="Section title" error={errors[`seo_sections.${index}.title`]} required>
+                                <Input value={section.title} onChange={(e) => updateSeoSection(index, { title: e.target.value })} placeholder="Search console verification" />
+                            </Field>
+
+                            <div className="space-y-3">
+                                {section.tags.map((tag, tagIndex) => (
+                                    <div key={tagIndex} className="grid gap-3 rounded-lg border border-[var(--field-line)] p-4 sm:grid-cols-[140px_minmax(0,0.8fr)_minmax(0,1.2fr)_auto] sm:items-end">
+                                        <Field label="Attribute">
+                                            <Select value={tag.attribute} onChange={(e) => updateSeoTag(index, tagIndex, { attribute: e.target.value })}>
+                                                <option value="name">name</option>
+                                                <option value="property">property</option>
+                                            </Select>
+                                        </Field>
+                                        <Field label={tag.attribute === 'property' ? 'Property' : 'Name'} error={errors[`seo_sections.${index}.tags.${tagIndex}.key`]}>
+                                            <Input value={tag.key} onChange={(e) => updateSeoTag(index, tagIndex, { key: e.target.value })} placeholder={tag.attribute === 'property' ? 'og:locale' : 'google-site-verification'} className="font-mono text-[13px]" />
+                                        </Field>
+                                        <Field label="Content" error={errors[`seo_sections.${index}.tags.${tagIndex}.content`]}>
+                                            <Input value={tag.content} onChange={(e) => updateSeoTag(index, tagIndex, { content: e.target.value })} placeholder="Value" className="font-mono text-[13px]" />
+                                        </Field>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateSeoSection(index, { tags: section.tags.filter((_, i) => i !== tagIndex) })}
+                                            aria-label={`Remove meta tag ${tagIndex + 1}`}
+                                            title="Remove"
+                                            className="rounded-lg px-2.5 py-2 text-[12px] text-[#ff6b6b] hover:opacity-80"
+                                        >
+                                            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
+                                                <path strokeLinecap="round" d="M10 11.5v5M14 11.5v5" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => updateSeoSection(index, { tags: [...section.tags, { ...BLANK_META_TAG }] })}
+                                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+                                >
+                                    + Add meta tag
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => askRemoveSeoSection(index)}
+                                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff6b6b] hover:opacity-80"
+                                >
+                                    Remove section
+                                </button>
+                            </div>
+                        </div>
+                    </AccordionWidget>
+                ))}
+
                 </div>
 
+                <ConfirmDialog
+                    open={!!seoRequest}
+                    title={seoRequest?.title ?? ''}
+                    body={seoRequest?.body}
+                    confirmLabel={seoRequest?.confirmLabel}
+                    onConfirm={runSeo}
+                    onCancel={cancelSeo}
+                />
+
                 {/* Always on screen, like the other admin forms' save bars. */}
-                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
-                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:px-6 lg:left-64 lg:px-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-[12px] text-[var(--mute)]">
                             Changes update site configuration and active layout components immediately.
                         </p>

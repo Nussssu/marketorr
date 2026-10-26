@@ -21,7 +21,7 @@ function ActionIcon({ name }) {
     );
 }
 
-export default function PagesIndex({ pages }) {
+export default function PagesIndex({ pages, stats = {} }) {
     const [request, confirm, cancel, run] = useConfirm();
 
     const askDelete = (page) => {
@@ -60,6 +60,28 @@ export default function PagesIndex({ pages }) {
                 <Button as="link" href="/admin/pages/create">New page</Button>
             </PageHeader>
 
+            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {[
+                    { label: 'Total pages', value: stats.total ?? pages.length, accent: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' },
+                    { label: 'Published', value: stats.published ?? 0, accent: 'var(--brand-3)' },
+                    { label: 'Hidden', value: stats.hidden ?? 0, accent: '#8B98A8' },
+                    {
+                        label: 'Last edited',
+                        value: stats.lastEdited?.ago ?? 'Never',
+                        hint: stats.lastEdited ? `${stats.lastEdited.title} · ${stats.lastEdited.at}` : null,
+                        accent: 'var(--brand-2)',
+                        small: true,
+                    },
+                ].map((card) => (
+                    <div key={card.label} className="relative overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                        <span className="absolute inset-x-0 top-0 h-0.5" style={{ background: card.accent }} aria-hidden />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">{card.label}</p>
+                        <p className={`mt-1 font-display font-black text-[var(--ink-strong)] ${card.small ? 'text-lg' : 'text-2xl'}`}>{card.value}</p>
+                        {card.hint && <p className="mt-0.5 truncate text-[11px] text-[var(--ink-faint)]" title={card.hint}>{card.hint}</p>}
+                    </div>
+                ))}
+            </div>
+
             <Panel className="overflow-hidden">
                 {pages.length === 0 ? (
                     <EmptyState>No pages yet, create the first one.</EmptyState>
@@ -85,11 +107,6 @@ export default function PagesIndex({ pages }) {
                                     >
                                         <td className="py-3 pr-4">
                                             <Link href={`/admin/pages/${page.id}/builder`} className="font-semibold text-[var(--ink-strong)] hover:underline">{page.title}</Link>
-                                            {page.is_system && (
-                                                <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
-                                                    System
-                                                </span>
-                                            )}
                                         </td>
                                         <td className="py-3 pr-4 font-mono text-[12px] text-[var(--ink-faint)]">{page.url}</td>
                                         <td className="py-3 pr-4 text-[var(--mute)]">{page.sections_count}</td>

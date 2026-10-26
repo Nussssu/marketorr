@@ -259,7 +259,7 @@ function AddSection({ page, palette }) {
     };
 
     return (
-        <Panel title="Add a section" description="Pick a widget; edit its content once it is in the stack.">
+        <WidgetPanel title="Add a section" description="Pick a widget; edit its content once it is in the stack." defaultOpen>
             <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                 <Field label="Section type">
                     <Select value={type} onChange={(e) => setType(e.target.value)}>
@@ -271,7 +271,7 @@ function AddSection({ page, palette }) {
                 <Button type="button" onClick={add}>Add section</Button>
             </div>
             {selected && <p className="mt-3 text-[12px] text-[var(--mute)]">{selected.description}</p>}
-        </Panel>
+        </WidgetPanel>
     );
 }
 
@@ -324,7 +324,7 @@ function SeoPanel({ page, register }) {
     };
 
     return (
-        <Panel title="SEO" description="How this page appears in search results and when shared.">
+        <WidgetPanel title="SEO" description="How this page appears in search results and when shared." summary={data.meta_title || 'Meta title, description, share image and robots'}>
             <form onSubmit={submit} className="grid gap-4">
                 <Field label="Meta title" error={errors.meta_title} hint={<LengthHint value={data.meta_title} limit={60} />}>
                     <Input value={data.meta_title} onChange={(e) => setData('meta_title', e.target.value)} placeholder={`${page.title} | Marketorr`} />
@@ -350,7 +350,7 @@ function SeoPanel({ page, register }) {
                     <Textarea rows={4} className="font-mono text-[12px]" value={data.schema_markup} onChange={(e) => setData('schema_markup', e.target.value)} />
                 </Field>
             </form>
-        </Panel>
+        </WidgetPanel>
     );
 }
 
@@ -358,7 +358,8 @@ export default function PageBuilder({ page, sections, palette, categories = null
     // Local copy so the up/down buttons reorder instantly, then persist.
     const [rows, setRows] = useState(sections);
     // Each card's open state is its own: opening one never closes another.
-    const [openIds, setOpenIds] = useState(() => new Set());
+    // The first section starts open; the rest start closed.
+    const [openIds, setOpenIds] = useState(() => new Set(sections[0] ? [sections[0].id] : []));
     const toggleOpen = (id) => setOpenIds((current) => {
         const next = new Set(current);
         if (next.has(id)) next.delete(id);
@@ -451,7 +452,6 @@ export default function PageBuilder({ page, sections, palette, categories = null
                 subtitle={`${rows.length} section${rows.length === 1 ? '' : 's'}, ${visibleCount} shown on the site. The order here is the order on the page.`}
             >
                 <Button as="a" href={page.url} target="_blank" rel="noreferrer" variant="secondary">View page ↗</Button>
-                <Button as="link" href="/admin/pages" variant="secondary">All pages</Button>
             </PageHeader>
 
             {/* Both columns start on the same line and stick: whichever is shorter

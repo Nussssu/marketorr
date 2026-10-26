@@ -55,6 +55,16 @@
     @if (filled($siteSettings?->schema_markup))
         <script type="application/ld+json">{!! json_encode($siteSettings->schema_markup) !!}</script>
     @endif
+    {{-- Custom meta tags from Settings > SEO, never on admin pages. --}}
+    @unless (request()->is('admin', 'admin/*'))
+        @foreach ($siteSettings?->seo_sections ?? [] as $seoSection)
+            @foreach ($seoSection['tags'] ?? [] as $seoTag)
+                @if (in_array($seoTag['attribute'] ?? '', ['name', 'property'], true) && filled($seoTag['key'] ?? null))
+                    <meta {{ $seoTag['attribute'] }}="{{ $seoTag['key'] }}" content="{{ $seoTag['content'] ?? '' }}" />
+                @endif
+            @endforeach
+        @endforeach
+    @endunless
 </head>
 <body>
     {!! app(\App\Services\CodeInjector::class)->render('body_start', request()) !!}

@@ -24,12 +24,16 @@ class EmailLogController extends Controller
             'status' => ['nullable', Rule::in(EmailLogStatus::values())],
             'source' => ['nullable', Rule::in(EmailLogSource::values())],
             'search' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
 
         $logs = EmailLog::query()
             ->with('user:id,name')
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->when($filters['source'] ?? null, fn ($query, string $source) => $query->where('source', $source))
+            ->when($filters['from'] ?? null, fn ($query, string $from) => $query->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, string $to) => $query->whereDate('created_at', '<=', $to))
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where(fn ($query) => $query
                 ->where('recipients', 'like', "%{$search}%")
                 ->orWhere('subject', 'like', "%{$search}%")))
@@ -44,6 +48,8 @@ class EmailLogController extends Controller
                 'status' => $filters['status'] ?? '',
                 'source' => $filters['source'] ?? '',
                 'search' => $filters['search'] ?? '',
+                'from' => $filters['from'] ?? '',
+                'to' => $filters['to'] ?? '',
             ],
             'counts' => collect(EmailLogStatus::cases())
                 ->mapWithKeys(fn (EmailLogStatus $status) => [$status->value => EmailLog::query()->where('status', $status)->count()]),

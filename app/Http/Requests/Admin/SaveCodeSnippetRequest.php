@@ -83,6 +83,9 @@ class SaveCodeSnippetRequest extends FormRequest
             ->all();
 
         $this->merge([
+            // There is no type to choose: code is added as written, so full
+            // <script> and <style> tags go straight in.
+            'type' => SnippetType::Html->value,
             'enabled' => $this->boolean('enabled'),
             'target_paths' => $this->input('target') === SnippetTarget::All->value ? [] : $paths,
         ]);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContentStatus;
 use App\Enums\SectionType;
 use App\Models\Page;
 use App\Models\PageSection;
@@ -140,6 +141,32 @@ class PageBuilderTest extends TestCase
         $this->assertArrayNotHasKey('smuggled', $content);
     }
 
+    public function test_rich_text_bodies_are_cleaned_when_a_section_is_saved(): void
+    {
+        $page = Page::factory()->create();
+        $section = PageSection::factory()->ofType(SectionType::Features)->create(['page_id' => $page->id]);
+
+        $this->actingAs($this->admin)->put("/admin/pages/{$page->id}/sections/{$section->id}", [
+            'type' => SectionType::Features->value,
+            'name' => 'Features',
+            'content' => [
+                'heading' => 'What we do',
+                'items' => [['title' => 'Brand', 'body' => '<p>Bold <strong>ideas</strong><script>alert(1)</script></p>', 'accent' => '#891FFB']],
+            ],
+            'enabled' => true,
+        ])->assertSessionHas('success');
+
+        $this->assertSame('<p>Bold <strong>ideas</strong></p>', $section->fresh()->content['items'][0]['body']);
+    }
+
+    public function test_the_builder_offers_the_rich_text_editor_for_body_fields(): void
+    {
+        $fields = collect(SectionType::Cta->fields())->keyBy('name');
+
+        $this->assertSame('richtext', $fields['body']['type']);
+        $this->assertSame('richtext', collect(SectionType::Features->fields())->firstWhere('name', 'items')['item_fields'][1]['type']);
+    }
+
     public function test_a_section_cannot_be_edited_through_another_pages_url(): void
     {
         $page = Page::factory()->create();
@@ -265,6 +292,22 @@ class PageBuilderTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('published', $page->fresh()->status->value);
+    }
+
+    public function test_the_page_list_shows_totals_and_the_last_edit(): void
+    {
+        Page::factory()->count(2)->create(['updated_at' => now()->subDays(3)]);
+        Page::factory()->create(['status' => ContentStatus::Draft, 'updated_at' => now()->subDays(3)]);
+        $edited = Page::factory()->create(['title' => 'Recently Edited', 'updated_at' => now()->subDays(3)]);
+        PageSection::factory()->create(['page_id' => $edited->id]);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/pages')
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.total', 4)
+                ->where('stats.published', 3)
+                ->where('stats.hidden', 1)
+                ->where('stats.lastEdited.title', 'Recently Edited'));
     }
 
     public function test_guests_cannot_reach_the_page_module(): void

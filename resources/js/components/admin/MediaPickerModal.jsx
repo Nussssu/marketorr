@@ -20,6 +20,33 @@ export function getFileExtension(filename = '') {
     return ext ? ext.toUpperCase() : 'FILE';
 }
 
+/** The portfolios a file can be filed under, in filter order. */
+const PORTFOLIOS = [
+    ['uiux', 'UI/UX'],
+    ['branding', 'Branding'],
+];
+
+/** Whether a file is used by the project or was uploaded under its name. */
+function belongsToProject(item, project) {
+    return (item.uses || []).some((use) => use.owner_key === `project-${project.id}`)
+        || (item.usage_location || '').trim().toLowerCase() === project.title.trim().toLowerCase();
+}
+
+/** The portfolios (uiux, branding) a file belongs to; none means Other. */
+function portfoliosOf(item, projects) {
+    const found = new Set(item.sections || []);
+    const category = (item.category || '').toLowerCase();
+
+    PORTFOLIOS.forEach(([key, label]) => {
+        if (category === label.toLowerCase()) found.add(key);
+    });
+    projects.forEach((project) => {
+        if (belongsToProject(item, project)) found.add(project.section);
+    });
+
+    return found;
+}
+
 /**
  * Centralized Media Library Modal Picker.
  *
@@ -44,10 +71,11 @@ export default function MediaPickerModal({
     currentUrl = '',
 }) {
     const [media, setMedia] = useState([]);
-    const [categories, setCategories] = useState([]);
+    const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
+    // '' (everything), 'section:uiux' | 'section:branding' | 'section:other', or 'project:<id>'.
+    const [selectedFilter, setSelectedFilter] = useState('');
     const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'upload'
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [typeFilter, setTypeFilter] = useState(filterType); // 'all' | 'image' | 'document'
@@ -56,6 +84,7 @@ export default function MediaPickerModal({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [uploadCategory, setUploadCategory] = useState('General');
+    const [uploadProjectId, setUploadProjectId] = useState('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -69,7 +98,7 @@ export default function MediaPickerModal({
             if (res.ok) {
                 const json = await res.json();
                 setMedia(json.media || []);
-                setCategories(json.categories || []);
+                setProjects(json.projects || []);
             }
         } catch (e) {
             console.error('Failed to load media items', e);
@@ -83,9 +112,14 @@ export default function MediaPickerModal({
             fetchMedia();
             setActiveTab('browse');
             setSearch('');
-            setSelectedCategory('');
+            setSelectedFilter('');
         }
     }, [open]);
+
+    const projectsBySection = useMemo(
+        () => PORTFOLIOS.map(([key, label]) => [key, label, projects.filter((project) => project.section === key)]),
+        [projects],
+    );
 
     // Handle escape key and body overflow
     useEffect(() => {
@@ -107,9 +141,19 @@ export default function MediaPickerModal({
 
     // Filtered media items
     const filteredItems = useMemo(() => {
+        const [filterKind, filterValue] = selectedFilter.split(':');
+        const filterProject = filterKind === 'project' ? projects.find((project) => String(project.id) === filterValue) : null;
+
         return media.filter((item) => {
-            if (selectedCategory && item.category !== selectedCategory) {
+            if (filterProject && !belongsToProject(item, filterProject)) {
                 return false;
+            }
+
+            if (filterKind === 'section') {
+                const portfolios = portfoliosOf(item, projects);
+                if (filterValue === 'other' ? portfolios.size > 0 : !portfolios.has(filterValue)) {
+                    return false;
+                }
             }
 
             if (typeFilter === 'image' && !isImageAsset(item)) {
@@ -125,12 +169,14 @@ export default function MediaPickerModal({
                 const matchFilename = (item.filename || '').toLowerCase().includes(q);
                 const matchAlt = (item.alt_text || '').toLowerCase().includes(q);
                 const matchCat = (item.category || '').toLowerCase().includes(q);
-                if (!matchFilename && !matchAlt && !matchCat) return false;
+                const matchProject = (item.usage_location || '').toLowerCase().includes(q)
+                    || (item.uses || []).some((use) => (use.owner || '').toLowerCase().includes(q));
+                if (!matchFilename && !matchAlt && !matchCat && !matchProject) return false;
             }
 
             return true;
         });
-    }, [media, selectedCategory, typeFilter, search]);
+    }, [media, projects, selectedFilter, typeFilter, search]);
 
     // Handle single file upload
     const handleFileUpload = async (file) => {
@@ -142,6 +188,10 @@ export default function MediaPickerModal({
         const formData = new FormData();
         formData.append('file', file);
         formData.append('category', uploadCategory || 'General');
+        const uploadProject = projects.find((project) => String(project.id) === uploadProjectId);
+        if (uploadProject) {
+            formData.append('usage_location', uploadProject.title);
+        }
 
         try {
             const res = await fetch('/admin/media', {
@@ -287,7 +337,7 @@ export default function MediaPickerModal({
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search filename or alt..."
+                                    placeholder="Search filename, alt or project..."
                                     className="w-56 sm:w-64 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
                                 />
                                 {search && (
@@ -301,17 +351,25 @@ export default function MediaPickerModal({
                                 )}
                             </div>
 
-                            {/* Category Filter */}
+                            {/* Project Filter: by project, grouped by UI/UX, Branding and Other */}
                             <Select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                aria-label="Filter by category"
-                                className="!w-auto min-w-[150px] !py-1.5 !text-xs"
+                                value={selectedFilter}
+                                onChange={(e) => setSelectedFilter(e.target.value)}
+                                aria-label="Filter by project"
+                                className="!w-auto min-w-[180px] !py-1.5 !text-xs"
                             >
-                                <option value="">All Categories</option>
-                                {categories.map((c) => (
-                                    <option key={c} value={c}>{c}</option>
+                                <option value="">All Projects</option>
+                                {projectsBySection.map(([key, label, list]) => (
+                                    <optgroup key={key} label={label}>
+                                        <option value={`section:${key}`}>All {label}</option>
+                                        {list.map((project) => (
+                                            <option key={project.id} value={`project:${project.id}`}>{project.title}</option>
+                                        ))}
+                                    </optgroup>
                                 ))}
+                                <optgroup label="Other">
+                                    <option value="section:other">Other (no project)</option>
+                                </optgroup>
                             </Select>
 
                             {/* Type Filter Pills */}
@@ -345,6 +403,33 @@ export default function MediaPickerModal({
                         /* Upload Screen */
                         <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center">
                             <div className="w-full max-w-xl space-y-6">
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                        Project (optional)
+                                    </label>
+                                    <Select
+                                        value={uploadProjectId}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            const project = projects.find((item) => String(item.id) === value);
+                                            setUploadProjectId(value);
+                                            setUploadCategory(project ? project.section_label : 'General');
+                                        }}
+                                        aria-label="Upload under project"
+                                    >
+                                        <option value="">No project</option>
+                                        {projectsBySection.map(([key, label, list]) => (
+                                            list.length > 0 && (
+                                                <optgroup key={key} label={label}>
+                                                    {list.map((project) => (
+                                                        <option key={project.id} value={String(project.id)}>{project.title}</option>
+                                                    ))}
+                                                </optgroup>
+                                            )
+                                        ))}
+                                    </Select>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                                         Assign Category (optional)

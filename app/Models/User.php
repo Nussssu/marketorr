@@ -117,7 +117,10 @@ class User extends Authenticatable
             return $this->adminRole?->isSuperAdmin() ? $this->adminRole : AdminRole::forSlug(AdminRole::SUPER_ADMIN);
         }
 
-        return $this->adminRole ?? AdminRole::forSlug(AdminRole::EDITOR);
+        // The Super Admin role only ever applies to Super Admin accounts.
+        return $this->adminRole && ! $this->adminRole->isSuperAdmin()
+            ? $this->adminRole
+            : AdminRole::forSlug(AdminRole::EDITOR);
     }
 
     /**

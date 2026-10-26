@@ -27,6 +27,69 @@ class Menu extends Model
     }
 
     /**
+     * Keep a sub-service listed in the header's Services mega menu, under its
+     * own tab's column: a new one is added at the end of that column, and one
+     * moved to another tab moves column. The link follows the sub-service's
+     * name, address and published state, so nothing else needs updating.
+     *
+     * Does nothing when the mega menu has not been set up in the admin (the
+     * header then lists the catalogue itself) or has no column for the tab.
+     */
+    public static function linkSubService(SubService $subService, bool $addIfMissing = true): void
+    {
+        $subService->loadMissing('group');
+        $menu = self::query()->where('location', MenuLocation::MegaServices)->first();
+
+        if ($menu === null || $subService->group === null) {
+            return;
+        }
+
+        $column = $menu->items()
+            ->whereNull('parent_id')
+            ->where(fn ($query) => $query
+                ->where('url', '/services#'.$subService->group->slug)
+                ->orWhere('label', $subService->group->name))
+            ->first();
+
+        if ($column === null) {
+            return;
+        }
+
+        $link = [
+            'label' => $subService->name,
+            'url' => '/services/'.$subService->group->slug.'/'.$subService->slug,
+        ];
+        $existing = $menu->items()->where('sub_service_id', $subService->id)->first();
+
+        if ($existing !== null) {
+            if ($existing->parent_id !== $column->id) {
+                $existing->update([
+                    ...$link,
+                    'parent_id' => $column->id,
+                    'sort_order' => (int) $menu->items()->where('parent_id', $column->id)->max('sort_order') + 1,
+                ]);
+            }
+
+            return;
+        }
+
+        if (! $addIfMissing) {
+            return;
+        }
+
+        $menu->items()->create([
+            ...$link,
+            'parent_id' => $column->id,
+            'sub_service_id' => $subService->id,
+            'opens_in_new_tab' => false,
+            'enabled' => true,
+            'show_on_desktop' => true,
+            'show_on_mobile' => true,
+            'sort_order' => (int) $menu->items()->where('parent_id', $column->id)->max('sort_order') + 1,
+        ]);
+    }
+
+    /**
      * Every menu keyed by location, with enabled items nested one level deep.
      * One query per relation, so the shared Inertia prop stays cheap.
      *

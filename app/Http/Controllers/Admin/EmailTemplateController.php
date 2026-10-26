@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\EmailLogSource;
 use App\Enums\EmailTemplateKey;
+use App\Enums\EmailWidget;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\PreviewEmailTemplateRequest;
 use App\Http\Requests\Admin\UpdateEmailTemplateRequest;
 use App\Http\Requests\Admin\UpdateEmailTemplatesRequest;
+use App\Mail\TemplatedMail;
 use App\Models\EmailTemplate;
 use App\Services\EmailLogger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,6 +28,25 @@ class EmailTemplateController extends Controller
             'templates' => collect(EmailTemplateKey::cases())
                 ->map(fn (EmailTemplateKey $key) => EmailTemplate::forKey($key)->toAdminArray())
                 ->values(),
+            'widgets' => EmailWidget::catalogue(),
+        ]);
+    }
+
+    /**
+     * The editor's unsaved subject and widgets rendered into the real email
+     * layout with sample values, so the preview is exactly what is sent.
+     */
+    public function preview(PreviewEmailTemplateRequest $request, EmailTemplate $template): JsonResponse
+    {
+        $draft = (clone $template)->forceFill([
+            'subject' => (string) $request->validated('subject', ''),
+            'blocks' => $request->validated('blocks'),
+        ]);
+        $sample = $template->key->sampleValues();
+
+        return response()->json([
+            'subject' => $draft->renderSubject($sample),
+            'html' => view('mail.templated', TemplatedMail::layoutData($draft->renderBody($sample)))->render(),
         ]);
     }
 
@@ -48,7 +71,7 @@ class EmailTemplateController extends Controller
         DB::transaction(function () use ($request, $logger): void {
             foreach ($request->validated('templates') as $input) {
                 $template = EmailTemplate::query()->findOrFail($input['id']);
-                $template->update(collect($input)->only(['subject', 'body_html', 'enabled'])->all());
+                $template->update(collect($input)->only(['subject', 'blocks', 'enabled'])->all());
 
                 $changed = array_keys(array_diff_key($template->getChanges(), array_flip(['updated_at'])));
                 if ($changed !== []) {

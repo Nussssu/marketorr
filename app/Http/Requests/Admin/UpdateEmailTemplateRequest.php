@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\EmailWidget;
 use App\Models\EmailTemplate;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateEmailTemplateRequest extends FormRequest
@@ -20,8 +22,33 @@ class UpdateEmailTemplateRequest extends FormRequest
     {
         return [
             'subject' => ['required', 'string', 'max:190'],
-            'body_html' => ['required', 'string', 'max:50000'],
             'enabled' => ['required', 'boolean'],
+            ...self::blockRules('blocks'),
+        ];
+    }
+
+    /**
+     * Rules for a template's widget list, under the given key.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public static function blockRules(string $key): array
+    {
+        return [
+            $key => ['required', 'array', 'min:1', 'max:40'],
+            "{$key}.*" => ['array'],
+            "{$key}.*.type" => ['required', 'string', Rule::in(EmailWidget::values())],
+            "{$key}.*.text" => ['nullable', 'string', 'max:10000'],
+            "{$key}.*.label" => ['nullable', 'string', 'max:190'],
+            "{$key}.*.url" => ['nullable', 'string', 'max:2000'],
+            "{$key}.*.html" => ['nullable', 'string', 'max:50000'],
+            "{$key}.*.src" => ['nullable', 'string', 'max:2000'],
+            "{$key}.*.alt" => ['nullable', 'string', 'max:190'],
+            "{$key}.*.link" => ['nullable', 'string', 'max:2000'],
+            "{$key}.*.width" => ['nullable', 'integer', 'min:0', 'max:600'],
+            "{$key}.*.rows" => ['nullable', 'array', 'max:30'],
+            "{$key}.*.rows.*.label" => ['nullable', 'string', 'max:190'],
+            "{$key}.*.rows.*.value" => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -41,13 +68,13 @@ class UpdateEmailTemplateRequest extends FormRequest
             $unknown = (clone $template)
                 ->forceFill([
                     'subject' => (string) $this->input('subject'),
-                    'body_html' => (string) $this->input('body_html'),
+                    'blocks' => (array) $this->input('blocks'),
                 ])
                 ->unknownPlaceholders();
 
             if ($unknown !== []) {
                 $validator->errors()->add(
-                    'body_html',
+                    'blocks',
                     'Unknown placeholder(s): '.implode(', ', array_map(
                         static fn (string $token) => '{{ '.$token.' }}',
                         $unknown,

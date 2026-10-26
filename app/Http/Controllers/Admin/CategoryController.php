@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreCategoryRequest;
 use App\Http\Requests\Admin\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Models\Page;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -106,16 +107,19 @@ class CategoryController extends Controller
      * Soft-deleting a category leaves its projects orphaned rather than
      * deleted, so the editor is told how many need re-filing.
      */
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(Category $category, TrashBin $trash): RedirectResponse
     {
-        $orphaned = $category->projects()->count();
+        // Remembered so a restore files them back under it.
+        $projects = $category->projects()->pluck('id')->all();
+        $children = $category->children()->pluck('id')->all();
+        $orphaned = count($projects);
         $category->children()->update(['parent_id' => null]);
         $category->projects()->update(['category_id' => null]);
-        $category->delete();
+        $entry = $trash->trash($category, 'category', $category->name, $orphaned.' project(s)', ['projects' => $projects, 'children' => $children]);
 
         return back()->with('success', $orphaned > 0
-            ? "Category deleted. {$orphaned} project(s) now have no category."
-            : 'Category deleted.');
+            ? "Category moved to the trash. {$orphaned} project(s) now have no category."
+            : 'Category moved to the trash.')->with('undo', $entry->id);
     }
 
     /**

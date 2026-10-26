@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\SectionType;
+use App\Services\RichTextSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,6 +42,31 @@ class StorePageSectionRequest extends FormRequest
             (array) $this->validated('content', []),
             array_flip($allowed),
         );
+
+        // Rich text is rendered as HTML on the site, so only safe markup is kept.
+        $sanitizer = app(RichTextSanitizer::class);
+
+        foreach ($type->fields() as $field) {
+            $name = $field['name'];
+
+            if ($field['type'] === 'richtext' && is_string($content[$name] ?? null)) {
+                $content[$name] = $sanitizer->clean($content[$name]);
+            }
+
+            if ($field['type'] === 'repeater' && is_array($content[$name] ?? null)) {
+                $richItems = array_column(array_filter($field['item_fields'] ?? [], fn (array $itemField): bool => $itemField['type'] === 'richtext'), 'name');
+
+                $content[$name] = array_map(function (mixed $item) use ($richItems, $sanitizer): mixed {
+                    foreach ($richItems as $itemName) {
+                        if (is_array($item) && is_string($item[$itemName] ?? null)) {
+                            $item[$itemName] = $sanitizer->clean($item[$itemName]);
+                        }
+                    }
+
+                    return $item;
+                }, $content[$name]);
+            }
+        }
 
         return [
             'type' => $type,

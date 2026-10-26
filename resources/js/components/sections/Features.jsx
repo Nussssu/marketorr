@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { EASE } from '../../lib/motion';
 import { BRAND_SEQUENCE } from '../../lib/tokens';
 import { GradientTitle, SectionLabel } from '../ui/primitives';
+import RichContent from '../ui/RichContent';
 
 /**
  * @param {{ content?: { heading?: string, items?: Array<{ title?: string, body?: string, accent?: string }> } }} props
@@ -32,7 +33,7 @@ export default function Features({ content }) {
                                 aria-hidden
                             />
                             <h3 className="mt-5 font-display text-[18px] font-bold text-[var(--ink-strong)]"><GradientTitle text={item.title} /></h3>
-                            <p className="mt-2.5 text-[15px] leading-[1.7] text-[var(--mute)]">{item.body}</p>
+                            <RichContent value={item.body} className="mt-2.5 text-[15px] leading-[1.7] text-[var(--mute)]" />
                         </motion.article>
                     ))}
                 </div>

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
+use App\Models\AdminRole;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -60,6 +61,8 @@ class DatabaseSeeder extends Seeder
             'email' => $email,
             'password' => Hash::make($password),
             'role' => UserRole::SuperAdmin,
+            'admin_role_id' => AdminRole::forSlug(AdminRole::SUPER_ADMIN)?->id,
+            'is_primary' => ! User::query()->where('is_primary', true)->exists(),
             'email_verified_at' => now(),
         ]);
 

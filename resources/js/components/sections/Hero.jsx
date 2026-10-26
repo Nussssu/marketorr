@@ -5,7 +5,7 @@ import { MARK, withAlpha } from '../../lib/tokens';
 import { useThemeMotion } from '../../lib/theme';
 import MagneticButton from '../motion/MagneticButton';
 import ScrollHeading from '../motion/ScrollHeading';
-import DesignCanvas from '../decor/DesignCanvas';
+import HeroOrb from '../decor/HeroOrb';
 import Stage from '../decor/Stage';
 
 /**
@@ -193,7 +193,7 @@ export default function Hero({ content }) {
             >
                 <Stage variant="hero" />
                 <div className="grid-bg absolute inset-0" />
-                <DesignCanvas progress={scrollYProgress} />
+                <HeroOrb progress={scrollYProgress} />
             </div>
 
             <motion.div style={exitMotion} className="container-x relative z-10 flex flex-none flex-col justify-start pb-4 pt-24 sm:flex-1 sm:justify-center sm:pt-32">
@@ -257,15 +257,6 @@ export default function Hero({ content }) {
                 className="container-x relative z-0 mt-24 flex items-end justify-start pb-8 sm:mt-10 sm:pb-10"
             >
                 <Bars glow={fx.barGlow} progress={scrollYProgress} rich={richMotion} reduce={reduce} />
-                <div className="hidden flex-1 justify-end md:flex">
-                    <Link
-                        href="/about"
-                        className="btn-press flex flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)] hover:text-[var(--ink)]"
-                    >
-                        Scroll to explore
-                        <span className="block h-10 w-[1px] bg-gradient-to-b from-[var(--brand-1)] via-[var(--brand-2)] to-[var(--brand-3)]" aria-hidden />
-                    </Link>
-                </div>
             </motion.div>
         </section>
     );

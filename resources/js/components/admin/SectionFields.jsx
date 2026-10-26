@@ -1,4 +1,5 @@
 import MediaPickerField from './MediaPickerField';
+import RichTextEditor from './RichTextEditor';
 import {
     ColorInput,
     Field,
@@ -43,6 +44,15 @@ function Repeater({ field, values, onChange }) {
                                 label={itemField.label}
                                 value={row[itemField.name] ?? ''}
                                 onChange={(url) => update(index, itemField.name, url)}
+                                className="sm:col-span-2"
+                            />
+                        ) : itemField.type === 'richtext' ? (
+                            <RichTextEditor
+                                key={itemField.name}
+                                label={itemField.label}
+                                value={row[itemField.name] ?? ''}
+                                onChange={(html) => update(index, itemField.name, html)}
+                                rows={3}
                                 className="sm:col-span-2"
                             />
                         ) : (
@@ -130,17 +140,23 @@ export default function SectionFields({ fields, content, onChange, errors = {} }
             );
         }
 
-        if (field.type === 'textarea' || field.type === 'richtext') {
+        if (field.type === 'richtext') {
             return (
-                <Field
+                <RichTextEditor
                     key={field.name}
                     label={field.label}
+                    value={value ?? ''}
                     error={error}
-                    hint={field.type === 'richtext' ? 'HTML is allowed: use <p>, <strong>, <a> and lists.' : undefined}
-                >
+                    onChange={(html) => set(field.name, html)}
+                />
+            );
+        }
+
+        if (field.type === 'textarea') {
+            return (
+                <Field key={field.name} label={field.label} error={error}>
                     <Textarea
-                        rows={field.type === 'richtext' ? 8 : 4}
-                        className={field.type === 'richtext' ? 'font-mono text-[12px]' : ''}
+                        rows={4}
                         value={value ?? ''}
                         onChange={(e) => set(field.name, e.target.value)}
                     />

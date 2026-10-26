@@ -34,6 +34,55 @@ class AdminInquiryTest extends TestCase
                 ->has('inquiries.data', 3));
     }
 
+    public function test_the_list_counts_inquiries_by_status_whatever_the_filter(): void
+    {
+        ContactSubmission::factory()->count(2)->create(['status' => InquiryStatus::New]);
+        ContactSubmission::factory()->create(['status' => InquiryStatus::Archived]);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/inquiries?status=archived')
+            ->assertInertia(fn ($page) => $page
+                ->where('counts.total', 3)
+                ->where('counts.new', 2)
+                ->where('counts.archived', 1)
+                ->where('counts.replied', 0));
+    }
+
+    public function test_the_admin_panel_shares_the_new_inquiry_count(): void
+    {
+        ContactSubmission::factory()->count(2)->create(['status' => InquiryStatus::New]);
+        ContactSubmission::factory()->create(['status' => InquiryStatus::Replied]);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/dashboard')
+            ->assertInertia(fn ($page) => $page->where('newInquiries', 2));
+    }
+
+    public function test_the_list_can_be_filtered_by_a_date_range(): void
+    {
+        ContactSubmission::factory()->create(['created_at' => '2026-03-01 10:00:00']);
+        ContactSubmission::factory()->create(['created_at' => '2026-03-10 23:30:00']);
+        ContactSubmission::factory()->create(['created_at' => '2026-03-11 00:10:00']);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/inquiries?from=2026-03-05&to=2026-03-10')
+            ->assertInertia(fn ($page) => $page
+                ->has('inquiries.data', 1)
+                ->where('filters.from', '2026-03-05')
+                ->where('filters.to', '2026-03-10'));
+
+        $this->actingAs($this->admin)
+            ->get('/admin/inquiries?from=2026-03-01')
+            ->assertInertia(fn ($page) => $page->has('inquiries.data', 3));
+    }
+
+    public function test_a_to_date_before_the_from_date_is_rejected(): void
+    {
+        $this->actingAs($this->admin)
+            ->get('/admin/inquiries?from=2026-03-10&to=2026-03-01')
+            ->assertSessionHasErrors('to');
+    }
+
     public function test_the_list_can_be_filtered_by_status(): void
     {
         ContactSubmission::factory()->create(['status' => InquiryStatus::New]);

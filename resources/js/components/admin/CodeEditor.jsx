@@ -82,7 +82,7 @@ const SHARED = 'm-0 whitespace-pre break-normal p-3 font-mono text-[13px] leadin
  *
  * @param {{ value: string, onChange: (value: string) => void, language: 'js'|'css'|'html', invalid?: boolean, rows?: number, readOnly?: boolean }} props
  */
-export default function CodeEditor({ value, onChange, language, invalid = false, rows = 18, readOnly = false, ...props }) {
+export default function CodeEditor({ value, onChange, language, invalid = false, rows = 18, readOnly = false, fill = false, ...props }) {
     const highlightRef = useRef(null);
     const gutterRef = useRef(null);
     const tokens = useMemo(() => tokenize(value ?? '', language), [value, language]);
@@ -108,7 +108,8 @@ export default function CodeEditor({ value, onChange, language, invalid = false,
     return (
         <div
             className={`relative flex overflow-hidden rounded-lg border bg-[var(--bg)] focus-within:ring-1 ${invalid ? 'border-[#ff6b6b] focus-within:ring-[#ff6b6b]' : 'border-[var(--field-line)] focus-within:border-[var(--brand-3)] focus-within:ring-[var(--brand-3)]'}`}
-            style={{ height: `calc(${rows} * 1.6 * 13px + 1.5rem)` }}
+            // `fill` grows the box into the space its flex parent gives it, never below `rows`.
+            style={fill ? { flex: '1 1 0%', minHeight: `calc(${rows} * 1.6 * 13px + 1.5rem)` } : { height: `calc(${rows} * 1.6 * 13px + 1.5rem)` }}
         >
             <div ref={gutterRef} className="shrink-0 select-none overflow-hidden border-r border-[var(--line)] bg-[var(--surface)] py-3 text-right font-mono text-[12px] leading-[1.6] text-[var(--ink-faint)]" aria-hidden>
                 {Array.from({ length: lineCount }, (_, i) => (

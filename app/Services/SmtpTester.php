@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\EmailLogSource;
+use App\Enums\EmailTemplateKey;
+use App\Mail\TemplatedMail;
+use App\Models\EmailTemplate;
 use App\Models\MailSetting;
-use App\Models\Setting;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
@@ -41,12 +43,10 @@ class SmtpTester
         Mail::purge('smtp');
 
         try {
-            $siteName = Setting::current()->site_name;
-
-            $sent = Mail::mailer('smtp')->raw(
-                "This is a test message from the {$siteName} admin panel. If you are reading it, your SMTP settings work.",
-                fn ($message) => $message->to($recipient)->subject("SMTP test: {$siteName}"),
-            );
+            $sent = Mail::mailer('smtp')->to($recipient)->send(new TemplatedMail(
+                EmailTemplate::forKey(EmailTemplateKey::SmtpTest),
+                ['recipient' => $recipient, 'sent_at' => now()->format('d M Y, H:i')],
+            ));
 
             $result = ['ok' => true, 'message' => "Test email sent to {$recipient}."];
             $this->logger->sent(EmailLogSource::SmtpTest, $sent, ['recipients' => $recipient, 'mailer' => 'smtp']);

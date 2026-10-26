@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\EmailTemplateKey;
 use App\Enums\MenuLocation;
 use App\Mail\TemplatedMail;
+use App\Models\MailSetting;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\Setting;
@@ -74,6 +75,30 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('/get-in-touch', $settings->header_cta_link);
         $this->assertFalse($settings->footer_logo_visible);
         $this->assertSame(['THINK', 'CREATE', 'GROW'], $settings->footer_motto_items);
+    }
+
+    public function test_the_email_logo_is_set_from_the_general_settings(): void
+    {
+        $this->actingAs($this->superAdmin)
+            ->put('/admin/settings', $this->validPayload(['email_logo' => '/images/logo/marketorr-logo-on-light.png']))
+            ->assertSessionHas('success');
+
+        $this->assertSame('/images/logo/marketorr-logo-on-light.png', MailSetting::loadFromDatabase()->email_logo_path);
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/settings')
+            ->assertInertia(fn ($page) => $page->where('settings.email_logo', '/images/logo/marketorr-logo-on-light.png'));
+    }
+
+    public function test_saving_settings_without_the_email_logo_field_keeps_it(): void
+    {
+        MailSetting::loadFromDatabase()->update(['email_logo_path' => '/images/logo/marketorr-logo-on-light.png']);
+
+        $this->actingAs($this->superAdmin)
+            ->put('/admin/settings', $this->validPayload())
+            ->assertSessionHas('success');
+
+        $this->assertSame('/images/logo/marketorr-logo-on-light.png', MailSetting::loadFromDatabase()->email_logo_path);
     }
 
     public function test_saved_settings_reach_the_public_site_immediately(): void

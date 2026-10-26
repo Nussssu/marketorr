@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { Button, ConfirmDialog, Select, useConfirm } from '../../../components/admin/ui';
 
+const SECTIONS = [['all', 'All files'], ['branding', 'Branding'], ['uiux', 'UI/UX'], ['other', 'Other']];
 const FILTERS = [['all', 'All'], ['images', 'Images'], ['videos', 'Videos'], ['gif', 'GIF'], ['documents', 'Documents']];
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.txt,.zip';
 
@@ -29,6 +30,8 @@ function Icon({ name, className = 'h-5 w-5' }) {
         upload: <><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" /><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" /></>,
         search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
         copy: <><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>,
+        link: <><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" /><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" /></>,
+        check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
         file: <><path d="M6 3.5h8l4 4V20H6V3.5Z" /><path d="M14 3.5V8h4" /></>,
         eye: <><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.5" /></>,
         close: <path d="m6 6 12 12M18 6 6 18" />,
@@ -44,10 +47,23 @@ function Icon({ name, className = 'h-5 w-5' }) {
  *
  * @param {{ fileInput: { current: HTMLInputElement|null } }} props
  */
-function UploadArea({ fileInput }) {
+function UploadArea({ fileInput, section = 'all', projects = [] }) {
     const dragDepth = useRef(0);
     const [dragging, setDragging] = useState(false);
-    const { data, setData, post, processing, progress, errors, reset, clearErrors } = useForm({ files: [] });
+    // Uploads go in the open tab's category (Branding, UI/UX) unless another is chosen.
+    const sectionCategory = { branding: 'Branding', uiux: 'UI/UX' }[section] ?? 'Other';
+    const { data, setData, post, processing, progress, errors, reset, clearErrors } = useForm({ files: [], category: sectionCategory, usage_location: '', from_library: true });
+
+    // Filing an upload under a project also puts it in that project's portfolio.
+    const chooseProject = (title) => {
+        const project = projects.find((item) => item.title === title);
+        setData((current) => ({ ...current, usage_location: title, category: project ? project.section_label : current.category }));
+    };
+    const options = ['Branding', 'UI/UX', 'Other'];
+
+    useEffect(() => {
+        setData('category', sectionCategory);
+    }, [sectionCategory]);
     const [pending, setPending] = useState(false);
 
     const chooseFiles = (incoming) => {
@@ -74,6 +90,36 @@ function UploadArea({ fileInput }) {
 
     return (
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+                <p className="text-sm font-bold text-slate-900">Upload to category</p>
+                <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Upload category">
+                    {options.map((option) => (
+                        <button
+                            key={option}
+                            type="button"
+                            role="radio"
+                            aria-checked={data.category === option}
+                            onClick={() => setData('category', option)}
+                            disabled={processing}
+                            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${data.category === option ? 'border-transparent text-white shadow-sm' : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-slate-900'}`}
+                            style={data.category === option ? { background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' } : undefined}
+                        >
+                            {option}
+                        </button>
+                    ))}
+                    <Select value={data.usage_location} onChange={(event) => chooseProject(event.target.value)} disabled={processing} aria-label="Upload under project" className="sm:w-56">
+                        <option value="">No project</option>
+                        {[['uiux', 'UI/UX'], ['branding', 'Branding']].map(([key, label]) => {
+                            const list = projects.filter((project) => project.section === key);
+                            return list.length > 0 && (
+                                <optgroup key={key} label={label}>
+                                    {list.map((project) => <option key={project.id} value={project.title}>{project.title}</option>)}
+                                </optgroup>
+                            );
+                        })}
+                    </Select>
+                </div>
+            </div>
             <div
                 role="button"
                 tabIndex={0}
@@ -88,7 +134,7 @@ function UploadArea({ fileInput }) {
                 <input ref={fileInput} type="file" multiple accept={ACCEPT} onChange={(event) => chooseFiles(event.target.files)} className="sr-only" />
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-200"><Icon name="upload" className="h-7 w-7" /></span>
                 <h2 className="mt-5 text-lg font-bold text-slate-900">{dragging ? 'Drop files to upload' : 'Drag & drop media here'}</h2>
-                <p className="mt-1 text-sm text-slate-500">or click to browse your device · up to 20 files, 20 MB each</p>
+                <p className="mt-1 text-sm text-slate-500">or click to browse your device · goes to <span className="font-bold text-slate-700">{data.category}{data.usage_location ? ` · ${data.usage_location}` : ''}</span></p>
                 <span className="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm">Choose files</span>
             </div>
 
@@ -160,7 +206,7 @@ function MediaPreview({ medium, onClose, onDelete }) {
                     <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
                         <div><dt className="text-xs text-slate-500">Size</dt><dd className="mt-1 font-semibold text-slate-800">{medium.size || '—'}</dd></div><div><dt className="text-xs text-slate-500">Dimensions</dt><dd className="mt-1 font-semibold text-slate-800">{medium.dimensions || '—'}</dd></div><div><dt className="text-xs text-slate-500">Collection</dt><dd className="mt-1 font-semibold text-slate-800">{medium.category}</dd></div><div><dt className="text-xs text-slate-500">Uploaded</dt><dd className="mt-1 font-semibold text-slate-800">{medium.created_at?.slice(0, 10) || '—'}</dd></div>
                     </dl>
-                    <div className="mt-6 rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Used in</p>{medium.usage_labels.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-slate-700">{medium.usage_labels.map((label) => <li key={label}>• {label}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">Not currently linked to CMS content.</p>}</div>
+                    <div className="mt-6 rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">{medium.usage_count > 0 ? `Used in ${medium.usage_count} place${medium.usage_count === 1 ? '' : 's'}` : 'Used in'}</p>{medium.usage_labels.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-slate-700">{medium.usage_labels.map((label) => { const use = (medium.uses ?? []).find((entry) => `${entry.owner} · ${entry.role}` === label); return <li key={label}>• {use ? <Link href={use.edit_url} className="hover:text-blue-600 hover:underline">{label}</Link> : label}</li>; })}</ul> : <p className="mt-2 text-sm text-slate-500">Not currently linked to CMS content.</p>}</div>
                     {renaming && <form onSubmit={rename} className="mt-5"><label className="text-xs font-bold text-slate-700" htmlFor="rename-media">Display filename</label><div className="mt-2 flex gap-2"><input id="rename-media" value={filename} onChange={(event) => setFilename(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500" /><button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Save</button></div></form>}
                     <div className="mt-6 grid gap-2"><button type="button" onClick={copyUrl} className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"><Icon name="copy" className="h-4 w-4" />{copied ? 'URL copied' : 'Copy URL'}</button><button type="button" onClick={() => setRenaming((value) => !value)} className="rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">Rename</button><button type="button" onClick={() => onDelete(medium)} className="rounded-lg border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50">Delete media</button></div>
                 </aside>
@@ -248,8 +294,33 @@ function MediaEditModal({ medium, onClose }) {
     );
 }
 
-export default function MediaIndex({ media, filters = {}, stats = {} }) {
+/**
+ * Prev, at most five page numbers around the current page, and Next.
+ * Page addresses keep the current tab, filters and search.
+ */
+function pageLinks(media) {
+    const current = media.current_page;
+    const last = media.last_page;
+    const urlFor = (page) => {
+        const url = new URL(media.first_page_url, 'http://localhost');
+        url.searchParams.set('page', String(page));
+
+        return `${url.pathname}${url.search}`;
+    };
+    const first = Math.max(1, Math.min(current - 2, last - 4));
+    const pages = Array.from({ length: Math.min(5, last) }, (_, index) => first + index);
+
+    return [
+        { key: 'prev', label: '‹ Prev', url: current > 1 ? urlFor(current - 1) : null },
+        ...pages.map((page) => ({ key: `page-${page}`, label: String(page), url: urlFor(page), active: page === current })),
+        { key: 'next', label: 'Next ›', url: current < last ? urlFor(current + 1) : null },
+    ];
+}
+
+export default function MediaIndex({ media, groups = [], sections = {}, filters = {}, stats = {}, projects = [] }) {
     const items = media?.data ?? [];
+    const section = filters.section ?? 'all';
+    const byId = Object.fromEntries(items.map((medium) => [medium.id, medium]));
     const [selected, setSelected] = useState(null);
     const [editing, setEditing] = useState(null);
     const [search, setSearch] = useState(filters.search ?? '');
@@ -259,13 +330,33 @@ export default function MediaIndex({ media, filters = {}, stats = {} }) {
     const firstSearch = useRef(true);
     const [request, confirm, cancel, run] = useConfirm();
 
-    const visit = (next = {}) => router.get('/admin/media', { type: next.type ?? activeFilter, search: next.search ?? search, sort: next.sort ?? sort }, { preserveState: true, preserveScroll: true, replace: true });
+    const visit = (next = {}) => router.get('/admin/media', { section: next.section ?? section, type: next.type ?? activeFilter, search: next.search ?? search, sort: next.sort ?? sort }, { preserveState: true, preserveScroll: true, replace: true });
 
     useEffect(() => {
         if (firstSearch.current) { firstSearch.current = false; return undefined; }
         const timeout = window.setTimeout(() => visit({ search }), 400);
         return () => window.clearTimeout(timeout);
     }, [search]);
+
+    // Copy a file's full link from its card, with a brief tick to confirm.
+    const [copiedId, setCopiedId] = useState(null);
+    const copyLink = async (medium) => {
+        const url = new URL(medium.file_url, window.location.origin).href;
+        try {
+            await navigator.clipboard.writeText(url);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        }
+        setCopiedId(medium.id);
+        window.setTimeout(() => setCopiedId((current) => (current === medium.id ? null : current)), 1800);
+    };
 
     const askDelete = (medium) => confirm({
         title: `Delete “${medium.filename}”?`,
@@ -275,50 +366,96 @@ export default function MediaIndex({ media, filters = {}, stats = {} }) {
         action: () => router.delete(`/admin/media/${medium.id}`, { preserveScroll: true, onSuccess: () => setSelected(null) }),
     });
 
+    const renderCard = (medium) => (
+                            <article key={medium.id} className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg">
+                                <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                                    <button type="button" onClick={() => setSelected(medium)} aria-label={`Preview ${medium.filename}`} className="block h-full w-full text-left">{medium.is_image ? <img src={medium.preview_url ?? medium.file_url} alt={medium.alt_text || medium.filename} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : kindOf(medium) === 'Video' ? <video src={medium.file_url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <span className="flex h-full flex-col items-center justify-center text-slate-400"><Icon name="file" className="h-12 w-12" /><span className="mt-2 text-xs font-bold">{medium.filename.split('.').pop()?.toUpperCase()}</span></span>}</button>
+                                    {medium.usage_count > 0 && <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">In use · {medium.usage_count}</span>}
+                                    <button type="button" onClick={() => setSelected(medium)} title="View" aria-label={`View ${medium.filename}`} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-md backdrop-blur-sm transition hover:scale-105 hover:text-white" onMouseEnter={(event) => { event.currentTarget.style.background = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))'; }} onMouseLeave={(event) => { event.currentTarget.style.background = ''; }}><Icon name="eye" className="h-4 w-4" /></button>
+                                </div>
+                                <div className="p-3">
+                                    {/* Name, then size, then the card's three actions underneath. */}
+                                    <p className="truncate text-xs font-bold text-slate-800" title={medium.filename}>{medium.filename}</p>
+                                    <p className="mt-0.5 text-[11px] text-slate-500">{medium.size || '—'}</p>
+                                    <div className="mt-2.5 flex items-center gap-1.5 border-t border-slate-100 pt-2.5">
+                                        <button type="button" onClick={() => copyLink(medium)} className={`${CARD_ACTION} ${copiedId === medium.id ? '!text-emerald-600' : ''}`} title={copiedId === medium.id ? 'Link copied' : 'Copy link'} aria-label={`Copy link to ${medium.filename}`}><Icon name={copiedId === medium.id ? 'check' : 'link'} className="h-4 w-4" /></button>
+                                        <button type="button" onClick={() => setEditing(medium)} className={CARD_ACTION} title="Edit" aria-label={`Edit ${medium.filename}`}><Icon name="edit" className="h-4 w-4" /></button>
+                                        <button type="button" onClick={() => askDelete(medium)} className={`${CARD_ACTION} !text-rose-600 hover:!bg-rose-50`} title="Delete" aria-label={`Delete ${medium.filename}`}><Icon name="trash" className="h-4 w-4" /></button>
+                                    </div>
+                                </div>
+                            </article>
+    );
+
     const chooseFilter = (type) => { setActiveFilter(type); visit({ type }); };
     const chooseSort = (value) => { setSort(value); visit({ sort: value }); };
 
     return (
         <>
             <Head title="Media Library | Marketorr Admin" />
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h1 className="font-display text-2xl font-extrabold tracking-tight text-[var(--ink-strong)]">Media Library</h1><p className="mt-1 text-[13px] text-[var(--mute)]">Upload, organize and reuse images, videos, GIFs and documents.</p></div><Button type="button" onClick={() => fileInput.current?.click()}>Upload media</Button></div>
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h1 className="font-display text-2xl font-extrabold tracking-tight text-[var(--ink-strong)]">Media Library</h1><p className="mt-1 text-[13px] text-[var(--mute)]">Upload, organize and reuse images, videos, GIFs and documents.</p></div><Button type="button" onClick={() => fileInput.current?.click()} className="!rounded-full !px-6 !py-3 shadow-[0_10px_28px_-10px_rgba(80,122,244,0.75)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-10px_rgba(137,31,251,0.7)] active:translate-y-0"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20"><Icon name="upload" className="h-4 w-4" /></span>Upload media</Button></div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {STAT_CARDS.map(([key, label, icon]) => <article key={key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon name={icon} /></span></div><p className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900">{stats[key] ?? 0}</p></article>)}
             </div>
 
-            <div id="media-upload-zone" className="mt-6"><UploadArea fileInput={fileInput} /></div>
+            <div id="media-upload-zone" className="mt-6"><UploadArea fileInput={fileInput} section={section} projects={projects} /></div>
 
             <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                {/* The library by portfolio: Branding and UI/UX hold every image their
+                    projects and services use, grouped by where it is used. */}
+                <div className="flex gap-1 overflow-x-auto border-b border-slate-200 px-4 pt-4 sm:px-5" role="tablist" aria-label="Media sections">
+                    {SECTIONS.map(([value, label]) => (
+                        <button key={value} type="button" role="tab" aria-selected={section === value} onClick={() => visit({ section: value })} className={`-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-4 pb-3 pt-1 text-sm font-bold transition ${section === value ? 'border-blue-600 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                            {label}
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${section === value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{sections[value] ?? 0}</span>
+                        </button>
+                    ))}
+                </div>
                 <div className="border-b border-slate-200 p-4 sm:p-5"><div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">{FILTERS.map(([value, label]) => <button key={value} type="button" onClick={() => chooseFilter(value)} className={`whitespace-nowrap rounded-lg px-4 py-2 text-xs font-bold transition ${activeFilter === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>{label}</button>)}</div>
-                    <div className="flex flex-col gap-2 sm:flex-row"><label className="relative block sm:w-72"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" className="h-4 w-4" /></span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search media…" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label><Select value={sort} onChange={(event) => chooseSort(event.target.value)} aria-label="Sort media" className="sm:w-48"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="largest">Largest first</option><option value="smallest">Smallest first</option></Select></div>
+                    <div className="flex flex-col gap-2 sm:flex-row"><label className="relative block sm:w-72"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" className="h-4 w-4" /></span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search media or project name…" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label><Select value={sort} onChange={(event) => chooseSort(event.target.value)} aria-label="Sort media" className="sm:w-48"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="largest">Largest first</option><option value="smallest">Smallest first</option></Select></div>
                 </div></div>
 
                 <div className="p-4 sm:p-5">
                     {items.length === 0 ? <div className="py-16 text-center"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><Icon name="images" className="h-7 w-7" /></span><h2 className="mt-4 font-bold text-slate-900">No media found</h2><p className="mt-1 text-sm text-slate-500">Try another filter or upload a new asset.</p></div> : (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">{items.map((medium) => (
-                            <article key={medium.id} className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg">
-                                <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-                                    <button type="button" onClick={() => setSelected(medium)} aria-label={`Preview ${medium.filename}`} className="block h-full w-full text-left">{medium.is_image ? <img src={medium.file_url} alt={medium.alt_text || medium.filename} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : kindOf(medium) === 'Video' ? <video src={medium.file_url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <span className="flex h-full flex-col items-center justify-center text-slate-400"><Icon name="file" className="h-12 w-12" /><span className="mt-2 text-xs font-bold">{medium.filename.split('.').pop()?.toUpperCase()}</span></span>}</button>
-                                    {medium.usage_count > 0 && <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">In use · {medium.usage_count}</span>}
-                                </div>
-                                <div className="flex items-start gap-2 p-3">
-                                    <div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-slate-800" title={medium.filename}>{medium.filename}</p><div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-500"><span className="truncate">{kindOf(medium)}</span><span className="shrink-0">{medium.size || '—'}</span></div></div>
-                                    {/* Edit and delete, beside the name rather than over the image. */}
-                                    <div className="flex shrink-0 items-center gap-1">
-                                        <button type="button" onClick={() => setEditing(medium)} className={CARD_ACTION} title="Edit" aria-label={`Edit ${medium.filename}`}><Icon name="edit" className="h-4 w-4" /></button>
-                                        <button type="button" onClick={() => askDelete(medium)} className={`${CARD_ACTION} !text-rose-600 hover:!bg-rose-50`} title="Delete" aria-label={`Delete ${medium.filename}`}><Icon name="trash" className="h-4 w-4" /></button>
+                        groups.length > 0 ? (
+                            <div className="space-y-8">{groups.map((group) => (
+                                <section key={group.key} aria-label={group.title}>
+                                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-sm font-bold text-slate-900">{group.title}</h2>
+                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{group.type}</span>
+                                            <span className="text-xs text-slate-500">{group.total ?? group.ids.length} file{(group.total ?? group.ids.length) === 1 ? '' : 's'}{group.total > group.ids.length && ` · ${group.ids.length} on this page`}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </article>
-                        ))}</div>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">{group.ids.map((id) => byId[id] && renderCard(byId[id]))}</div>
+                                </section>
+                            ))}</div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">{items.map((medium) => renderCard(medium))}</div>
+                        )
                     )}
-                    {media?.last_page > 1 && <nav className="mt-6 flex items-center justify-between border-t border-slate-200 pt-5" aria-label="Media pagination">{media.prev_page_url ? <Link href={media.prev_page_url} preserveScroll className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Previous</Link> : <span />}<span className="text-xs font-medium text-slate-500">Page {media.current_page} of {media.last_page}</span>{media.next_page_url ? <Link href={media.next_page_url} preserveScroll className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Next</Link> : <span />}</nav>}
+                    {media?.last_page > 1 && (
+                        <nav className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5" aria-label="Media pagination">
+                            <span className="text-xs font-medium text-slate-500">Showing {media.from}–{media.to} of {media.total} · page {media.current_page} of {media.last_page}</span>
+                            <div className="flex flex-wrap items-center gap-1">
+                                {pageLinks(media).map((link) => {
+                                    const base = 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border px-2.5 text-xs font-bold transition';
+
+                                    if (!link.url) return <span key={link.key} className={`${base} border-transparent text-slate-400`}>{link.label}</span>;
+
+                                    return link.active
+                                        ? <span key={link.key} aria-current="page" className={`${base} border-transparent text-white`} style={{ background: 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))' }}>{link.label}</span>
+                                        : <Link key={link.key} href={link.url} preserveScroll className={`${base} border-slate-300 text-slate-700 hover:bg-slate-50`}>{link.label}</Link>;
+                                })}
+                            </div>
+                        </nav>
+                    )}
                 </div>
             </section>
 
-            {selected && <MediaPreview medium={selected} onClose={() => setSelected(null)} onDelete={askDelete} />}
+            {/* The popup closes first, so the delete confirmation shows on top of the page, not behind it. */}
+            {selected && <MediaPreview medium={selected} onClose={() => setSelected(null)} onDelete={(medium) => { setSelected(null); askDelete(medium); }} />}
             {editing && <MediaEditModal key={editing.id} medium={editing} onClose={() => setEditing(null)} />}
             <ConfirmDialog open={!!request} title={request?.title ?? ''} body={request?.body} onConfirm={run} onCancel={cancel} />
         </>

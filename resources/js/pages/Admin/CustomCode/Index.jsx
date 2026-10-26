@@ -1,15 +1,10 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { Button, ConfirmDialog, EmptyState, Input, PageHeader, Panel, Select, useConfirm } from '../../../components/admin/ui';
+import SnippetModal from './SnippetModal';
 
 const GRADIENT = 'linear-gradient(90deg,var(--brand-1),var(--brand-2),var(--brand-3))';
-
-const TYPE_TONES = {
-    css: 'border-[#0ea5c6]/40 text-[#0ea5c6]',
-    js: 'border-[#e08a0b]/40 text-[#e08a0b]',
-    html: 'border-[#e0457b]/40 text-[#e0457b]',
-};
 
 const ICONS = {
     edit: <><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
@@ -51,11 +46,30 @@ const STATUS_FILTERS = [
     { value: 'disabled', label: 'Disabled' },
 ];
 
-export default function CustomCodeIndex({ snippets, filters, masterEnabled, types, locations }) {
+export default function CustomCodeIndex({ snippets, filters, masterEnabled, locations, targets, pageOptions = [], openNew = false, openSnippet = null }) {
     // Errors from list actions, e.g. switching on a snippet whose code fails the publish checks.
     const pageErrors = usePage().props.errors ?? {};
     const [search, setSearch] = useState(filters.search ?? '');
     const [request, confirm, cancel, run] = useConfirm();
+    // The add / edit popup: 'new', a snippet, or closed.
+    const [editing, setEditing] = useState(() => (openNew ? 'new' : snippets.find((snippet) => snippet.id === openSnippet) ?? null));
+
+    useEffect(() => {
+        if (openNew) setEditing('new');
+        else if (openSnippet) setEditing(snippets.find((snippet) => snippet.id === openSnippet) ?? null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [openNew, openSnippet]);
+
+    // Closing drops ?new / ?edit from the address, so a reload does not reopen it.
+    const closeEditor = () => {
+        setEditing(null);
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('new') || url.searchParams.has('edit')) {
+            url.searchParams.delete('new');
+            url.searchParams.delete('edit');
+            window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
+        }
+    };
 
     const apply = (next) => {
         router.get('/admin/custom-code', Object.fromEntries(Object.entries({ ...filters, ...next }).filter(([, value]) => value)), {
@@ -83,7 +97,7 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
     const askDelete = (snippet) => {
         confirm({
             title: `Delete “${snippet.name}”?`,
-            body: 'The snippet and its whole version history are deleted permanently. To stop it running without losing it, switch it off instead.',
+            body: 'The snippet is deleted permanently. To stop it running without losing it, switch it off instead.',
             confirmLabel: 'Delete',
             action: () => router.delete(`/admin/custom-code/${snippet.id}`, { preserveScroll: true }),
         });
@@ -93,7 +107,7 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
         <>
             <Head title="Custom code | Marketorr Admin" />
             <PageHeader title="Custom Code" subtitle="CSS, scripts, tracking pixels and third-party embeds, injected into the public site. Never into the admin panel.">
-                <Button as="link" href="/admin/custom-code/create">+ New snippet</Button>
+                <Button type="button" onClick={() => setEditing('new')}>+ New snippet</Button>
             </PageHeader>
 
             {pageErrors.code && (
@@ -146,13 +160,9 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
                         event.preventDefault();
                         apply({ search });
                     }}
-                    className="grid gap-3 sm:grid-cols-[1fr_11rem_11rem]"
+                    className="grid gap-3 sm:grid-cols-[1fr_11rem]"
                 >
-                    <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, description or code, then press Enter" aria-label="Search snippets" />
-                    <Select value={filters.type ?? ''} onChange={(event) => apply({ type: event.target.value })} aria-label="Filter by type">
-                        <option value="">All types</option>
-                        {types.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
-                    </Select>
+                    <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or code, then press Enter" aria-label="Search snippets" />
                     <Select value={filters.location ?? ''} onChange={(event) => apply({ location: event.target.value })} aria-label="Filter by placement">
                         <option value="">All placements</option>
                         {locations.map((location) => <option key={location.value} value={location.value}>{location.label}</option>)}
@@ -172,7 +182,6 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
                                 <tr className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
                                     <th className="pb-3 pr-4 font-bold">Priority</th>
                                     <th className="pb-3 pr-4 font-bold">Snippet</th>
-                                    <th className="pb-3 pr-4 font-bold">Type</th>
                                     <th className="pb-3 pr-4 font-bold">Placement</th>
                                     <th className="pb-3 pr-4 font-bold">Pages</th>
                                     <th className="pb-3 pr-4 font-bold">Status</th>
@@ -185,14 +194,11 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
                                     <tr key={snippet.id} className="border-t border-[var(--line)]">
                                         <td className="py-3 pr-4 font-mono text-[12px] text-[var(--mute)]">{snippet.priority}</td>
                                         <td className="max-w-[18rem] py-3 pr-4">
-                                            <Link href={`/admin/custom-code/${snippet.id}/edit`} className="block truncate font-semibold text-[var(--ink-strong)] hover:underline">{snippet.name}</Link>
+                                            <button type="button" onClick={() => setEditing(snippet)} className="block max-w-full truncate text-left font-semibold text-[var(--ink-strong)] hover:underline">{snippet.name}</button>
                                             <p className="truncate text-[12px] text-[var(--ink-faint)]">
                                                 {snippet.description || `${snippet.size.toLocaleString()} characters`}
                                                 {snippet.updatedAt && ` · ${snippet.updatedAt}${snippet.updatedBy ? ` by ${snippet.updatedBy}` : ''}`}
                                             </p>
-                                        </td>
-                                        <td className="py-3 pr-4">
-                                            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] ${TYPE_TONES[snippet.type]}`}>{snippet.typeLabel}</span>
                                         </td>
                                         <td className="whitespace-nowrap py-3 pr-4 text-[var(--mute)]">{snippet.locationLabel}</td>
                                         <td className="max-w-[12rem] py-3 pr-4 text-[var(--mute)]">
@@ -214,7 +220,7 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
                                         </td>
                                         <td className="py-3">
                                             <div className="flex gap-1.5">
-                                                <Link href={`/admin/custom-code/${snippet.id}/edit`} className={ACTION} title="Edit" aria-label={`Edit ${snippet.name}`}><Icon name="edit" /></Link>
+                                                <button type="button" onClick={() => setEditing(snippet)} className={ACTION} title="Edit" aria-label={`Edit ${snippet.name}`}><Icon name="edit" /></button>
                                                 <button type="button" onClick={() => router.post(`/admin/custom-code/${snippet.id}/duplicate`)} className={ACTION} title="Duplicate" aria-label={`Duplicate ${snippet.name}`}><Icon name="copy" /></button>
                                                 <button type="button" onClick={() => askDelete(snippet)} className={`${ACTION} !text-[#ff6b6b] hover:!bg-[#ff6b6b]/10`} title="Delete" aria-label={`Delete ${snippet.name}`}><Icon name="delete" /></button>
                                             </div>
@@ -226,6 +232,18 @@ export default function CustomCodeIndex({ snippets, filters, masterEnabled, type
                     </div>
                 )}
             </Panel>
+
+            {editing && (
+                <SnippetModal
+                    key={editing === 'new' ? 'new' : editing.id}
+                    snippet={editing === 'new' ? null : editing}
+                    locations={locations}
+                    targets={targets}
+                    pageOptions={pageOptions}
+                    onClose={closeEditor}
+                    Switch={Switch}
+                />
+            )}
 
             <ConfirmDialog
                 open={!!request}

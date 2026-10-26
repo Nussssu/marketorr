@@ -10,8 +10,10 @@ use App\Http\Requests\Admin\UpdatePageRequest;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\PageSection;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -21,16 +23,38 @@ class PageController extends Controller
 {
     public function index(): Response
     {
+        $pages = Page::query()
+            ->withCount('sections')
+            ->withMax('sections', 'updated_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        // A page counts as edited when the page itself or any of its sections changed.
+        $lastEdited = $pages
+            ->map(fn (Page $page): array => [
+                'page' => $page,
+                'at' => collect([$page->updated_at, $page->sections_max_updated_at ? Carbon::parse($page->sections_max_updated_at) : null])->filter()->max(),
+            ])
+            ->filter(fn (array $entry): bool => $entry['at'] !== null)
+            ->sortByDesc('at')
+            ->first();
+
         return Inertia::render('Admin/Pages/Index', [
-            'pages' => Page::query()
-                ->withCount('sections')
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get()
-                ->map(fn (Page $page) => [
-                    ...$this->toAdminArray($page),
-                    'sections_count' => $page->sections_count,
-                ]),
+            'pages' => $pages->map(fn (Page $page) => [
+                ...$this->toAdminArray($page),
+                'sections_count' => $page->sections_count,
+            ]),
+            'stats' => [
+                'total' => $pages->count(),
+                'published' => $pages->filter(fn (Page $page): bool => $page->status === ContentStatus::Published)->count(),
+                'hidden' => $pages->filter(fn (Page $page): bool => $page->status !== ContentStatus::Published)->count(),
+                'lastEdited' => $lastEdited ? [
+                    'ago' => $lastEdited['at']->diffForHumans(),
+                    'at' => $lastEdited['at']->format('j M Y, H:i'),
+                    'title' => $lastEdited['page']->title,
+                ] : null,
+            ],
         ]);
     }
 
@@ -173,15 +197,15 @@ class PageController extends Controller
         return back()->with('success', $message);
     }
 
-    public function destroy(Page $page): RedirectResponse
+    public function destroy(Page $page, TrashBin $trash): RedirectResponse
     {
         if ($page->is_system) {
             return back()->with('success', 'System pages cannot be deleted. Unpublish it instead.');
         }
 
-        $page->delete();
+        $entry = $trash->trash($page, 'page', $page->title, '/'.$page->slug);
 
-        return back()->with('success', 'Page deleted.');
+        return back()->with('success', 'Page moved to the trash.')->with('undo', $entry->id);
     }
 
     private function storeOgImage(?UploadedFile $file): ?string

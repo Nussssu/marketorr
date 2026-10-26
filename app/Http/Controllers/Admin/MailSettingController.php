@@ -56,7 +56,7 @@ class MailSettingController extends Controller
         $result = $tester->send(MailSetting::current(), $validated['recipient']);
 
         if (! $result['ok']) {
-            return back()->withErrors(['recipient' => $result['message']]);
+            return back()->withErrors(['recipient' => $result['message']])->with('error', $result['message']);
         }
 
         return back()->with('success', $result['message']);

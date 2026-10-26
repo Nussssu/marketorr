@@ -2,7 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import MediaPickerField from '../../../components/admin/MediaPickerField';
-import { Button, ColorInput, Field, Input, PageHeader, Panel, RepeatableList, Select, StickyColumn, Textarea, slugify } from '../../../components/admin/ui';
+import { Button, ColorInput, Field, Input, PageHeader, RepeatableList, Select, StickyColumn, Textarea, WidgetPanel, slugify } from '../../../components/admin/ui';
 
 /** How many projects the public page's related-work row shows. */
 const RELATED_LIMIT = 4;
@@ -333,13 +333,12 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                 title={isEdit ? `Edit ${item.name}` : 'New sub-service'}
                 subtitle="Fields map one-to-one onto the public sub-service page."
             >
-                <Button as="link" href="/admin/sub-services" variant="secondary">Cancel</Button>
             </PageHeader>
 
             {/* Both columns start on the same line and stick: whichever is shorter stays beside the other while scrolling. */}
             <form onSubmit={submit} className="grid items-start gap-6 pb-24 lg:grid-cols-3">
-                <StickyColumn bottomOffset={96} className="space-y-6 lg:col-span-2">
-                    <Panel title="Basics">
+                <StickyColumn bottomOffset={96} className="space-y-4 lg:col-span-2">
+                    <WidgetPanel title="Basics" summary={data.name || 'Tab, name, slug, tagline, description and accent'} defaultOpen>
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field label="Tab" error={errors.service_group_id} required className="sm:col-span-2">
                                 <Select value={data.service_group_id} onChange={(e) => setData('service_group_id', e.target.value)}>
@@ -370,9 +369,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                                 <ColorInput value={data.accent} onChange={(v) => setData('accent', v)} />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Showcase image" description="The visual the tile, transition and hero all share. Empty renders the placeholder plate.">
+                    <WidgetPanel title="Showcase image" summary={data.image ? 'Image set' : 'No image yet'} description="The visual the tile, transition and hero all share. Empty renders the placeholder plate.">
                         <div className="space-y-4">
                             <MediaPickerField
                                 label="Image"
@@ -386,9 +385,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                                 <Input value={data.image_alt ?? ''} onChange={(e) => setData('image_alt', e.target.value)} />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Deliverables" description="The “what you get” list on the dedicated page.">
+                    <WidgetPanel title="Deliverables" summary={`${data.deliverables.filter(Boolean).length} deliverable${data.deliverables.filter(Boolean).length === 1 ? '' : 's'}`} description="The “what you get” list on the dedicated page.">
                         <RepeatableList
                             values={data.deliverables}
                             onChange={(v) => setData('deliverables', v)}
@@ -398,9 +397,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                             name="deliverables"
                         />
                         {errors.deliverables && <p className="mt-2 text-[12px] text-[#ff6b6b]">{errors.deliverables}</p>}
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Related work" description={`Up to ${RELATED_LIMIT} projects from the ${groupName} portfolio. Hand-picked ones lead, tagged ones follow, and the rest of the portfolio fills any gap.`}>
+                    <WidgetPanel title="Related work" summary={`${data.related_pin.length} pinned · ${data.related_match.length} tagged`} description={`Up to ${RELATED_LIMIT} projects from the ${groupName} portfolio. Hand-picked ones lead, tagged ones follow, and the rest of the portfolio fills any gap.`}>
                         <RelatedWorkPicker
                             options={relatedOptions[groupSlug] ?? []}
                             pins={data.related_pin}
@@ -412,9 +411,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                         {(errors.related_pin || errors.related_match) && (
                             <p className="mt-2 text-[12px] text-[#ff6b6b]">{errors.related_pin ?? errors.related_match}</p>
                         )}
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Page text" description="The headings and buttons on the dedicated page. {name} and {category} fill in the live names; an emptied field goes back to its default.">
+                    <WidgetPanel title="Page text" summary="Headings and buttons on the dedicated page" description="The headings and buttons on the dedicated page. {name} and {category} fill in the live names; an emptied field goes back to its default.">
                         <div className="grid gap-5 sm:grid-cols-2">
                             {PAGE_FIELDS.map((field) => (
                                 <Field
@@ -440,15 +439,15 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                                 </Field>
                             ))}
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="Case study" description="Optional long-form story below the page. Leave without sections for no case study.">
+                    <WidgetPanel title="Case study" summary={data.case_study?.sections?.length ? `${data.case_study.sections.length} section${data.case_study.sections.length === 1 ? '' : 's'}` : 'No case study'} description="Optional long-form story below the page. Leave without sections for no case study.">
                         <CaseStudyEditor value={data.case_study} onChange={(v) => setData('case_study', v)} error={errors.case_study} />
-                    </Panel>
+                    </WidgetPanel>
                 </StickyColumn>
 
-                <StickyColumn bottomOffset={96} className="space-y-6">
-                    <Panel title="Publishing">
+                <StickyColumn bottomOffset={96} className="space-y-4">
+                    <WidgetPanel title="Publishing" summary={data.status} defaultOpen>
                         <div className="space-y-5">
                             <Field label="Status" error={errors.status} required>
                                 <Select value={data.status} onChange={(e) => setData('status', e.target.value)}>
@@ -466,9 +465,9 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                                 />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
-                    <Panel title="SEO" description="How this page appears in search results and when shared. Empty fields use the page's name, description and image.">
+                    <WidgetPanel title="SEO" summary={data.meta_title || 'Uses the page name and description'} description="How this page appears in search results and when shared. Empty fields use the page's name, description and image.">
                         <div className="space-y-5">
                             <Field label="Meta title" error={errors.meta_title} hint={`${data.meta_title.length}/60 characters`}>
                                 <Input value={data.meta_title} onChange={(e) => setData('meta_title', e.target.value)} placeholder={`${data.name || 'Sub-service'} | Marketorr`} />
@@ -495,12 +494,12 @@ export default function SubServiceForm({ item, groups, statuses, relatedOptions 
                                 <Input value={data.canonical_url} onChange={(e) => setData('canonical_url', e.target.value)} placeholder="https://" />
                             </Field>
                         </div>
-                    </Panel>
+                    </WidgetPanel>
 
                 </StickyColumn>
                 {/* The page's one save button, always on screen at the bottom. */}
-                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
-                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:px-6 lg:left-64 lg:px-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
                             <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
                             {isDirty ? 'You have unsaved changes.' : 'No unsaved changes.'}

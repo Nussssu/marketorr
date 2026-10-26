@@ -104,8 +104,8 @@ export default function ServiceGroupForm({ group, statuses }) {
 
                 </StickyColumn>
                 {/* The page's one save button, always on screen at the bottom. */}
-                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm lg:left-64">
-                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:px-6 lg:left-64 lg:px-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className={`flex items-center gap-2 text-[13px] font-semibold ${isDirty ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'}`}>
                             <span className={`h-2 w-2 rounded-full ${isDirty ? 'bg-[#f5a524]' : 'bg-[var(--field-line)]'}`} aria-hidden />
                             {isDirty ? 'You have unsaved changes.' : 'No unsaved changes.'}

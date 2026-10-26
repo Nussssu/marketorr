@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useForm, usePage } from '@inertiajs/react';
 import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import FastCollapse from '../ui/FastCollapse';
+import RichContent from '../ui/RichContent';
 import { SectionLabel } from '../ui/primitives';
 import OfficeMap from '../ui/OfficeMap';
 import { useThemeMotion } from '../../lib/theme';
@@ -764,11 +765,13 @@ export function ContactConnect({ content = {} }) {
                             <TitleLines lines={content.titleLines} highlight={content.titleHighlight} reduce={reduce} />
                         </motion.h2>
                         <motion.span variants={reduce ? undefined : omniRise} className="mt-6 block h-[3px] w-10 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
-                        {content.body && (
-                            <motion.p variants={reduce ? undefined : omniRise} className="mt-6 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]">
-                                {content.body}
-                            </motion.p>
-                        )}
+                        <RichContent
+                            as={motion.p}
+                            htmlAs={motion.div}
+                            value={content.body}
+                            variants={reduce ? undefined : omniRise}
+                            className="mt-6 max-w-[46ch] text-[14px] leading-[22px] text-[var(--mute)]"
+                        />
                     </motion.div>
 
                     <motion.div {...scrollReveal} variants={reduce ? undefined : omniRise} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8 lg:mt-[44px]">

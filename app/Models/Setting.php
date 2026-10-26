@@ -23,11 +23,13 @@ class Setting extends Model
             'hero_heading_lines' => 'array',
             'about_metrics' => 'array',
             'schema_markup' => 'array',
+            'seo_sections' => 'array',
             'sitemap_enabled' => 'boolean',
             'header_sticky' => 'boolean',
             'footer_logo_visible' => 'boolean',
             'footer_motto_items' => 'array',
             'custom_code_enabled' => 'boolean',
+            'audit_cleared_at' => 'array',
         ];
     }
 

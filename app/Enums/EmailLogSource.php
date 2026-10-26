@@ -29,13 +29,16 @@ enum EmailLogSource: string
     }
 
     /**
-     * The source a lead email template sends as.
+     * The source an email template sends as.
      */
     public static function forTemplate(EmailTemplateKey $key): self
     {
         return match ($key) {
             EmailTemplateKey::AdminLeadNotification => self::LeadNotification,
             EmailTemplateKey::LeadAutoResponder => self::LeadAutoResponder,
+            EmailTemplateKey::AdminInvitation => self::AdminInvitation,
+            EmailTemplateKey::AdminPasswordReset => self::AdminPasswordReset,
+            EmailTemplateKey::SmtpTest => self::SmtpTest,
         };
     }
 

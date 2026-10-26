@@ -1,8 +1,9 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Button, Field, Input } from '../../../components/admin/ui';
 import BrandMark from '../../../components/ui/BrandMark';
 
 export default function Login() {
+    const notice = usePage().props.flash?.success;
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -27,6 +28,11 @@ export default function Login() {
                     </div>
                     <h1 className="mt-8 font-display text-2xl font-extrabold uppercase text-[var(--ink-strong)]">Admin sign in</h1>
                     <p className="mt-2 text-[13px] text-[var(--mute)]">Manage projects, services, inquiries and site content.</p>
+                    {notice && (
+                        <p role="status" className="mt-6 rounded-lg border border-[var(--brand-3)]/40 bg-[var(--brand-3)]/10 px-4 py-3 text-[13px] text-[var(--ink)]">
+                            {notice}
+                        </p>
+                    )}
 
                     <form onSubmit={submit} className="mt-8 space-y-5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6">
                         <Field label="Email" error={errors.email} required>

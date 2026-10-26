@@ -1,4 +1,5 @@
 import { GradientButton, GradientTitle, SectionLabel } from '../ui/primitives';
+import RichContent from '../ui/RichContent';
 
 /**
  * @param {{ content?: { heading?: string, body?: string, buttonLabel?: string, buttonUrl?: string } }} props
@@ -15,7 +16,7 @@ export default function Cta({ content }) {
                 {heading && (
                     <h2 className="display-md mt-8 uppercase text-[var(--ink-strong)]"><GradientTitle text={heading} /></h2>
                 )}
-                {body && <p className="mt-5 text-[16px] leading-[1.75] text-[var(--mute)]">{body}</p>}
+                <RichContent value={body} className="mt-5 text-[16px] leading-[1.75] text-[var(--mute)]" />
                 {buttonLabel && buttonUrl && (
                     <div className="mt-9 flex justify-center">
                         <GradientButton href={buttonUrl}>{buttonLabel}</GradientButton>

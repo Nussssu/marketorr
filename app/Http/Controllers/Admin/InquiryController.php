@@ -6,6 +6,7 @@ use App\Enums\InquiryStatus;
 use App\Enums\InquiryType;
 use App\Http\Controllers\Controller;
 use App\Models\ContactSubmission;
+use App\Services\TrashBin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,8 @@ class InquiryController extends Controller
             'status' => ['nullable', Rule::in(InquiryStatus::values())],
             'type' => ['nullable', Rule::in(InquiryType::values())],
             'search' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
 
         $inquiries = $this->filteredQuery($filters)
@@ -56,10 +59,30 @@ class InquiryController extends Controller
                 'status' => $filters['status'] ?? '',
                 'type' => $filters['type'] ?? '',
                 'search' => $filters['search'] ?? '',
+                'from' => $filters['from'] ?? '',
+                'to' => $filters['to'] ?? '',
             ],
             'statuses' => InquiryStatus::values(),
             'types' => [InquiryType::Branding->value, InquiryType::UiUx->value],
+            // Totals across the whole inbox, whatever the filters, for the count chips.
+            'counts' => $this->statusCounts(),
         ]);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function statusCounts(): array
+    {
+        $byStatus = ContactSubmission::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return [
+            'total' => (int) $byStatus->sum(),
+            ...collect(InquiryStatus::values())->mapWithKeys(fn (string $status): array => [$status => (int) ($byStatus[$status] ?? 0)])->all(),
+        ];
     }
 
     public function show(ContactSubmission $inquiry): Response
@@ -127,6 +150,8 @@ class InquiryController extends Controller
             'status' => ['nullable', Rule::in(InquiryStatus::values())],
             'type' => ['nullable', Rule::in(InquiryType::values())],
             'search' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
 
         $query = $this->filteredQuery($filters)->latest();
@@ -263,13 +288,14 @@ class InquiryController extends Controller
         return back()->with('success', "{$count} lead".($count === 1 ? '' : 's').' imported.');
     }
 
-    public function destroy(ContactSubmission $inquiry): RedirectResponse
+    public function destroy(ContactSubmission $inquiry, TrashBin $trash): RedirectResponse
     {
-        $inquiry->delete();
+        $entry = $trash->trash($inquiry, 'inquiry', $inquiry->name, $inquiry->email);
 
         return redirect()
             ->route('admin.inquiries.index')
-            ->with('success', 'Inquiry deleted.');
+            ->with('success', 'Inquiry moved to the trash.')
+            ->with('undo', $entry->id);
     }
 
     /**
@@ -283,6 +309,9 @@ class InquiryController extends Controller
         return ContactSubmission::query()
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['type'] ?? null, fn (Builder $query, string $type) => $query->where('type', $type))
+            // Received between the two dates, both days included.
+            ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->whereDate('created_at', '<=', $to))
             ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
                 fn (Builder $inner) => $inner
                     ->where('name', 'like', "%{$search}%")

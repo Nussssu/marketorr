@@ -26,8 +26,7 @@ class UpdateEmailTemplatesRequest extends FormRequest
             'templates' => ['required', 'array', 'min:1'],
             'templates.*.id' => ['required', 'integer', 'distinct', 'exists:email_templates,id'],
             'templates.*.subject' => ['required', 'string', 'max:190'],
-            'templates.*.body_html' => ['required', 'string', 'max:50000'],
-            'templates.*.enabled' => ['required', 'boolean'],
+            'templates.*.enabled' => ['required', 'boolean'],            ...UpdateEmailTemplateRequest::blockRules('templates.*.blocks'),
         ];
     }
 
@@ -54,13 +53,13 @@ class UpdateEmailTemplatesRequest extends FormRequest
                 $unknown = (clone $template)
                     ->forceFill([
                         'subject' => (string) ($input['subject'] ?? ''),
-                        'body_html' => (string) ($input['body_html'] ?? ''),
+                        'blocks' => (array) ($input['blocks'] ?? []),
                     ])
                     ->unknownPlaceholders();
 
                 if ($unknown !== []) {
                     $validator->errors()->add(
-                        "templates.{$index}.body_html",
+                        "templates.{$index}.blocks",
                         'Unknown placeholder(s): '.implode(', ', array_map(
                             static fn (string $token) => '{{ '.$token.' }}',
                             $unknown,

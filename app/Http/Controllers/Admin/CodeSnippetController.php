@@ -11,6 +11,9 @@ use App\Http\Requests\Admin\SaveCodeSnippetRequest;
 use App\Models\CodeSnippet;
 use App\Models\CodeSnippetAuditLog;
 use App\Models\CodeSnippetVersion;
+use App\Models\Page;
+use App\Models\Project;
+use App\Models\ServiceGroup;
 use App\Models\Setting;
 use App\Services\CodeInjector;
 use App\Services\CodeSnippetValidator;
@@ -56,7 +59,7 @@ class CodeSnippetController extends Controller
             ->orderBy('priority')
             ->orderBy('id')
             ->get()
-            ->map(fn (CodeSnippet $snippet) => $snippet->toAdminArray());
+            ->map(fn (CodeSnippet $snippet) => [...$snippet->toAdminArray(), 'code' => $snippet->code]);
 
         return Inertia::render('Admin/CustomCode/Index', [
             'snippets' => $snippets,
@@ -67,17 +70,20 @@ class CodeSnippetController extends Controller
                 'location' => $filters['location'] ?? '',
             ],
             'masterEnabled' => (bool) Setting::current()->custom_code_enabled,
+            // Adding and editing happen in a popup on this page; these open it.
+            'openNew' => $request->boolean('new'),
+            'openSnippet' => $request->integer('edit') ?: null,
+            'pageOptions' => $this->pageOptions(),
             ...$this->options(),
         ]);
     }
 
-    public function create(): Response
+    /**
+     * Adding opens the popup on the list.
+     */
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Admin/CustomCode/Form', [
-            'snippet' => null,
-            'versions' => [],
-            ...$this->options(),
-        ]);
+        return redirect()->route('admin.custom-code.index', ['new' => 1]);
     }
 
     public function store(SaveCodeSnippetRequest $request): RedirectResponse
@@ -97,32 +103,16 @@ class CodeSnippetController extends Controller
         CodeInjector::forget();
 
         return redirect()
-            ->route('admin.custom-code.edit', $snippet)
+            ->route('admin.custom-code.index')
             ->with('success', $snippet->isLive() ? 'Snippet published.' : 'Snippet saved as a draft.');
     }
 
-    public function edit(CodeSnippet $snippet): Response
+    /**
+     * Editing opens the popup on the list.
+     */
+    public function edit(CodeSnippet $snippet): RedirectResponse
     {
-        return Inertia::render('Admin/CustomCode/Form', [
-            'snippet' => [
-                ...$snippet->toAdminArray(),
-                'code' => $snippet->code,
-            ],
-            'versions' => $snippet->versions()
-                ->with('user:id,name')
-                ->limit(50)
-                ->get()
-                ->map(fn (CodeSnippetVersion $version) => [
-                    'id' => $version->id,
-                    'version' => $version->version,
-                    'note' => $version->note,
-                    'user' => $version->user?->name,
-                    'createdAt' => $version->created_at?->format('d M Y, h:i A'),
-                    'createdAgo' => $version->created_at?->diffForHumans(),
-                    'snapshot' => $version->snapshot,
-                ]),
-            ...$this->options(),
-        ]);
+        return redirect()->route('admin.custom-code.index', ['edit' => $snippet->id]);
     }
 
     public function update(SaveCodeSnippetRequest $request, CodeSnippet $snippet): RedirectResponse
@@ -175,7 +165,7 @@ class CodeSnippetController extends Controller
             return $copy;
         });
 
-        return redirect()->route('admin.custom-code.edit', $copy)->with('success', 'Snippet copied as a disabled draft.');
+        return redirect()->route('admin.custom-code.index', ['edit' => $copy->id])->with('success', 'Snippet copied as a disabled draft.');
     }
 
     /**
@@ -273,6 +263,43 @@ class CodeSnippetController extends Controller
         if ($errors !== []) {
             throw ValidationException::withMessages(['code' => $errors]);
         }
+    }
+
+    /**
+     * The site's pages a snippet can be aimed at, grouped for the dropdown:
+     * whole sections, the CMS pages, each project and each service page.
+     *
+     * @return array<int, array{group: string, items: array<int, array{path: string, label: string}>}>
+     */
+    private function pageOptions(): array
+    {
+        $pages = Page::query()->published()->orderBy('sort_order')->orderBy('id')->get()
+            ->map(fn (Page $page): array => ['path' => $page->slug === 'home' ? '/' : '/'.$page->slug, 'label' => $page->title])
+            ->values()
+            ->all();
+
+        $projects = Project::query()->published()->orderBy('sort_order')->orderBy('id')->get()
+            ->map(fn (Project $project): array => ['path' => $project->publicPath(), 'label' => $project->title])
+            ->values()
+            ->all();
+
+        $services = collect(ServiceGroup::catalogue())
+            ->flatMap(fn (array $group) => collect($group['items'] ?? [])->map(fn (array $item): array => [
+                'path' => '/services/'.$group['slug'].'/'.$item['slug'],
+                'label' => $group['name'].' · '.$item['name'],
+            ]))
+            ->values()
+            ->all();
+
+        return array_values(array_filter([
+            ['group' => 'Whole sections', 'items' => [
+                ['path' => '/work/*', 'label' => 'Every project page'],
+                ['path' => '/services/*', 'label' => 'Every service page'],
+            ]],
+            ['group' => 'Pages', 'items' => $pages],
+            ['group' => 'Projects', 'items' => $projects],
+            ['group' => 'Services', 'items' => $services],
+        ], fn (array $group): bool => $group['items'] !== []));
     }
 
     /**

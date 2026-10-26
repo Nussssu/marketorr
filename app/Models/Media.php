@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\PublicAsset;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'filename', 'path', 'checksum', 'mime_type', 'size_bytes', 'width', 'height',
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Media extends Model
 {
+    use SoftDeletes;
+
     /**
      * @return array<string, string>
      */
@@ -76,10 +80,41 @@ class Media extends Model
     }
 
     /**
+     * A lighter copy for library grids: a UI/UX screen's top crop from its
+     * folder's `thumbs/`, a site file's grid-sized or optimized copy, or the
+     * file itself.
+     */
+    public function previewUrl(): string
+    {
+        if (! str_starts_with($this->path, '/images/')) {
+            return $this->fileUrl();
+        }
+
+        $thumb = dirname($this->path).'/thumbs/'.basename($this->path);
+
+        if (str_starts_with($this->path, '/images/work/uiux/') && is_file(public_path(ltrim($thumb, '/')))) {
+            return (string) PublicAsset::url($thumb);
+        }
+
+        return (string) PublicAsset::thumb($this->path);
+    }
+
+    /**
+     * @param  array{groups?: array<int, string>, labels?: array<int, string>}  $usage
+     * @param  array<int, array<string, string|null>>  $uses  where the Branding / UI/UX work uses the file (MediaCatalogue)
      * @return array<string, mixed>
      */
-    public function toAdminArray(array $usage = []): array
+    public function toAdminArray(array $usage = [], array $uses = []): array
     {
+        // One line per place the file is used: the portfolio and service uses
+        // in full, plus category thumbnails and banners.
+        $labels = collect($uses)
+            ->map(fn (array $use): string => "{$use['owner']} · {$use['role']}")
+            ->merge(collect($usage['labels'] ?? [])->reject(fn (string $label): bool => $uses !== [] && str_starts_with($label, 'Product: ')))
+            ->unique()
+            ->values()
+            ->all();
+
         return [
             'id' => $this->id,
             'filename' => $this->filename,
@@ -94,9 +129,12 @@ class Media extends Model
             'is_image' => str_starts_with((string) $this->mime_type, 'image/')
                 || (bool) preg_match('/\.(jpe?g|png|webp|gif|svg|avif)$/i', $this->filename),
             'is_site_file' => $this->isSiteFile(),
+            'preview_url' => $this->previewUrl(),
             'usage_groups' => $usage['groups'] ?? [],
-            'usage_labels' => $usage['labels'] ?? [],
-            'usage_count' => count($usage['labels'] ?? []),
+            'usage_labels' => $labels,
+            'usage_count' => count($labels),
+            'uses' => array_values($uses),
+            'sections' => collect($uses)->pluck('section')->unique()->values()->all(),
         ];
     }
 }

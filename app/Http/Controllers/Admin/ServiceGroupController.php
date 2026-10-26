@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreServiceGroupRequest;
 use App\Http\Requests\Admin\UpdateServiceGroupRequest;
 use App\Models\ServiceGroup;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -64,12 +65,15 @@ class ServiceGroupController extends Controller
             ->with('success', 'Service tab updated.');
     }
 
-    public function destroy(ServiceGroup $serviceGroup): RedirectResponse
+    public function destroy(ServiceGroup $serviceGroup, TrashBin $trash): RedirectResponse
     {
-        $serviceGroup->delete();
-        ServiceGroup::forgetCatalogue();
+        // Its sub-services go with it and come back with it.
+        $subServices = $serviceGroup->subServices()->get();
+        $subServices->each->delete();
 
-        return back()->with('success', 'Service tab deleted.');
+        $entry = $trash->trash($serviceGroup, 'service_group', $serviceGroup->name, $subServices->count().' sub-service(s)', ['sub_services' => $subServices->modelKeys()]);
+
+        return back()->with('success', 'Service tab moved to the trash.')->with('undo', $entry->id);
     }
 
     /**

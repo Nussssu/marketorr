@@ -7,6 +7,7 @@ import { SectionLabel } from '../ui/primitives';
 import ScrollHeading from '../motion/ScrollHeading';
 import Stage from '../decor/Stage';
 import { gradientLines } from '../../lib/headingLines';
+import RichContent, { plainText } from '../ui/RichContent';
 
 /** Tagline phrase colours, in order: purple, blue, cyan. */
 const TAGLINE_COLORS = ['var(--brand-1)', 'var(--brand-2)', 'var(--brand-3)'];
@@ -61,7 +62,8 @@ function ManifestoAbout({ label, text, metrics, tagline, compactTop }) {
     const ref = useRef(null);
     const reduce = useReducedMotion();
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start 85%', 'end 45%'] });
-    const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+    // Lit word by word, so rich text is read as its plain words here.
+    const words = plainText(text).trim().split(/\s+/).filter(Boolean);
     const accentFrom = words.length - MANIFESTO_ACCENT_WORDS;
 
     return (
@@ -77,7 +79,7 @@ function ManifestoAbout({ label, text, metrics, tagline, compactTop }) {
                 {label && <SectionLabel name={label.toUpperCase()} />}
                 <h2 className="sr-only">{label}</h2>
 
-                <p className="sr-only">{text}</p>
+                <p className="sr-only">{plainText(text)}</p>
                 <p
                     ref={ref}
                     aria-hidden
@@ -184,15 +186,16 @@ export default function About({ variant = 'hero', heroHeading = false, compactTo
                         />
                     </div>
                     <div className="lg:col-span-5 lg:pt-4">
-                        <motion.p
+                        <RichContent
+                            as={motion.p}
+                            htmlAs={motion.div}
+                            value={text}
                             initial={{ opacity: 0, y: 24 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
                             className="text-[16px] leading-relaxed text-[var(--mute)]"
-                        >
-                            {text}
-                        </motion.p>
+                        />
                         {tagline.length > 0 && (
                             <p className="mt-5 font-display text-[12px] font-bold uppercase tracking-[0.22em]">
                                 {tagline.map((phrase, index) => (

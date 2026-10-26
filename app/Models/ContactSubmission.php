@@ -8,6 +8,7 @@ use Database\Factories\ContactSubmissionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'name', 'email', 'phone', 'company', 'type', 'budget',
@@ -18,6 +19,8 @@ class ContactSubmission extends Model
 {
     /** @use HasFactory<ContactSubmissionFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -50,6 +53,7 @@ class ContactSubmission extends Model
             'message' => $this->message,
             'source_page' => $this->source_page,
             'submitted_at' => $this->created_at?->format('d M Y, H:i'),
+            'admin_url' => route('admin.inquiries.show', $this),
             'site_name' => $settings->site_name,
             'contact_email' => $settings->contact_email,
         ];

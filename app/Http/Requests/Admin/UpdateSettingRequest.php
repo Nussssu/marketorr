@@ -3,12 +3,13 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSettingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isSuperAdmin() ?? false;
+        return $this->user()?->hasPermission('settings.manage') ?? false;
     }
 
     /**
@@ -21,6 +22,7 @@ class UpdateSettingRequest extends FormRequest
             'logo' => ['nullable'],
             'logo_dark' => ['nullable'],
             'favicon' => ['nullable'],
+            'email_logo' => ['nullable', 'string', 'max:2000'],
             'header_sticky' => ['required', 'boolean'],
             'header_cta_text' => ['nullable', 'string', 'max:60'],
             'header_cta_link' => ['nullable', 'string', 'max:255'],
@@ -41,6 +43,12 @@ class UpdateSettingRequest extends FormRequest
             'robots_txt' => ['nullable', 'string', 'max:10000'],
             'schema_markup' => ['nullable', 'string', 'max:20000', 'json'],
             'sitemap_enabled' => ['required', 'boolean'],
+            'seo_sections' => ['present', 'array', 'max:20'],
+            'seo_sections.*.title' => ['required', 'string', 'max:120'],
+            'seo_sections.*.tags' => ['present', 'array', 'max:50'],
+            'seo_sections.*.tags.*.attribute' => ['required', Rule::in(['name', 'property'])],
+            'seo_sections.*.tags.*.key' => ['required', 'string', 'max:190'],
+            'seo_sections.*.tags.*.content' => ['required', 'string', 'max:1000'],
         ];
     }
 
@@ -51,6 +59,9 @@ class UpdateSettingRequest extends FormRequest
     {
         return [
             'schema_markup.json' => 'Schema markup must be valid JSON.',
+            'seo_sections.*.title.required' => 'Give the section a title.',
+            'seo_sections.*.tags.*.key.required' => 'Enter the meta tag name, e.g. google-site-verification.',
+            'seo_sections.*.tags.*.content.required' => 'Enter the meta tag content.',
         ];
     }
 
@@ -63,7 +74,7 @@ class UpdateSettingRequest extends FormRequest
     public function settingAttributes(): array
     {
         $data = $this->safe()->except([
-            'logo', 'logo_dark', 'favicon', 'footer_logo', 'meta_default_og_image', 'schema_markup',
+            'logo', 'logo_dark', 'favicon', 'footer_logo', 'meta_default_og_image', 'schema_markup', 'email_logo',
         ]);
 
         $data['schema_markup'] = filled($this->input('schema_markup'))
@@ -82,6 +93,22 @@ class UpdateSettingRequest extends FormRequest
             'footer_motto_items' => array_values(array_filter(
                 (array) $this->input('footer_motto_items', []),
                 static fn ($item) => filled($item),
+            )),
+            // Sent as form data, so an empty list arrives missing; fully blank
+            // tag rows are dropped rather than refused.
+            'seo_sections' => array_values(array_map(
+                static fn ($section): array => [
+                    'title' => trim((string) ($section['title'] ?? '')),
+                    'tags' => array_values(array_filter(
+                        array_map(static fn ($tag): array => [
+                            'attribute' => (string) ($tag['attribute'] ?? 'name'),
+                            'key' => trim((string) ($tag['key'] ?? '')),
+                            'content' => trim((string) ($tag['content'] ?? '')),
+                        ], (array) ($section['tags'] ?? [])),
+                        static fn (array $tag): bool => $tag['key'] !== '' || $tag['content'] !== '',
+                    )),
+                ],
+                (array) $this->input('seo_sections', []),
             )),
         ]);
     }

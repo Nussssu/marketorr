@@ -4,7 +4,9 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\ContentStatus;
 use App\Http\Requests\Admin\Concerns\NormalisesSlug;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
@@ -65,6 +67,33 @@ class StoreSubServiceRequest extends FormRequest
             'accent.regex' => 'The accent must be a 6-digit hex color, for example #891FFB.',
             'case_study.json' => 'The case study must be valid JSON.',
         ];
+    }
+
+    /**
+     * A refused create also says so in a toast, naming the fields to fix,
+     * besides the messages under each field.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        if ($this->isMethod('post')) {
+            $labels = [
+                'service_group_id' => 'Tab',
+                'name' => 'Name',
+                'slug' => 'Slug',
+                'deliverables' => 'Deliverables',
+                'accent' => 'Accent colour',
+                'status' => 'Status',
+            ];
+            $fields = collect($validator->errors()->keys())
+                ->map(fn (string $key): string => Str::before($key, '.'))
+                ->unique()
+                ->map(fn (string $field): string => $labels[$field] ?? Str::headline($field))
+                ->values();
+
+            session()->flash('error', 'Sub-service not created. Fill in the required fields: '.$fields->join(', ', ' and ').'.');
+        }
+
+        parent::failedValidation($validator);
     }
 
     protected function prepareForValidation(): void

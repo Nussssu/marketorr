@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreServiceRequest;
 use App\Http\Requests\Admin\UpdateServiceRequest;
 use App\Models\Service;
+use App\Services\TrashBin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -62,11 +63,11 @@ class ServiceController extends Controller
             ->with('success', 'Service updated.');
     }
 
-    public function destroy(Service $service): RedirectResponse
+    public function destroy(Service $service, TrashBin $trash): RedirectResponse
     {
-        $service->delete();
+        $entry = $trash->trash($service, 'service', (string) $service->name, '/services/'.$service->slug);
 
-        return back()->with('success', 'Service deleted.');
+        return back()->with('success', 'Service moved to the trash.')->with('undo', $entry->id);
     }
 
     /**
